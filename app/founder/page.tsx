@@ -28,6 +28,7 @@ import {
   Plus,
   ReceiptIndianRupee,
   RotateCcw,
+  ShieldCheck,
   Search,
   Settings,
   ShoppingBag,
@@ -214,36 +215,93 @@ const navigationGroups: NavigationGroup[] = [
         id: "customers",
         name: "Customers",
         description:
-          "Customer profiles, segmentation, loyalty and relationship management",
+          "Customer profiles, groups, loyalty, wallets, purchase history and analytics",
         icon: Users,
       },
       {
         id: "finance",
         name: "Finance",
         description:
-          "Finance, accounting, banking, taxation and financial reporting",
+          "Accounting, banking, taxation, budgeting, treasury and financial reporting",
         icon: CircleDollarSign,
       },
       {
         id: "employees",
         name: "Human Resources",
         description:
-          "Employees, recruitment, attendance, payroll and performance",
+          "Employees, recruitment, attendance, leave, payroll and performance",
         icon: UserRound,
       },
       {
         id: "marketing",
         name: "Marketing",
         description:
-          "Campaigns, audiences, promotions and marketing performance",
+          "Campaigns, audiences, social media, SEO, advertising and performance",
         icon: Megaphone,
       },
       {
         id: "support",
         name: "Customer Support",
         description:
-          "Customer tickets, complaints, service requests and resolutions",
+          "Tickets, chat, calls, complaints, SLA, knowledge base and resolutions",
         icon: Headphones,
+        badge: "12",
+      },
+      {
+        id: "procurement",
+        name: "Procurement",
+        description:
+          "Suppliers, RFQs, purchase orders, vendor bills, contracts and procurement",
+        icon: ClipboardCheck,
+      },
+      {
+        id: "crm",
+        name: "CRM",
+        description:
+          "Leads, opportunities, contacts, accounts, follow-ups and sales pipeline",
+        icon: Users,
+      },
+      {
+        id: "vendor-management",
+        name: "Vendor Management",
+        description:
+          "Vendor onboarding, compliance, performance, contracts and payments",
+        icon: Building2,
+      },
+      {
+        id: "projects",
+        name: "Projects & Tasks",
+        description:
+          "Projects, milestones, task allocation, deadlines and execution tracking",
+        icon: FileChartColumn,
+      },
+      {
+        id: "documents",
+        name: "Documents",
+        description:
+          "Enterprise documents, policies, records, approvals and version control",
+        icon: FileChartColumn,
+      },
+      {
+        id: "legal-compliance",
+        name: "Legal & Compliance",
+        description:
+          "Legal matters, contracts, statutory compliance and regulatory controls",
+        icon: ShieldCheck,
+      },
+      {
+        id: "risk-management",
+        name: "Risk Management",
+        description:
+          "Enterprise risks, controls, incidents, mitigation and monitoring",
+        icon: Activity,
+      },
+      {
+        id: "facilities",
+        name: "Facilities & Assets",
+        description:
+          "Offices, facilities, company assets, maintenance and allocations",
+        icon: Building2,
       },
     ],
   },
@@ -287,6 +345,23 @@ const commerceWorkspaceIds = new Set([
   "order-tracking",
   "commerce-reports",
 ]);
+
+const businessWorkspaceIds = new Set([
+  "customers",
+  "finance",
+  "employees",
+  "marketing",
+  "support",
+  "procurement",
+  "crm",
+  "vendor-management",
+  "projects",
+  "documents",
+  "legal-compliance",
+  "risk-management",
+  "facilities",
+]);
+
 
 const dashboardStatistics: DashboardStatistic[] = [
   {
@@ -790,13 +865,18 @@ export default function FounderPage() {
           <CommerceModuleWorkspace item={activeNavigationItem} />
         )}
 
+        {businessWorkspaceIds.has(activeModuleId) && (
+          <BusinessOperationsWorkspace item={activeNavigationItem} />
+        )}
+
         {activeModuleId !== "dashboard" &&
           activeModuleId !== "analytics" &&
           activeModuleId !== "approvals" &&
           activeModuleId !== "orders" &&
           activeModuleId !== "products" &&
           activeModuleId !== "inventory" &&
-          !commerceWorkspaceIds.has(activeModuleId) && (
+          !commerceWorkspaceIds.has(activeModuleId) &&
+          !businessWorkspaceIds.has(activeModuleId) && (
             <ModuleWorkspace item={activeNavigationItem} />
           )}
       </section>
@@ -1643,6 +1723,500 @@ function CommerceModuleWorkspace({
             <ArrowRight size={16} />
           </button>
         </article>
+      </section>
+    </div>
+  );
+}
+
+function BusinessOperationsWorkspace({
+  item,
+}: {
+  item: NavigationItem;
+}) {
+  const ModuleIcon = item.icon;
+
+  const moduleContent: Record<
+    string,
+    {
+      eyebrow: string;
+      summary: string;
+      stats: Array<{ label: string; value: string; note: string }>;
+      actions: string[];
+      sections: Array<{ title: string; description: string }>;
+      alerts: Array<{ title: string; detail: string; tone: "blue" | "green" | "orange" | "red" }>;
+    }
+  > = {
+    customers: {
+      eyebrow: "Customer Operations",
+      summary:
+        "Manage customer records, segmentation, loyalty, wallets, addresses, purchase history and relationship intelligence.",
+      stats: [
+        { label: "Total Customers", value: "4,294", note: "1,028 added this year" },
+        { label: "Active Customers", value: "3,516", note: "Purchased in 90 days" },
+        { label: "Loyalty Members", value: "1,842", note: "43% of customer base" },
+        { label: "Customer LTV", value: "₹28,640", note: "Average lifetime value" },
+      ],
+      actions: ["Add Customer", "Create Segment", "Launch Loyalty Rule", "Export Customers"],
+      sections: [
+        { title: "Customer Directory", description: "Profiles, contacts, addresses and verification." },
+        { title: "Segments & Groups", description: "VIP, repeat, inactive and custom audiences." },
+        { title: "Loyalty & Wallet", description: "Points, tiers, credits and redemption controls." },
+        { title: "Customer Analytics", description: "Retention, frequency, value and behaviour." },
+      ],
+      alerts: [
+        { title: "VIP retention opportunity", detail: "86 high-value customers have not purchased in 45 days.", tone: "orange" },
+        { title: "Loyalty growth", detail: "Membership conversion increased by 12.4% this month.", tone: "green" },
+      ],
+    },
+    finance: {
+      eyebrow: "Financial Control Center",
+      summary:
+        "Control accounting, receivables, payables, banking, taxation, budgeting, treasury, assets and enterprise reporting.",
+      stats: [
+        { label: "Net Revenue", value: "₹15.86L", note: "Current month" },
+        { label: "Cash Position", value: "₹42.18L", note: "Across bank accounts" },
+        { label: "Receivables", value: "₹6.42L", note: "₹1.18L overdue" },
+        { label: "Payables", value: "₹8.74L", note: "Due within 30 days" },
+      ],
+      actions: ["Create Journal", "Record Receipt", "Approve Payment", "Open Finance Reports"],
+      sections: [
+        { title: "General Ledger", description: "Chart of accounts, journals and trial balance." },
+        { title: "AP & AR", description: "Vendor bills, customer invoices and ageing." },
+        { title: "Banking & Treasury", description: "Bank reconciliation, cash and liquidity." },
+        { title: "Tax & Compliance", description: "GST, TDS, returns and statutory reporting." },
+      ],
+      alerts: [
+        { title: "Overdue receivables", detail: "₹1.18L is overdue across 9 customer accounts.", tone: "red" },
+        { title: "Cash coverage healthy", detail: "Current liquidity covers 4.8 months of operating expenses.", tone: "green" },
+      ],
+    },
+    employees: {
+      eyebrow: "People Operations",
+      summary:
+        "Manage employees, recruitment, attendance, leave, payroll, performance, learning and organisation structure.",
+      stats: [
+        { label: "Employees", value: "128", note: "124 currently active" },
+        { label: "Open Positions", value: "14", note: "Across 6 departments" },
+        { label: "Attendance", value: "94.6%", note: "Current month" },
+        { label: "Payroll", value: "₹18.42L", note: "Next cycle estimate" },
+      ],
+      actions: ["Add Employee", "Open Recruitment", "Run Attendance", "Review Payroll"],
+      sections: [
+        { title: "Employee Directory", description: "Profiles, roles, documents and access." },
+        { title: "Recruitment", description: "Jobs, candidates, interviews and offers." },
+        { title: "Attendance & Leave", description: "Shifts, time records, leave and holidays." },
+        { title: "Performance & Learning", description: "Goals, reviews, training and growth." },
+      ],
+      alerts: [
+        { title: "Probation reviews due", detail: "7 employee reviews are due within the next 10 days.", tone: "orange" },
+        { title: "Attendance improvement", detail: "Overall attendance improved by 2.8% this month.", tone: "green" },
+      ],
+    },
+    marketing: {
+      eyebrow: "Growth Operations",
+      summary:
+        "Plan and monitor campaigns, email, SMS, WhatsApp, social media, SEO, advertising, influencers and attribution.",
+      stats: [
+        { label: "Campaign Revenue", value: "₹7.26L", note: "Current month" },
+        { label: "ROAS", value: "4.8x", note: "Across paid channels" },
+        { label: "Active Campaigns", value: "11", note: "4 ending this week" },
+        { label: "Audience Reach", value: "8.4L", note: "Last 30 days" },
+      ],
+      actions: ["Create Campaign", "Build Audience", "Launch Promotion", "Open Analytics"],
+      sections: [
+        { title: "Campaign Management", description: "Briefs, calendars, budgets and execution." },
+        { title: "Direct Messaging", description: "Email, SMS and WhatsApp journeys." },
+        { title: "Social & Influencers", description: "Content, creators and performance." },
+        { title: "SEO & Paid Media", description: "Search, ads, keywords and attribution." },
+      ],
+      alerts: [
+        { title: "Campaign budget alert", detail: "Two campaigns have consumed more than 85% of budget.", tone: "orange" },
+        { title: "Strong creative signal", detail: "The Noir campaign is delivering 6.2x ROAS.", tone: "green" },
+      ],
+    },
+    support: {
+      eyebrow: "Customer Service Center",
+      summary:
+        "Manage tickets, live chat, calls, email, WhatsApp, complaints, SLA, knowledge base and service quality.",
+      stats: [
+        { label: "Open Tickets", value: "42", note: "12 high priority" },
+        { label: "First Response", value: "6m 18s", note: "Average response time" },
+        { label: "Resolution Rate", value: "92.4%", note: "Within SLA" },
+        { label: "CSAT", value: "4.7/5", note: "Based on 1,284 ratings" },
+      ],
+      actions: ["Create Ticket", "Open Live Queue", "Assign Cases", "Review SLA"],
+      sections: [
+        { title: "Ticket Management", description: "Queues, priorities, owners and escalation." },
+        { title: "Omnichannel Support", description: "Chat, calls, email and WhatsApp." },
+        { title: "Knowledge Base", description: "Help articles, scripts and internal guidance." },
+        { title: "Service Analytics", description: "SLA, CSAT, resolution and agent performance." },
+      ],
+      alerts: [
+        { title: "SLA risk", detail: "5 priority tickets may breach SLA within 30 minutes.", tone: "red" },
+        { title: "Customer satisfaction", detail: "CSAT improved from 4.5 to 4.7 this month.", tone: "green" },
+      ],
+    },
+    procurement: {
+      eyebrow: "Procurement Operations",
+      summary:
+        "Control suppliers, RFQs, purchase orders, receipts, vendor bills, contracts and procurement performance.",
+      stats: [
+        { label: "Open Purchase Orders", value: "18", note: "₹14.82L committed" },
+        { label: "Pending Approvals", value: "6", note: "Founder or finance review" },
+        { label: "Active Suppliers", value: "24", note: "5 strategic vendors" },
+        { label: "On-Time Delivery", value: "91.8%", note: "Current quarter" },
+      ],
+      actions: ["Create RFQ", "Create Purchase Order", "Approve Request", "Review Suppliers"],
+      sections: [
+        { title: "Supplier Directory", description: "Supplier records, terms and performance." },
+        { title: "RFQ & Quotations", description: "Requests, comparisons and selection." },
+        { title: "Purchase Orders", description: "Approvals, receipts and closures." },
+        { title: "Contracts & Spend", description: "Agreements, commitments and analytics." },
+      ],
+      alerts: [
+        { title: "Approval queue", detail: "₹3.62L of purchase requests await approval.", tone: "orange" },
+        { title: "Supplier performance", detail: "Three strategic suppliers maintain above 97% fulfilment.", tone: "green" },
+      ],
+    },
+    crm: {
+      eyebrow: "Revenue Relationship Management",
+      summary:
+        "Manage leads, opportunities, contacts, accounts, follow-ups, meetings, pipeline and revenue forecasting.",
+      stats: [
+        { label: "Active Leads", value: "286", note: "74 added this month" },
+        { label: "Pipeline Value", value: "₹48.6L", note: "Across all stages" },
+        { label: "Win Rate", value: "31.4%", note: "Rolling 90 days" },
+        { label: "Follow-Ups Due", value: "38", note: "Due today" },
+      ],
+      actions: ["Add Lead", "Create Opportunity", "Schedule Follow-Up", "Open Pipeline"],
+      sections: [
+        { title: "Leads", description: "Capture, score, assign and qualify prospects." },
+        { title: "Opportunities", description: "Stages, values, probability and closure." },
+        { title: "Accounts & Contacts", description: "Organisations, people and relationships." },
+        { title: "Activities & Forecast", description: "Calls, meetings, follow-ups and revenue." },
+      ],
+      alerts: [
+        { title: "High-value opportunity", detail: "A ₹9.8L opportunity has moved to final negotiation.", tone: "blue" },
+        { title: "Follow-up backlog", detail: "14 high-priority leads have overdue follow-ups.", tone: "orange" },
+      ],
+    },
+    "vendor-management": {
+      eyebrow: "Third-Party Governance",
+      summary:
+        "Manage vendor onboarding, due diligence, documents, contracts, performance, payments and compliance.",
+      stats: [
+        { label: "Active Vendors", value: "36", note: "Across 8 categories" },
+        { label: "Onboarding", value: "5", note: "Verification in progress" },
+        { label: "Contracts Expiring", value: "4", note: "Within 45 days" },
+        { label: "Vendor Score", value: "4.6/5", note: "Average performance" },
+      ],
+      actions: ["Add Vendor", "Start Verification", "Review Contract", "Score Vendor"],
+      sections: [
+        { title: "Vendor Directory", description: "Profiles, categories and contacts." },
+        { title: "Onboarding & KYC", description: "Documents, tax and bank verification." },
+        { title: "Contracts", description: "Terms, renewals and obligations." },
+        { title: "Performance", description: "Quality, service, delivery and risk." },
+      ],
+      alerts: [
+        { title: "Contract renewal", detail: "Four vendor agreements expire within 45 days.", tone: "orange" },
+        { title: "Compliance complete", detail: "92% of active vendors have complete documentation.", tone: "green" },
+      ],
+    },
+    projects: {
+      eyebrow: "Execution Management",
+      summary:
+        "Plan projects, allocate tasks, monitor milestones, dependencies, deadlines, budgets and delivery performance.",
+      stats: [
+        { label: "Active Projects", value: "17", note: "Across 7 departments" },
+        { label: "Open Tasks", value: "184", note: "26 due this week" },
+        { label: "On Track", value: "82%", note: "Project health" },
+        { label: "At Risk", value: "3", note: "Need intervention" },
+      ],
+      actions: ["Create Project", "Add Task", "Assign Owner", "Review Timeline"],
+      sections: [
+        { title: "Project Portfolio", description: "Status, owners, budgets and priorities." },
+        { title: "Tasks & Milestones", description: "Assignments, deadlines and dependencies." },
+        { title: "Resource Planning", description: "Capacity, workload and allocation." },
+        { title: "Project Reports", description: "Progress, risk, cost and closure." },
+      ],
+      alerts: [
+        { title: "Deadline risk", detail: "Three milestones are forecast to miss target dates.", tone: "red" },
+        { title: "Delivery momentum", detail: "42 tasks were completed during the last seven days.", tone: "green" },
+      ],
+    },
+    documents: {
+      eyebrow: "Enterprise Records",
+      summary:
+        "Store, classify, review, approve and control company documents, policies, records and versions.",
+      stats: [
+        { label: "Documents", value: "2,486", note: "Across all departments" },
+        { label: "Pending Approval", value: "18", note: "Awaiting reviewers" },
+        { label: "Expiring Records", value: "9", note: "Within 30 days" },
+        { label: "Storage Used", value: "68%", note: "Secure document storage" },
+      ],
+      actions: ["Upload Document", "Create Policy", "Request Approval", "Open Archive"],
+      sections: [
+        { title: "Document Library", description: "Folders, tags, search and permissions." },
+        { title: "Policies & SOPs", description: "Controlled procedures and acknowledgement." },
+        { title: "Approvals", description: "Review workflows and signatures." },
+        { title: "Versions & Audit", description: "Revision history and access logs." },
+      ],
+      alerts: [
+        { title: "Policy acknowledgements", detail: "23 employees have pending policy acknowledgements.", tone: "orange" },
+        { title: "Document security", detail: "No unauthorised access events detected this month.", tone: "green" },
+      ],
+    },
+    "legal-compliance": {
+      eyebrow: "Governance & Compliance",
+      summary:
+        "Track legal matters, contracts, licences, statutory requirements, regulatory obligations and compliance evidence.",
+      stats: [
+        { label: "Open Legal Matters", value: "7", note: "2 high priority" },
+        { label: "Compliance Score", value: "96%", note: "Enterprise-wide" },
+        { label: "Renewals Due", value: "5", note: "Within 60 days" },
+        { label: "Open Actions", value: "11", note: "Assigned to owners" },
+      ],
+      actions: ["Add Legal Matter", "Create Compliance Task", "Review Contract", "Open Register"],
+      sections: [
+        { title: "Legal Matters", description: "Cases, notices, counsel and actions." },
+        { title: "Contracts", description: "Drafts, reviews, obligations and renewals." },
+        { title: "Statutory Compliance", description: "Registrations, filings and licences." },
+        { title: "Evidence & Audit", description: "Controls, proofs and compliance reports." },
+      ],
+      alerts: [
+        { title: "Licence renewal", detail: "Two statutory registrations require renewal this month.", tone: "orange" },
+        { title: "Compliance health", detail: "All critical filings are currently up to date.", tone: "green" },
+      ],
+    },
+    "risk-management": {
+      eyebrow: "Enterprise Risk Center",
+      summary:
+        "Identify, assess, assign, monitor and mitigate operational, financial, legal, cyber and strategic risks.",
+      stats: [
+        { label: "Open Risks", value: "24", note: "4 rated high" },
+        { label: "Controls Active", value: "86", note: "Across 9 functions" },
+        { label: "Incidents", value: "3", note: "Current month" },
+        { label: "Mitigation Complete", value: "78%", note: "Current quarter" },
+      ],
+      actions: ["Register Risk", "Report Incident", "Assign Control", "Review Heatmap"],
+      sections: [
+        { title: "Risk Register", description: "Categories, ratings, owners and treatment." },
+        { title: "Controls", description: "Preventive, detective and corrective controls." },
+        { title: "Incidents", description: "Events, impact, response and closure." },
+        { title: "Risk Analytics", description: "Heatmaps, trends and residual exposure." },
+      ],
+      alerts: [
+        { title: "High-risk exposure", detail: "Four risks remain above approved tolerance.", tone: "red" },
+        { title: "Control improvement", detail: "Eight mitigation actions were closed this month.", tone: "green" },
+      ],
+    },
+    facilities: {
+      eyebrow: "Workplace & Asset Operations",
+      summary:
+        "Manage offices, facilities, company assets, maintenance, allocations, vendors and workplace readiness.",
+      stats: [
+        { label: "Company Assets", value: "486", note: "₹1.84Cr book value" },
+        { label: "Assigned Assets", value: "412", note: "Across employees" },
+        { label: "Maintenance Due", value: "16", note: "Within 30 days" },
+        { label: "Active Locations", value: "4", note: "All operational" },
+      ],
+      actions: ["Add Asset", "Assign Asset", "Create Maintenance", "Open Facilities"],
+      sections: [
+        { title: "Asset Register", description: "Equipment, ownership, value and status." },
+        { title: "Assignments", description: "Employee, department and location allocation." },
+        { title: "Maintenance", description: "Schedules, requests, vendors and costs." },
+        { title: "Facilities", description: "Locations, services, access and inspections." },
+      ],
+      alerts: [
+        { title: "Maintenance schedule", detail: "16 assets are due for preventive maintenance.", tone: "orange" },
+        { title: "Asset verification", detail: "96% of assigned assets were verified this quarter.", tone: "green" },
+      ],
+    },
+  };
+
+  const content = moduleContent[item.id];
+
+  if (!content) {
+    return <ModuleWorkspace item={item} />;
+  }
+
+  const toneClass = {
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    green: "border-green-200 bg-green-50 text-green-700",
+    orange: "border-orange-200 bg-orange-50 text-orange-700",
+    red: "border-red-200 bg-red-50 text-red-700",
+  };
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8">
+      <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-[#0f172a] via-blue-950 to-blue-700 p-7 text-white shadow-xl sm:p-9">
+        <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10">
+                <ModuleIcon size={24} />
+              </div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-200">
+                {content.eyebrow}
+              </p>
+            </div>
+
+            <h1 className="mt-5 text-3xl font-black sm:text-4xl">
+              {item.name}
+            </h1>
+
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-blue-100">
+              {content.summary}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {content.actions.slice(0, 2).map((action, index) => (
+              <button
+                key={action}
+                type="button"
+                className={
+                  index === 1
+                    ? "flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-blue-800 transition hover:bg-blue-50"
+                    : "flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold transition hover:bg-white/20"
+                }
+              >
+                {index === 0 ? <Plus size={17} /> : <ArrowRight size={17} />}
+                {action}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        {content.stats.map((stat, index) => (
+          <article
+            key={stat.label}
+            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div
+              className={`grid h-11 w-11 place-items-center rounded-xl ${
+                index === 0
+                  ? "bg-blue-50 text-blue-600"
+                  : index === 1
+                    ? "bg-green-50 text-green-600"
+                    : index === 2
+                      ? "bg-violet-50 text-violet-600"
+                      : "bg-orange-50 text-orange-600"
+              }`}
+            >
+              <ModuleIcon size={20} />
+            </div>
+
+            <p className="mt-5 text-sm font-medium text-slate-500">
+              {stat.label}
+            </p>
+            <h2 className="mt-2 text-3xl font-black text-slate-950">
+              {stat.value}
+            </h2>
+            <p className="mt-2 text-xs leading-5 text-slate-400">
+              {stat.note}
+            </p>
+          </article>
+        ))}
+      </section>
+
+      <section className="mt-6 grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
+        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div>
+            <h2 className="text-lg font-black text-slate-950">
+              Operational Modules
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Complete workflows available inside {item.name}
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {content.sections.map((section, index) => (
+              <button
+                key={section.title}
+                type="button"
+                className="group rounded-2xl border border-slate-200 bg-slate-50/60 p-5 text-left transition hover:border-blue-300 hover:bg-blue-50/60"
+              >
+                <div className="flex items-start gap-4">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-xs font-black text-white">
+                    {index + 1}
+                  </span>
+
+                  <div className="min-w-0">
+                    <strong className="block text-sm text-slate-900">
+                      {section.title}
+                    </strong>
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      {section.description}
+                    </p>
+                    <span className="mt-4 flex items-center gap-2 text-xs font-bold text-blue-600">
+                      Open module
+                      <ArrowRight
+                        size={14}
+                        className="transition group-hover:translate-x-1"
+                      />
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </article>
+
+        <div className="space-y-6">
+          <article className="rounded-3xl bg-[#0f172a] p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-600">
+                <Sparkles size={22} />
+              </div>
+              <span className="rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-300">
+                KRVE AI Active
+              </span>
+            </div>
+
+            <h2 className="mt-6 text-xl font-black">
+              AI Operational Intelligence
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-400">
+              KRVE AI monitors performance, exceptions, deadlines and risks
+              inside {item.name}.
+            </p>
+
+            <button
+              type="button"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold transition hover:bg-blue-700"
+            >
+              Open AI Intelligence
+              <ArrowRight size={16} />
+            </button>
+          </article>
+
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-black text-slate-950">
+              Attention & Insights
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Current operational signals
+            </p>
+
+            <div className="mt-5 space-y-3">
+              {content.alerts.map((alert) => (
+                <div
+                  key={alert.title}
+                  className={`rounded-2xl border p-4 ${toneClass[alert.tone]}`}
+                >
+                  <strong className="text-sm">{alert.title}</strong>
+                  <p className="mt-2 text-xs leading-5 opacity-80">
+                    {alert.detail}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </article>
+        </div>
       </section>
     </div>
   );
