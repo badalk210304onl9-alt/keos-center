@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 
 import {
   Activity,
+  AlertTriangle,
   ArrowRight,
   ArrowUpRight,
-  AlertTriangle,
   BadgePercent,
   BarChart3,
   Bell,
@@ -35,8 +35,8 @@ import {
   ShoppingBag,
   ShoppingCart,
   Sparkles,
-  TrendingUp,
   Tags,
+  TrendingUp,
   Truck,
   UserRound,
   Users,
@@ -606,6 +606,8 @@ export default function FounderPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [aiCommandOpen, setAiCommandOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
 
   useEffect(() => {
     const currentSession = getStoredSession();
@@ -803,82 +805,38 @@ export default function FounderPage() {
             <Menu size={20} />
           </button>
 
-          <div className="relative hidden max-w-xl flex-1 sm:block">
-            <div className="flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-blue-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-100">
-              <Search
-                size={18}
-                className="text-slate-400"
-              />
-
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) =>
-                  setSearchQuery(event.target.value)
-                }
-                placeholder="Search across KEOS..."
-                className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none"
-              />
-
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  aria-label="Clear search"
-                >
-                  <X
-                    size={16}
-                    className="text-slate-400"
-                  />
-                </button>
-              )}
-            </div>
-
-            {searchQuery && (
-              <div className="absolute left-0 right-0 top-14 max-h-[430px] overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                {searchResults.length > 0 ? (
-                  searchResults.map((item) => {
-                    const ResultIcon = item.icon;
-
-                    return (
-                      <button
-                        type="button"
-                        key={item.id}
-                        onClick={() =>
-                          openModule(item.id)
-                        }
-                        className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition hover:bg-blue-50"
-                      >
-                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-600">
-                          <ResultIcon size={18} />
-                        </div>
-
-                        <div className="min-w-0">
-                          <strong className="block truncate text-sm text-slate-900">
-                            {item.name}
-                          </strong>
-
-                          <span className="mt-1 block truncate text-xs text-slate-500">
-                            {item.description}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div className="p-7 text-center">
-                    <Search
-                      size={25}
-                      className="mx-auto text-slate-300"
-                    />
-
-                    <p className="mt-3 text-sm font-semibold text-slate-600">
-                      No module found
-                    </p>
-                  </div>
-                )}
+          <div className="max-w-3xl flex-1">
+            <button
+              type="button"
+              onClick={() => setAiCommandOpen(true)}
+              className="group flex h-14 w-full items-center gap-4 rounded-2xl border border-violet-200 bg-white px-4 text-left shadow-sm transition-all hover:border-violet-400 hover:shadow-lg sm:px-5"
+            >
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-600/20">
+                <Sparkles size={20} />
               </div>
-            )}
+
+              <div className="min-w-0 flex-1">
+                <strong className="block text-sm font-black text-slate-900">
+                  KRVE AI
+                </strong>
+
+                <span className="mt-0.5 block truncate text-xs text-slate-500">
+                  Ask anything about your business...
+                </span>
+              </div>
+
+              <div className="hidden items-center gap-1.5 sm:flex">
+                <kbd className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-500">
+                  Ctrl
+                </kbd>
+
+                <span className="text-xs text-slate-300">+</span>
+
+                <kbd className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-500">
+                  K
+                </kbd>
+              </div>
+            </button>
           </div>
 
           <div className="ml-auto flex items-center gap-2">
@@ -967,6 +925,113 @@ export default function FounderPage() {
             </div>
           </div>
         </header>
+
+
+        {aiCommandOpen && (
+          <div className="fixed inset-0 z-[80] flex items-start justify-center bg-slate-950/55 p-4 pt-24 backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={() => setAiCommandOpen(false)}
+              className="absolute inset-0"
+              aria-label="Close KRVE AI"
+            />
+
+            <section className="relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-white/20 bg-white shadow-2xl">
+              <div className="bg-gradient-to-r from-violet-700 via-blue-700 to-blue-950 p-6 text-white sm:p-7">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15">
+                      <Sparkles size={24} />
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-200">
+                        Enterprise AI Command
+                      </p>
+
+                      <h2 className="mt-1 text-2xl font-black">
+                        KRVE AI
+                      </h2>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setAiCommandOpen(false)}
+                    className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 transition hover:bg-white/20"
+                    aria-label="Close KRVE AI"
+                  >
+                    <X size={19} />
+                  </button>
+                </div>
+
+                <p className="mt-4 max-w-2xl text-sm leading-6 text-blue-100">
+                  Ask about revenue, orders, inventory, finance, employees,
+                  approvals, risks or any KRVE operation.
+                </p>
+              </div>
+
+              <div className="p-5 sm:p-6">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 focus-within:border-violet-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-100">
+                  <textarea
+                    value={aiPrompt}
+                    onChange={(event) => setAiPrompt(event.target.value)}
+                    placeholder="Example: Show today's revenue, low-stock products and pending founder approvals..."
+                    rows={4}
+                    className="w-full resize-none bg-transparent text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400"
+                  />
+
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <span className="text-xs text-slate-400">
+                      KRVE AI uses authorised enterprise data only.
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveModuleId("ai-center");
+                        setAiCommandOpen(false);
+                        setAiPrompt("");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      disabled={!aiPrompt.trim()}
+                      className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Ask KRVE AI
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                    Quick questions
+                  </p>
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {[
+                      "Show today's revenue and orders",
+                      "Which products need stock replenishment?",
+                      "Show pending founder approvals",
+                      "Summarise employee attendance",
+                      "What risks need immediate attention?",
+                      "Generate an executive business brief",
+                    ].map((question) => (
+                      <button
+                        key={question}
+                        type="button"
+                        onClick={() => setAiPrompt(question)}
+                        className="rounded-xl border border-slate-200 bg-white p-3 text-left text-xs font-semibold leading-5 text-slate-600 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+                      >
+                        {question}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
 
         {activeModuleId === "dashboard" && (
           <FounderDashboard
