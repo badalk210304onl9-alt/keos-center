@@ -1578,7 +1578,7 @@ function OverviewWorkspace({
         </article>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.72fr)]">
         <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -1690,7 +1690,7 @@ function OverviewWorkspace({
             <Settings2 size={20} className="text-slate-400" />
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <OperationButton
               title="Stock In"
               description="Receive new inventory"
@@ -2058,32 +2058,39 @@ function OperationButton({
 }) {
   const iconClass =
     tone === "green"
-      ? "bg-green-50 text-green-600"
+      ? "bg-green-50 text-green-600 ring-green-100"
       : tone === "red"
-        ? "bg-red-50 text-red-600"
+        ? "bg-red-50 text-red-600 ring-red-100"
         : tone === "orange"
-          ? "bg-orange-50 text-orange-600"
-          : "bg-blue-50 text-blue-600";
+          ? "bg-orange-50 text-orange-600 ring-orange-100"
+          : "bg-blue-50 text-blue-600 ring-blue-100";
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-2xl border border-slate-200 p-4 text-left transition hover:border-blue-300 hover:bg-blue-50/40"
+      className="group flex min-h-[150px] w-full flex-col rounded-2xl border border-slate-200 bg-white p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-100"
     >
       <div
-        className={`grid h-10 w-10 place-items-center rounded-xl ${iconClass}`}
+        className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ring-1 ${iconClass}`}
       >
-        <Icon size={19} />
+        <Icon size={22} />
       </div>
 
-      <strong className="mt-4 block text-sm text-slate-900">
-        {title}
-      </strong>
+      <div className="mt-5 min-w-0">
+        <strong className="block whitespace-nowrap text-[15px] font-black leading-5 text-slate-950">
+          {title}
+        </strong>
 
-      <span className="mt-1 block text-xs text-slate-500">
-        {description}
-      </span>
+        <span className="mt-2 block text-xs leading-5 text-slate-500">
+          {description}
+        </span>
+      </div>
+
+      <div className="mt-auto flex items-center gap-2 pt-4 text-xs font-bold text-blue-600 opacity-0 transition group-hover:opacity-100">
+        Open operation
+        <ArrowRight size={14} />
+      </div>
     </button>
   );
 }
