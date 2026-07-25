@@ -48,6 +48,7 @@ import BusinessAnalytics from "@/components/founder/business-analytics";
 import OrdersManagement from "@/components/founder/orders-management";
 import ProductsManagement from "@/components/founder/products-management";
 import InventoryManagement from "@/components/founder/inventory-management";
+import WarehouseManagement from "@/components/founder/warehouse-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -455,7 +456,6 @@ const navigationGroups: NavigationGroup[] = [
 ];
 
 const commerceWorkspaceIds = new Set([
-  "warehouse",
   "shipping",
   "returns-refunds",
   "pricing",
@@ -1071,6 +1071,10 @@ export default function FounderPage() {
           <InventoryManagement />
         )}
 
+        {activeModuleId === "warehouse" && (
+          <WarehouseManagement />
+        )}
+
         {commerceWorkspaceIds.has(activeModuleId) && (
           <CommerceModuleWorkspace item={activeNavigationItem} />
         )}
@@ -1089,6 +1093,7 @@ export default function FounderPage() {
           activeModuleId !== "orders" &&
           activeModuleId !== "products" &&
           activeModuleId !== "inventory" &&
+          activeModuleId !== "warehouse" &&
           !commerceWorkspaceIds.has(activeModuleId) &&
           !businessWorkspaceIds.has(activeModuleId) &&
           !intelligenceWorkspaceIds.has(activeModuleId) && (
