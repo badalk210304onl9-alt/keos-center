@@ -8,6 +8,7 @@ import {
   Activity,
   ArrowRight,
   ArrowUpRight,
+  AlertTriangle,
   BadgePercent,
   BarChart3,
   Bell,
@@ -28,12 +29,13 @@ import {
   Plus,
   ReceiptIndianRupee,
   RotateCcw,
-  ShieldCheck,
   Search,
   Settings,
+  ShieldCheck,
   ShoppingBag,
   ShoppingCart,
   Sparkles,
+  TrendingUp,
   Tags,
   Truck,
   UserRound,
@@ -312,7 +314,42 @@ const navigationGroups: NavigationGroup[] = [
         id: "ai-center",
         name: "KRVE AI Center",
         description:
-          "Enterprise AI assistant, intelligence and workflow automation",
+          "Enterprise AI assistant, intelligence, recommendations and workflow automation",
+        icon: Sparkles,
+      },
+      {
+        id: "ai-assistant",
+        name: "AI Assistant",
+        description:
+          "Ask questions, analyse records and receive enterprise-wide operational answers",
+        icon: Sparkles,
+      },
+      {
+        id: "ai-automation",
+        name: "AI Automation",
+        description:
+          "Automate repetitive workflows, approvals, alerts and departmental actions",
+        icon: Activity,
+      },
+      {
+        id: "forecasting",
+        name: "Forecasting",
+        description:
+          "Revenue, demand, inventory, cash flow and workforce forecasting",
+        icon: TrendingUp,
+      },
+      {
+        id: "anomaly-detection",
+        name: "Anomaly Detection",
+        description:
+          "Detect unusual transactions, stock movements, costs and operational exceptions",
+        icon: AlertTriangle,
+      },
+      {
+        id: "recommendations",
+        name: "AI Recommendations",
+        description:
+          "Prioritised business recommendations for growth, savings and operational improvement",
         icon: Sparkles,
       },
       {
@@ -323,10 +360,94 @@ const navigationGroups: NavigationGroup[] = [
         icon: FileChartColumn,
       },
       {
+        id: "executive-reports",
+        name: "Executive Reports",
+        description:
+          "Founder and leadership summaries, scorecards, trends and decision briefs",
+        icon: BarChart3,
+      },
+      {
+        id: "department-reports",
+        name: "Department Reports",
+        description:
+          "Commerce, finance, HR, marketing, support and operational reports",
+        icon: FileChartColumn,
+      },
+      {
+        id: "audit-reports",
+        name: "Audit Reports",
+        description:
+          "Control, compliance, access, transaction and exception audit reporting",
+        icon: ClipboardCheck,
+      },
+      {
         id: "administration",
         name: "Administration",
         description:
           "Users, roles, permissions, departments and system configuration",
+        icon: Settings,
+      },
+      {
+        id: "users-roles",
+        name: "Users & Roles",
+        description:
+          "User accounts, role assignments, access levels and account lifecycle",
+        icon: Users,
+      },
+      {
+        id: "departments",
+        name: "Departments",
+        description:
+          "Department structure, leadership, reporting lines and operational ownership",
+        icon: Building2,
+      },
+      {
+        id: "permissions",
+        name: "Permissions",
+        description:
+          "Role-based permissions, module access, approval rights and data visibility",
+        icon: ShieldCheck,
+      },
+      {
+        id: "integrations",
+        name: "Integrations",
+        description:
+          "Website, app, payment, courier, banking, marketplace and external system connections",
+        icon: Link2,
+      },
+      {
+        id: "security",
+        name: "Security Center",
+        description:
+          "Authentication, sessions, access monitoring, threats and security policies",
+        icon: ShieldCheck,
+      },
+      {
+        id: "audit-logs",
+        name: "Audit Logs",
+        description:
+          "Complete user activity, changes, approvals, exports and system event history",
+        icon: Activity,
+      },
+      {
+        id: "data-management",
+        name: "Data Management",
+        description:
+          "Data imports, exports, backups, retention, validation and master data controls",
+        icon: FileChartColumn,
+      },
+      {
+        id: "notifications",
+        name: "Notifications",
+        description:
+          "System alerts, email, SMS, WhatsApp and role-based notification rules",
+        icon: Bell,
+      },
+      {
+        id: "system-settings",
+        name: "System Settings",
+        description:
+          "Company profile, numbering, preferences, localisation and enterprise configuration",
         icon: Settings,
       },
     ],
@@ -361,6 +482,30 @@ const businessWorkspaceIds = new Set([
   "risk-management",
   "facilities",
 ]);
+
+const intelligenceWorkspaceIds = new Set([
+  "ai-center",
+  "ai-assistant",
+  "ai-automation",
+  "forecasting",
+  "anomaly-detection",
+  "recommendations",
+  "reports",
+  "executive-reports",
+  "department-reports",
+  "audit-reports",
+  "administration",
+  "users-roles",
+  "departments",
+  "permissions",
+  "integrations",
+  "security",
+  "audit-logs",
+  "data-management",
+  "notifications",
+  "system-settings",
+]);
+
 
 
 const dashboardStatistics: DashboardStatistic[] = [
@@ -869,6 +1014,10 @@ export default function FounderPage() {
           <BusinessOperationsWorkspace item={activeNavigationItem} />
         )}
 
+        {intelligenceWorkspaceIds.has(activeModuleId) && (
+          <IntelligenceWorkspace item={activeNavigationItem} />
+        )}
+
         {activeModuleId !== "dashboard" &&
           activeModuleId !== "analytics" &&
           activeModuleId !== "approvals" &&
@@ -876,7 +1025,8 @@ export default function FounderPage() {
           activeModuleId !== "products" &&
           activeModuleId !== "inventory" &&
           !commerceWorkspaceIds.has(activeModuleId) &&
-          !businessWorkspaceIds.has(activeModuleId) && (
+          !businessWorkspaceIds.has(activeModuleId) &&
+          !intelligenceWorkspaceIds.has(activeModuleId) && (
             <ModuleWorkspace item={activeNavigationItem} />
           )}
       </section>
@@ -2211,6 +2361,668 @@ function BusinessOperationsWorkspace({
                   <strong className="text-sm">{alert.title}</strong>
                   <p className="mt-2 text-xs leading-5 opacity-80">
                     {alert.detail}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function IntelligenceWorkspace({
+  item,
+}: {
+  item: NavigationItem;
+}) {
+  const ModuleIcon = item.icon;
+
+  const moduleContent: Record<
+    string,
+    {
+      eyebrow: string;
+      summary: string;
+      stats: Array<{ label: string; value: string; note: string }>;
+      actions: string[];
+      sections: Array<{ title: string; description: string }>;
+      insights: Array<{
+        title: string;
+        detail: string;
+        tone: "blue" | "green" | "orange" | "red";
+      }>;
+    }
+  > = {
+    "ai-center": {
+      eyebrow: "Enterprise Intelligence",
+      summary:
+        "A unified AI command center for enterprise questions, insights, recommendations, forecasting and workflow automation.",
+      stats: [
+        { label: "AI Analyses Today", value: "1,284", note: "Across all departments" },
+        { label: "Automations Active", value: "42", note: "31 completed today" },
+        { label: "Decisions Assisted", value: "186", note: "Current month" },
+        { label: "Estimated Savings", value: "₹4.82L", note: "Through AI actions" },
+      ],
+      actions: ["Ask KRVE AI", "Create Automation", "Generate Brief", "Open AI History"],
+      sections: [
+        { title: "Enterprise Assistant", description: "Ask questions across commerce, finance, HR and operations." },
+        { title: "AI Workflows", description: "Create intelligent triggers, approvals and automated actions." },
+        { title: "Forecasting", description: "Predict demand, revenue, cash flow and workforce needs." },
+        { title: "Recommendations", description: "Prioritised actions for growth, savings and risk reduction." },
+      ],
+      insights: [
+        { title: "Inventory opportunity", detail: "Redistributing two overstocked SKUs could release ₹1.26L in working capital.", tone: "green" },
+        { title: "Cash flow watch", detail: "Vendor payments and receivables may create a ₹2.4L liquidity gap next week.", tone: "orange" },
+      ],
+    },
+    "ai-assistant": {
+      eyebrow: "Conversational Intelligence",
+      summary:
+        "Ask natural-language questions and receive data-backed answers from the complete KRVE operating system.",
+      stats: [
+        { label: "Questions Today", value: "328", note: "Across 14 users" },
+        { label: "Answer Accuracy", value: "96.8%", note: "Based on feedback" },
+        { label: "Reports Generated", value: "47", note: "During this week" },
+        { label: "Average Response", value: "3.2s", note: "Enterprise queries" },
+      ],
+      actions: ["Start Conversation", "Analyse Department", "Generate Report", "View History"],
+      sections: [
+        { title: "Ask About Business", description: "Revenue, orders, inventory, finance and employee questions." },
+        { title: "Document Analysis", description: "Summarise policies, contracts, reports and uploaded records." },
+        { title: "Decision Support", description: "Compare options, risks, costs and expected outcomes." },
+        { title: "Conversation History", description: "Secure searchable record of previous AI sessions." },
+      ],
+      insights: [
+        { title: "Frequently asked", detail: "Revenue, stock health and pending approvals are the top query categories.", tone: "blue" },
+        { title: "Time saved", detail: "AI-assisted reporting saved an estimated 38 staff hours this week.", tone: "green" },
+      ],
+    },
+    "ai-automation": {
+      eyebrow: "Intelligent Workflow Automation",
+      summary:
+        "Build and monitor automated actions for alerts, approvals, record updates and cross-department workflows.",
+      stats: [
+        { label: "Active Automations", value: "42", note: "Across 9 departments" },
+        { label: "Runs Today", value: "1,086", note: "98.9% successful" },
+        { label: "Manual Hours Saved", value: "126h", note: "Current month" },
+        { label: "Failed Runs", value: "12", note: "Require review" },
+      ],
+      actions: ["Create Automation", "Use Template", "Review Failures", "Open Run History"],
+      sections: [
+        { title: "Workflow Builder", description: "Create triggers, conditions, approvals and actions." },
+        { title: "Automation Templates", description: "Ready workflows for commerce, finance, HR and support." },
+        { title: "Run History", description: "Execution status, logs, errors and performance." },
+        { title: "Governance", description: "Permissions, limits, approvals and audit controls." },
+      ],
+      insights: [
+        { title: "Optimisation available", detail: "Combining three inventory alerts could reduce duplicate notifications by 46%.", tone: "blue" },
+        { title: "Failure attention", detail: "Twelve failed runs are linked to one disconnected courier integration.", tone: "red" },
+      ],
+    },
+    forecasting: {
+      eyebrow: "Predictive Intelligence",
+      summary:
+        "Forecast business demand, revenue, inventory, cash flow and workforce requirements using historical trends.",
+      stats: [
+        { label: "Revenue Forecast", value: "₹22.6L", note: "Next 30 days" },
+        { label: "Demand Accuracy", value: "91.4%", note: "Rolling 90 days" },
+        { label: "Cash Forecast", value: "₹38.2L", note: "Month-end estimate" },
+        { label: "Hiring Need", value: "8", note: "Next quarter" },
+      ],
+      actions: ["Run Forecast", "Change Assumptions", "Compare Scenarios", "Export Forecast"],
+      sections: [
+        { title: "Revenue Forecast", description: "Sales, channel and category outlook." },
+        { title: "Demand Forecast", description: "SKU-level stock and replenishment requirements." },
+        { title: "Cash Flow Forecast", description: "Collections, payments and liquidity projections." },
+        { title: "Workforce Forecast", description: "Hiring, capacity and payroll projections." },
+      ],
+      insights: [
+        { title: "Demand peak expected", detail: "Formalwear demand is projected to rise 28% over the next six weeks.", tone: "green" },
+        { title: "Scenario risk", detail: "A 10% increase in fulfilment cost would reduce forecast contribution by ₹1.7L.", tone: "orange" },
+      ],
+    },
+    "anomaly-detection": {
+      eyebrow: "Exception Intelligence",
+      summary:
+        "Continuously detect unusual transactions, stock movements, costs, access patterns and operational behaviour.",
+      stats: [
+        { label: "Open Anomalies", value: "17", note: "4 high severity" },
+        { label: "Checked Today", value: "18,642", note: "Transactions and events" },
+        { label: "False Positive Rate", value: "2.8%", note: "Current model" },
+        { label: "Prevented Exposure", value: "₹2.16L", note: "Current quarter" },
+      ],
+      actions: ["Review Anomalies", "Create Rule", "Assign Investigation", "Tune Detection"],
+      sections: [
+        { title: "Financial Anomalies", description: "Payments, journals, refunds and duplicate entries." },
+        { title: "Inventory Anomalies", description: "Unusual movements, shrinkage and adjustments." },
+        { title: "Access Anomalies", description: "Login, permission and export behaviour." },
+        { title: "Operational Anomalies", description: "Delays, costs and unusual performance changes." },
+      ],
+      insights: [
+        { title: "High-priority anomaly", detail: "Three refunds from one account exceed the normal customer pattern.", tone: "red" },
+        { title: "Stock variance", detail: "One warehouse adjustment differs materially from the previous cycle count.", tone: "orange" },
+      ],
+    },
+    recommendations: {
+      eyebrow: "AI Decision Recommendations",
+      summary:
+        "Receive prioritised recommendations based on growth potential, savings, customer experience and enterprise risk.",
+      stats: [
+        { label: "Open Recommendations", value: "24", note: "8 high priority" },
+        { label: "Accepted", value: "68%", note: "Current quarter" },
+        { label: "Value Realised", value: "₹7.84L", note: "Measured impact" },
+        { label: "Under Review", value: "11", note: "Assigned to owners" },
+      ],
+      actions: ["Review Priorities", "Accept Recommendation", "Assign Owner", "View Impact"],
+      sections: [
+        { title: "Growth Recommendations", description: "Pricing, campaigns, conversion and retention." },
+        { title: "Cost Recommendations", description: "Procurement, inventory and operational savings." },
+        { title: "Risk Recommendations", description: "Controls, compliance and security improvements." },
+        { title: "People Recommendations", description: "Hiring, workload, performance and learning." },
+      ],
+      insights: [
+        { title: "Highest value action", detail: "A category price correction may improve monthly margin by ₹1.42L.", tone: "green" },
+        { title: "Customer action", detail: "Re-engaging 86 high-value customers could generate ₹3.8L in sales.", tone: "blue" },
+      ],
+    },
+    reports: {
+      eyebrow: "Enterprise Reporting",
+      summary:
+        "Generate, schedule and distribute complete company, department, operational and management reports.",
+      stats: [
+        { label: "Reports Available", value: "86", note: "Across all functions" },
+        { label: "Scheduled Reports", value: "24", note: "Automatic delivery" },
+        { label: "Generated Today", value: "38", note: "PDF, Excel and dashboard" },
+        { label: "Pending Reviews", value: "7", note: "Management approval" },
+      ],
+      actions: ["Generate Report", "Schedule Report", "Create Template", "Export Report"],
+      sections: [
+        { title: "Executive Reports", description: "Founder scorecards and leadership summaries." },
+        { title: "Department Reports", description: "Commerce, finance, HR, marketing and operations." },
+        { title: "Statutory Reports", description: "Tax, compliance and regulatory reporting." },
+        { title: "Custom Report Builder", description: "Fields, filters, charts and delivery schedules." },
+      ],
+      insights: [
+        { title: "Reporting efficiency", detail: "Scheduled reports replaced 46 manual report preparation tasks.", tone: "green" },
+        { title: "Review pending", detail: "Seven management reports remain unsigned for the current period.", tone: "orange" },
+      ],
+    },
+    "executive-reports": {
+      eyebrow: "Leadership Reporting",
+      summary:
+        "Founder and executive reports covering enterprise performance, risks, decisions and strategic priorities.",
+      stats: [
+        { label: "Enterprise Score", value: "88/100", note: "Current operating health" },
+        { label: "Revenue Growth", value: "18.4%", note: "Year over year" },
+        { label: "Critical Risks", value: "4", note: "Leadership attention" },
+        { label: "Approvals Pending", value: "8", note: "Founder action required" },
+      ],
+      actions: ["Generate Founder Brief", "Open Scorecard", "Review Risks", "Export Board Pack"],
+      sections: [
+        { title: "Founder Dashboard", description: "Enterprise KPIs, alerts and priorities." },
+        { title: "Board Reporting", description: "Financial, strategic and governance packs." },
+        { title: "Performance Scorecards", description: "Department and leadership scorecards." },
+        { title: "Decision Briefs", description: "AI-generated context, options and recommendations." },
+      ],
+      insights: [
+        { title: "Enterprise strength", detail: "Commerce growth and customer retention are above plan.", tone: "green" },
+        { title: "Leadership attention", detail: "Inventory working capital and overdue receivables need action.", tone: "orange" },
+      ],
+    },
+    "department-reports": {
+      eyebrow: "Department Intelligence",
+      summary:
+        "Access consistent operational and performance reporting for every KRVE department.",
+      stats: [
+        { label: "Departments", value: "12", note: "All reporting enabled" },
+        { label: "Reports This Month", value: "148", note: "Across departments" },
+        { label: "On-Time Submission", value: "94%", note: "Current cycle" },
+        { label: "Open Variances", value: "16", note: "Need explanation" },
+      ],
+      actions: ["Select Department", "Generate Monthly Report", "Compare Departments", "Schedule Delivery"],
+      sections: [
+        { title: "Commerce Reports", description: "Sales, orders, stock, fulfilment and returns." },
+        { title: "Finance Reports", description: "Revenue, expenses, cash, tax and profitability." },
+        { title: "People Reports", description: "Headcount, attendance, payroll and performance." },
+        { title: "Growth & Service Reports", description: "Marketing, CRM and support performance." },
+      ],
+      insights: [
+        { title: "Best-performing department", detail: "Sales & Commerce currently holds the highest operating score.", tone: "green" },
+        { title: "Variance attention", detail: "Finance and inventory reports contain 16 unresolved variances.", tone: "orange" },
+      ],
+    },
+    "audit-reports": {
+      eyebrow: "Audit & Control Reporting",
+      summary:
+        "Review user actions, approvals, transactions, changes, exceptions and compliance evidence.",
+      stats: [
+        { label: "Audit Events", value: "28,486", note: "Current month" },
+        { label: "Control Exceptions", value: "11", note: "3 high priority" },
+        { label: "Completed Reviews", value: "96%", note: "Current audit plan" },
+        { label: "Open Findings", value: "8", note: "Assigned for closure" },
+      ],
+      actions: ["Generate Audit Report", "Review Findings", "Export Logs", "Create Audit Plan"],
+      sections: [
+        { title: "Access Audit", description: "Logins, permissions and user activity." },
+        { title: "Transaction Audit", description: "Financial, inventory and commerce changes." },
+        { title: "Approval Audit", description: "Requests, reviewers, decisions and timestamps." },
+        { title: "Compliance Audit", description: "Controls, evidence, findings and remediation." },
+      ],
+      insights: [
+        { title: "Control health", detail: "No critical access violations were identified this month.", tone: "green" },
+        { title: "Open finding", detail: "One procurement approval control requires evidence update.", tone: "orange" },
+      ],
+    },
+    administration: {
+      eyebrow: "Enterprise Administration",
+      summary:
+        "Control users, roles, departments, permissions, integrations, security, data and system configuration.",
+      stats: [
+        { label: "System Users", value: "148", note: "132 currently active" },
+        { label: "Roles", value: "18", note: "Across all departments" },
+        { label: "Integrations", value: "14", note: "12 connected" },
+        { label: "Security Score", value: "96%", note: "Enterprise posture" },
+      ],
+      actions: ["Add User", "Create Role", "Configure System", "Review Security"],
+      sections: [
+        { title: "Users & Roles", description: "Accounts, roles, access and lifecycle." },
+        { title: "Departments", description: "Structure, owners and reporting relationships." },
+        { title: "System Configuration", description: "Company, numbering and preferences." },
+        { title: "Security & Audit", description: "Policies, sessions, logs and controls." },
+      ],
+      insights: [
+        { title: "Access review due", detail: "Nine user access reviews are due within seven days.", tone: "orange" },
+        { title: "System health", detail: "All critical enterprise services are operational.", tone: "green" },
+      ],
+    },
+    "users-roles": {
+      eyebrow: "Identity Administration",
+      summary:
+        "Manage user accounts, employee access, roles, account status and authentication lifecycle.",
+      stats: [
+        { label: "Total Users", value: "148", note: "132 active users" },
+        { label: "Roles", value: "18", note: "Department and functional" },
+        { label: "Pending Invites", value: "6", note: "Awaiting activation" },
+        { label: "Locked Accounts", value: "2", note: "Require administrator review" },
+      ],
+      actions: ["Create User", "Create Role", "Send Invitation", "Review Access"],
+      sections: [
+        { title: "User Directory", description: "Accounts, employees, status and authentication." },
+        { title: "Role Management", description: "Role definitions and module assignments." },
+        { title: "Access Reviews", description: "Periodic certification and revocation." },
+        { title: "Account Security", description: "Sessions, resets, locks and activity." },
+      ],
+      insights: [
+        { title: "Access review", detail: "Nine privileged accounts require quarterly certification.", tone: "orange" },
+        { title: "Account security", detail: "No suspicious login pattern is currently active.", tone: "green" },
+      ],
+    },
+    departments: {
+      eyebrow: "Organisation Administration",
+      summary:
+        "Define departments, leadership, reporting structures, responsibilities and operating ownership.",
+      stats: [
+        { label: "Departments", value: "12", note: "All active" },
+        { label: "Department Heads", value: "12", note: "Fully assigned" },
+        { label: "Employees Mapped", value: "128", note: "100% organisational mapping" },
+        { label: "Open Positions", value: "14", note: "Across 6 departments" },
+      ],
+      actions: ["Create Department", "Assign Head", "Edit Structure", "View Org Chart"],
+      sections: [
+        { title: "Department Directory", description: "Names, codes, heads and responsibilities." },
+        { title: "Organisation Chart", description: "Reporting lines and hierarchy." },
+        { title: "Cost Centres", description: "Financial and budget ownership." },
+        { title: "Department Access", description: "Modules, records and approval authority." },
+      ],
+      insights: [
+        { title: "Structure complete", detail: "All active employees are mapped to a department and manager.", tone: "green" },
+        { title: "Capacity gap", detail: "Commerce and customer support have the highest open-position demand.", tone: "orange" },
+      ],
+    },
+    permissions: {
+      eyebrow: "Access Governance",
+      summary:
+        "Control module permissions, record visibility, approval authority and sensitive action rights.",
+      stats: [
+        { label: "Permission Rules", value: "286", note: "Across 18 roles" },
+        { label: "Privileged Users", value: "14", note: "Enhanced access" },
+        { label: "Access Reviews Due", value: "9", note: "Within 7 days" },
+        { label: "Denied Actions", value: "42", note: "Current month" },
+      ],
+      actions: ["Create Permission", "Review Role Access", "Approve Exception", "Run Access Audit"],
+      sections: [
+        { title: "Module Access", description: "Department and role module visibility." },
+        { title: "Record Permissions", description: "Own, team, department and enterprise data scope." },
+        { title: "Action Rights", description: "Create, edit, delete, approve and export rights." },
+        { title: "Permission Audit", description: "Changes, exceptions and certification." },
+      ],
+      insights: [
+        { title: "Least privilege improvement", detail: "Four roles contain permissions not used during the last 90 days.", tone: "blue" },
+        { title: "Review required", detail: "Nine privileged access assignments await certification.", tone: "orange" },
+      ],
+    },
+    integrations: {
+      eyebrow: "Connected Enterprise",
+      summary:
+        "Connect and monitor the KRVE website, app, payments, couriers, banks, marketplaces and external systems.",
+      stats: [
+        { label: "Integrations", value: "14", note: "12 connected" },
+        { label: "API Calls Today", value: "84,628", note: "99.7% successful" },
+        { label: "Sync Delays", value: "2", note: "Require review" },
+        { label: "Data Updated", value: "2m ago", note: "Latest successful sync" },
+      ],
+      actions: ["Connect Integration", "Test Connection", "View API Logs", "Configure Sync"],
+      sections: [
+        { title: "Commerce Connections", description: "Website, mobile app and marketplaces." },
+        { title: "Payment & Banking", description: "Gateways, settlements and bank feeds." },
+        { title: "Shipping & Communication", description: "Couriers, email, SMS and WhatsApp." },
+        { title: "API & Webhooks", description: "Keys, endpoints, logs and event delivery." },
+      ],
+      insights: [
+        { title: "Connection issue", detail: "One courier integration is producing delayed tracking updates.", tone: "orange" },
+        { title: "System reliability", detail: "API success rate remained above 99.7% this week.", tone: "green" },
+      ],
+    },
+    security: {
+      eyebrow: "Enterprise Security",
+      summary:
+        "Monitor authentication, active sessions, suspicious activity, security policies and access posture.",
+      stats: [
+        { label: "Security Score", value: "96%", note: "Enterprise posture" },
+        { label: "Active Sessions", value: "74", note: "Across 48 users" },
+        { label: "Blocked Attempts", value: "28", note: "Current month" },
+        { label: "Open Alerts", value: "3", note: "No critical alerts" },
+      ],
+      actions: ["Review Security", "Revoke Session", "Create Policy", "Run Security Audit"],
+      sections: [
+        { title: "Authentication", description: "Login methods, password and MFA policies." },
+        { title: "Session Management", description: "Active devices, expiry and revocation." },
+        { title: "Threat Monitoring", description: "Suspicious access and behavioural alerts." },
+        { title: "Security Policies", description: "Controls, exceptions and evidence." },
+      ],
+      insights: [
+        { title: "Security posture strong", detail: "No critical security event is currently open.", tone: "green" },
+        { title: "Policy action", detail: "Six users have not completed the latest security acknowledgement.", tone: "orange" },
+      ],
+    },
+    "audit-logs": {
+      eyebrow: "System Activity History",
+      summary:
+        "Review complete user activity, record changes, approvals, exports and system-generated events.",
+      stats: [
+        { label: "Events Today", value: "18,642", note: "User and system actions" },
+        { label: "Changes Logged", value: "4,286", note: "Record-level changes" },
+        { label: "Exports", value: "84", note: "Tracked downloads" },
+        { label: "Flagged Events", value: "7", note: "Under review" },
+      ],
+      actions: ["Search Logs", "Export Audit Trail", "Create Alert Rule", "Review Flagged Events"],
+      sections: [
+        { title: "User Activity", description: "Logins, views, edits and actions." },
+        { title: "Record Changes", description: "Before and after values with timestamps." },
+        { title: "Approval History", description: "Requests, reviewers and decisions." },
+        { title: "System Events", description: "Automations, integrations and background tasks." },
+      ],
+      insights: [
+        { title: "Audit coverage", detail: "All sensitive modules have complete event logging enabled.", tone: "green" },
+        { title: "Flagged export", detail: "One unusually large customer export requires administrator review.", tone: "orange" },
+      ],
+    },
+    "data-management": {
+      eyebrow: "Enterprise Data Control",
+      summary:
+        "Manage imports, exports, backups, retention, validation, cleansing and master data standards.",
+      stats: [
+        { label: "Master Records", value: "42,684", note: "Across enterprise datasets" },
+        { label: "Data Quality", value: "97.2%", note: "Validation score" },
+        { label: "Last Backup", value: "2h ago", note: "Completed successfully" },
+        { label: "Import Jobs", value: "6", note: "2 currently running" },
+      ],
+      actions: ["Import Data", "Export Data", "Run Validation", "Create Backup"],
+      sections: [
+        { title: "Imports & Exports", description: "CSV, spreadsheet and system data movement." },
+        { title: "Master Data", description: "Products, customers, vendors and accounting standards." },
+        { title: "Data Quality", description: "Duplicates, missing values and validation rules." },
+        { title: "Backup & Retention", description: "Schedules, recovery and data lifecycle." },
+      ],
+      insights: [
+        { title: "Data quality strong", detail: "Enterprise validation score improved to 97.2%.", tone: "green" },
+        { title: "Duplicate review", detail: "Thirty-two possible duplicate customer records need confirmation.", tone: "orange" },
+      ],
+    },
+    notifications: {
+      eyebrow: "Enterprise Communications",
+      summary:
+        "Configure system alerts, email, SMS, WhatsApp and role-based notification delivery.",
+      stats: [
+        { label: "Notifications Today", value: "4,286", note: "Across all channels" },
+        { label: "Delivery Rate", value: "98.6%", note: "Current month" },
+        { label: "Active Rules", value: "68", note: "Role and event based" },
+        { label: "Failed Messages", value: "18", note: "Require retry" },
+      ],
+      actions: ["Create Rule", "Send Notification", "Manage Templates", "Review Delivery"],
+      sections: [
+        { title: "Notification Rules", description: "Events, audiences, channels and timing." },
+        { title: "Templates", description: "Email, SMS, WhatsApp and in-app messages." },
+        { title: "Delivery Logs", description: "Status, failures, retries and engagement." },
+        { title: "User Preferences", description: "Role and individual notification choices." },
+      ],
+      insights: [
+        { title: "Delivery performance", detail: "Notification delivery remained above 98% this month.", tone: "green" },
+        { title: "Retry required", detail: "Eighteen messages failed because of invalid phone numbers.", tone: "orange" },
+      ],
+    },
+    "system-settings": {
+      eyebrow: "Enterprise Configuration",
+      summary:
+        "Configure company information, numbering, localisation, workflow defaults and system-wide preferences.",
+      stats: [
+        { label: "Configuration Areas", value: "24", note: "Enterprise settings" },
+        { label: "Numbering Series", value: "18", note: "Orders, invoices and records" },
+        { label: "Active Currencies", value: "1", note: "Indian Rupee" },
+        { label: "Pending Changes", value: "3", note: "Awaiting approval" },
+      ],
+      actions: ["Edit Company Profile", "Configure Numbering", "Manage Preferences", "Review Changes"],
+      sections: [
+        { title: "Company Profile", description: "Legal, contact and branding information." },
+        { title: "Numbering & Formats", description: "Document series, dates and identifiers." },
+        { title: "Localisation", description: "Currency, timezone, tax and regional preferences." },
+        { title: "Workflow Defaults", description: "Approvals, notifications and operating rules." },
+      ],
+      insights: [
+        { title: "Configuration stable", detail: "No critical system configuration issue is active.", tone: "green" },
+        { title: "Pending change", detail: "Three numbering configuration changes await approval.", tone: "orange" },
+      ],
+    },
+  };
+
+  const content = moduleContent[item.id];
+
+  if (!content) {
+    return <ModuleWorkspace item={item} />;
+  }
+
+  const toneClass = {
+    blue: "border-blue-200 bg-blue-50 text-blue-700",
+    green: "border-green-200 bg-green-50 text-green-700",
+    orange: "border-orange-200 bg-orange-50 text-orange-700",
+    red: "border-red-200 bg-red-50 text-red-700",
+  };
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8">
+      <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-[#111827] via-violet-950 to-blue-700 p-7 text-white shadow-xl sm:p-9">
+        <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10">
+                <ModuleIcon size={24} />
+              </div>
+
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-200">
+                {content.eyebrow}
+              </p>
+            </div>
+
+            <h1 className="mt-5 text-3xl font-black sm:text-4xl">
+              {item.name}
+            </h1>
+
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-blue-100">
+              {content.summary}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {content.actions.slice(0, 2).map((action, index) => (
+              <button
+                key={action}
+                type="button"
+                className={
+                  index === 1
+                    ? "flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-violet-800 transition hover:bg-violet-50"
+                    : "flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold transition hover:bg-white/20"
+                }
+              >
+                {index === 0 ? <Sparkles size={17} /> : <ArrowRight size={17} />}
+                {action}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        {content.stats.map((stat, index) => (
+          <article
+            key={stat.label}
+            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div
+              className={`grid h-11 w-11 place-items-center rounded-xl ${
+                index === 0
+                  ? "bg-violet-50 text-violet-600"
+                  : index === 1
+                    ? "bg-blue-50 text-blue-600"
+                    : index === 2
+                      ? "bg-green-50 text-green-600"
+                      : "bg-orange-50 text-orange-600"
+              }`}
+            >
+              <ModuleIcon size={20} />
+            </div>
+
+            <p className="mt-5 text-sm font-medium text-slate-500">
+              {stat.label}
+            </p>
+
+            <h2 className="mt-2 text-3xl font-black text-slate-950">
+              {stat.value}
+            </h2>
+
+            <p className="mt-2 text-xs leading-5 text-slate-400">
+              {stat.note}
+            </p>
+          </article>
+        ))}
+      </section>
+
+      <section className="mt-6 grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
+        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div>
+            <h2 className="text-lg font-black text-slate-950">
+              Intelligence Modules
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Complete capabilities available inside {item.name}
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {content.sections.map((section, index) => (
+              <button
+                key={section.title}
+                type="button"
+                className="group rounded-2xl border border-slate-200 bg-slate-50/60 p-5 text-left transition hover:border-violet-300 hover:bg-violet-50/60"
+              >
+                <div className="flex items-start gap-4">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-600 text-xs font-black text-white">
+                    {index + 1}
+                  </span>
+
+                  <div className="min-w-0">
+                    <strong className="block text-sm text-slate-900">
+                      {section.title}
+                    </strong>
+
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      {section.description}
+                    </p>
+
+                    <span className="mt-4 flex items-center gap-2 text-xs font-bold text-violet-600">
+                      Open module
+                      <ArrowRight
+                        size={14}
+                        className="transition group-hover:translate-x-1"
+                      />
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </article>
+
+        <div className="space-y-6">
+          <article className="rounded-3xl bg-[#0f172a] p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div className="grid h-11 w-11 place-items-center rounded-xl bg-violet-600">
+                <Sparkles size={22} />
+              </div>
+
+              <span className="rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-300">
+                Live Intelligence
+              </span>
+            </div>
+
+            <h2 className="mt-6 text-xl font-black">
+              KRVE AI Executive Brief
+            </h2>
+
+            <p className="mt-3 text-sm leading-7 text-slate-400">
+              Intelligence is continuously generated from current enterprise
+              operations, records and approved data.
+            </p>
+
+            <button
+              type="button"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-bold transition hover:bg-violet-700"
+            >
+              Generate Detailed Brief
+              <ArrowRight size={16} />
+            </button>
+          </article>
+
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-black text-slate-950">
+              Signals & Recommendations
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Current intelligence requiring attention
+            </p>
+
+            <div className="mt-5 space-y-3">
+              {content.insights.map((insight) => (
+                <div
+                  key={insight.title}
+                  className={`rounded-2xl border p-4 ${toneClass[insight.tone]}`}
+                >
+                  <strong className="text-sm">{insight.title}</strong>
+
+                  <p className="mt-2 text-xs leading-5 opacity-80">
+                    {insight.detail}
                   </p>
                 </div>
               ))}
