@@ -36,6 +36,7 @@ import {
 import BusinessAnalytics from "@/components/founder/business-analytics";
 import OrdersManagement from "@/components/founder/orders-management";
 import ProductsManagement from "@/components/founder/products-management";
+import InventoryManagement from "@/components/founder/inventory-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -119,12 +120,12 @@ const navigationGroups: NavigationGroup[] = [
         icon: Package,
       },
       {
-        id: "inventory",
-        name: "Inventory",
-        description:
-          "Stock levels, movements, replenishment and inventory controls",
-        icon: Boxes,
-      },
+         id: "inventory",
+         name: "Inventory",
+         description:
+         "Stock levels, movements, replenishment and inventory controls.",
+          icon: Boxes,
+     },
       {
         id: "warehouse",
         name: "Warehouse",
@@ -703,11 +704,16 @@ export default function FounderPage() {
           <ProductsManagement />
         )}
 
+        {activeModuleId === "inventory" && (
+          <InventoryManagement />
+        )}
+
         {activeModuleId !== "dashboard" &&
           activeModuleId !== "analytics" &&
           activeModuleId !== "approvals" &&
           activeModuleId !== "orders" &&
-          activeModuleId !== "products" && (
+          activeModuleId !== "products" &&
+          activeModuleId !== "inventory" && (
             <ModuleWorkspace
               item={activeNavigationItem}
             />
