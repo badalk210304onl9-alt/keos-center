@@ -74,6 +74,7 @@ import FacilitiesAssetsManagement from "@/components/founder/facilities-assets-m
 import KrveAICenterManagement from "@/components/founder/krve-ai-center-management";
 import AIAssistantManagement from "@/components/founder/ai-assistant-management";
 import AIAutomationManagement from "@/components/founder/ai-automation-management";
+import ForecastingManagement from "@/components/founder/forecasting-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1194,6 +1195,10 @@ export default function FounderPage() {
           <AIAutomationManagement />
         )}
 
+        {activeModuleId === "forecasting" && (
+          <ForecastingManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
@@ -1216,6 +1221,7 @@ export default function FounderPage() {
         {activeModuleId !== "ai-center" &&
           activeModuleId !== "ai-assistant" &&
           activeModuleId !== "ai-automation" &&
+          activeModuleId !== "forecasting" &&
           intelligenceWorkspaceIds.has(activeModuleId) && (
             <IntelligenceWorkspace item={activeNavigationItem} />
           )}
