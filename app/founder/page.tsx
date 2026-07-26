@@ -1175,7 +1175,7 @@ export default function FounderPage() {
           <RiskManagement />
         )}
 
-        {activeModuleId === "facilities-assets" && (
+        {activeModuleId === "facilities" && (
           <FacilitiesAssetsManagement />
         )}
 
@@ -1191,7 +1191,7 @@ export default function FounderPage() {
           activeModuleId !== "documents" &&
           activeModuleId !== "legal-compliance" &&
           activeModuleId !== "risk-management" &&
-          activeModuleId !== "facilities-assets" &&
+          activeModuleId !== "facilities" &&
           businessWorkspaceIds.has(activeModuleId) && (
             <BusinessOperationsWorkspace item={activeNavigationItem} />
           )}
