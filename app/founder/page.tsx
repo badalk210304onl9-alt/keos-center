@@ -55,6 +55,7 @@ import PricingManagement from "@/components/founder/pricing-management";
 import DiscountsPromotionsManagement from "@/components/founder/discounts-promotions-management";
 import SalesChannelsManagement from "@/components/founder/sales-channels-management";
 import AbandonedCartsManagement from "@/components/founder/abandoned-carts-management";
+import CheckoutManagement from "@/components/founder/checkout-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1099,6 +1100,10 @@ export default function FounderPage() {
           <AbandonedCartsManagement />
         )}
 
+        {activeModuleId === "checkout-management" && (
+          <CheckoutManagement />
+        )}
+
         {commerceWorkspaceIds.has(activeModuleId) && (
           <CommerceModuleWorkspace item={activeNavigationItem} />
         )}
@@ -1124,6 +1129,7 @@ export default function FounderPage() {
           activeModuleId !== "discounts-promotions" &&
           activeModuleId !== "sales-channels" &&
           activeModuleId !== "abandoned-carts" &&
+          activeModuleId !== "checkout-management" &&
           !commerceWorkspaceIds.has(activeModuleId) &&
           !businessWorkspaceIds.has(activeModuleId) &&
           !intelligenceWorkspaceIds.has(activeModuleId) && (
