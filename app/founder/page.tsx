@@ -67,6 +67,7 @@ import ProcurementManagement from "@/components/founder/procurement-management";
 import CRMManagement from "@/components/founder/crm-management";
 import VendorManagement from "@/components/founder/vendor-management";
 import ProjectsTasksManagement from "@/components/founder/projects-tasks-management";
+import DocumentsManagement from "@/components/founder/documents-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1159,6 +1160,10 @@ export default function FounderPage() {
           <ProjectsTasksManagement />
         )}
 
+        {activeModuleId === "documents" && (
+          <DocumentsManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
@@ -1168,6 +1173,7 @@ export default function FounderPage() {
           activeModuleId !== "crm" &&
           activeModuleId !== "vendor-management" &&
           activeModuleId !== "projects" &&
+          activeModuleId !== "documents" &&
           businessWorkspaceIds.has(activeModuleId) && (
             <BusinessOperationsWorkspace item={activeNavigationItem} />
           )}
