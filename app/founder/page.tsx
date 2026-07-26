@@ -463,7 +463,6 @@ const navigationGroups: NavigationGroup[] = [
 ];
 
 const commerceWorkspaceIds = new Set([
-  "checkout",
   "order-tracking",
   "commerce-reports",
 ]);
@@ -1100,7 +1099,7 @@ export default function FounderPage() {
           <AbandonedCartsManagement />
         )}
 
-        {activeModuleId === "checkout-management" && (
+        {activeModuleId === "checkout" && (
           <CheckoutManagement />
         )}
 
@@ -1129,7 +1128,7 @@ export default function FounderPage() {
           activeModuleId !== "discounts-promotions" &&
           activeModuleId !== "sales-channels" &&
           activeModuleId !== "abandoned-carts" &&
-          activeModuleId !== "checkout-management" &&
+          activeModuleId !== "checkout" &&
           !commerceWorkspaceIds.has(activeModuleId) &&
           !businessWorkspaceIds.has(activeModuleId) &&
           !intelligenceWorkspaceIds.has(activeModuleId) && (
