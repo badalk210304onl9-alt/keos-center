@@ -59,6 +59,7 @@ import CheckoutManagement from "@/components/founder/checkout-management";
 import OrderTrackingManagement from "@/components/founder/order-tracking-management";
 import CommerceReportsManagement from "@/components/founder/commerce-reports-management";
 import CustomersManagement from "@/components/founder/customers-management";
+import FinanceManagement from "@/components/founder/finance-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1119,7 +1120,12 @@ export default function FounderPage() {
           <CustomersManagement />
         )}
 
+        {activeModuleId === "finance" && (
+          <FinanceManagement />
+        )}
+
         {activeModuleId !== "customers" &&
+          activeModuleId !== "finance" &&
           businessWorkspaceIds.has(activeModuleId) && (
             <BusinessOperationsWorkspace item={activeNavigationItem} />
           )}
