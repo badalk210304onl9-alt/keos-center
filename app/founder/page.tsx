@@ -1135,7 +1135,7 @@ export default function FounderPage() {
           <MarketingManagement />
         )}
 
-        {activeModuleId === "customer-support" && (
+        {activeModuleId === "support" && (
           <CustomerSupportManagement />
         )}
 
@@ -1143,7 +1143,7 @@ export default function FounderPage() {
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
           activeModuleId !== "marketing" &&
-          activeModuleId !== "customer-support" &&
+          activeModuleId !== "support" &&
           businessWorkspaceIds.has(activeModuleId) && (
             <BusinessOperationsWorkspace item={activeNavigationItem} />
           )}
