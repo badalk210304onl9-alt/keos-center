@@ -79,6 +79,7 @@ import AnomalyDetectionManagement from "@/components/founder/anomaly-detection-m
 import AIRecommendationsManagement from "@/components/founder/ai-recommendations-management";
 import EnterpriseReportsManagement from "@/components/founder/enterprise-reports-management";
 import ExecutiveReportsManagement from "@/components/founder/executive-reports-management";
+import DepartmentReportsManagement from "@/components/founder/department-reports-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1219,6 +1220,10 @@ export default function FounderPage() {
           <ExecutiveReportsManagement />
         )}
 
+        {activeModuleId === "department-reports" && (
+          <DepartmentReportsManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
@@ -1246,6 +1251,7 @@ export default function FounderPage() {
           activeModuleId !== "recommendations" &&
           activeModuleId !== "reports" &&
           activeModuleId !== "executive-reports" &&
+          activeModuleId !== "department-reports" &&
           intelligenceWorkspaceIds.has(activeModuleId) && (
             <IntelligenceWorkspace item={activeNavigationItem} />
           )}
