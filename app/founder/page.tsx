@@ -71,6 +71,7 @@ import DocumentsManagement from "@/components/founder/documents-management";
 import LegalComplianceManagement from "@/components/founder/legal-compliance-management";
 import RiskManagement from "@/components/founder/risk-management";
 import FacilitiesAssetsManagement from "@/components/founder/facilities-assets-management";
+import KrveAICenterManagement from "@/components/founder/krve-ai-center-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1179,6 +1180,10 @@ export default function FounderPage() {
           <FacilitiesAssetsManagement />
         )}
 
+        {activeModuleId === "ai-center" && (
+          <KrveAICenterManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
@@ -1192,6 +1197,7 @@ export default function FounderPage() {
           activeModuleId !== "legal-compliance" &&
           activeModuleId !== "risk-management" &&
           activeModuleId !== "facilities" &&
+          activeModuleId !== "ai-center" &&
           businessWorkspaceIds.has(activeModuleId) && (
             <BusinessOperationsWorkspace item={activeNavigationItem} />
           )}
