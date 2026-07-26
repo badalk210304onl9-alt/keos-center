@@ -73,6 +73,7 @@ import RiskManagement from "@/components/founder/risk-management";
 import FacilitiesAssetsManagement from "@/components/founder/facilities-assets-management";
 import KrveAICenterManagement from "@/components/founder/krve-ai-center-management";
 import AIAssistantManagement from "@/components/founder/ai-assistant-management";
+import AIAutomationManagement from "@/components/founder/ai-automation-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1189,6 +1190,10 @@ export default function FounderPage() {
           <AIAssistantManagement />
         )}
 
+        {activeModuleId === "ai-automation" && (
+          <AIAutomationManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
@@ -1210,6 +1215,7 @@ export default function FounderPage() {
 
         {activeModuleId !== "ai-center" &&
           activeModuleId !== "ai-assistant" &&
+          activeModuleId !== "ai-automation" &&
           intelligenceWorkspaceIds.has(activeModuleId) && (
             <IntelligenceWorkspace item={activeNavigationItem} />
           )}
