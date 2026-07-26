@@ -58,6 +58,7 @@ import AbandonedCartsManagement from "@/components/founder/abandoned-carts-manag
 import CheckoutManagement from "@/components/founder/checkout-management";
 import OrderTrackingManagement from "@/components/founder/order-tracking-management";
 import CommerceReportsManagement from "@/components/founder/commerce-reports-management";
+import CustomersManagement from "@/components/founder/customers-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -468,7 +469,6 @@ const commerceWorkspaceIds = new Set<string>([
 ]);
 
 const businessWorkspaceIds = new Set<string>([
-  "customers",
   "finance",
   "employees",
   "marketing",
@@ -1115,9 +1115,14 @@ export default function FounderPage() {
           <CommerceModuleWorkspace item={activeNavigationItem} />
         )}
 
-        {businessWorkspaceIds.has(activeModuleId) && (
-          <BusinessOperationsWorkspace item={activeNavigationItem} />
+        {activeModuleId === "customers" && (
+          <CustomersManagement />
         )}
+
+        {activeModuleId !== "customers" &&
+          businessWorkspaceIds.has(activeModuleId) && (
+            <BusinessOperationsWorkspace item={activeNavigationItem} />
+          )}
 
         {intelligenceWorkspaceIds.has(activeModuleId) && (
           <IntelligenceWorkspace item={activeNavigationItem} />
