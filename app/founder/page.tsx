@@ -75,6 +75,7 @@ import KrveAICenterManagement from "@/components/founder/krve-ai-center-manageme
 import AIAssistantManagement from "@/components/founder/ai-assistant-management";
 import AIAutomationManagement from "@/components/founder/ai-automation-management";
 import ForecastingManagement from "@/components/founder/forecasting-management";
+import AnomalyDetectionManagement from "@/components/founder/anomaly-detection-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1199,6 +1200,10 @@ export default function FounderPage() {
           <ForecastingManagement />
         )}
 
+        {activeModuleId === "anomaly-detection" && (
+          <AnomalyDetectionManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
@@ -1222,6 +1227,7 @@ export default function FounderPage() {
           activeModuleId !== "ai-assistant" &&
           activeModuleId !== "ai-automation" &&
           activeModuleId !== "forecasting" &&
+          activeModuleId !== "anomaly-detection" &&
           intelligenceWorkspaceIds.has(activeModuleId) && (
             <IntelligenceWorkspace item={activeNavigationItem} />
           )}
