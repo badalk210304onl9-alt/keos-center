@@ -72,6 +72,7 @@ import LegalComplianceManagement from "@/components/founder/legal-compliance-man
 import RiskManagement from "@/components/founder/risk-management";
 import FacilitiesAssetsManagement from "@/components/founder/facilities-assets-management";
 import KrveAICenterManagement from "@/components/founder/krve-ai-center-management";
+import AIAssistantManagement from "@/components/founder/ai-assistant-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1184,6 +1185,10 @@ export default function FounderPage() {
           <KrveAICenterManagement />
         )}
 
+        {activeModuleId === "ai-assistant" && (
+          <AIAssistantManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
@@ -1198,6 +1203,7 @@ export default function FounderPage() {
           activeModuleId !== "risk-management" &&
           activeModuleId !== "facilities" &&
           activeModuleId !== "ai-center" &&
+          activeModuleId !== "ai-assistant" &&
           businessWorkspaceIds.has(activeModuleId) && (
             <BusinessOperationsWorkspace item={activeNavigationItem} />
           )}
