@@ -1205,7 +1205,7 @@ export default function FounderPage() {
           <AnomalyDetectionManagement />
         )}
 
-        {activeModuleId === "ai-recommendations" && (
+        {activeModuleId === "recommendations" && (
           <AIRecommendationsManagement />
         )}
 
@@ -1233,7 +1233,7 @@ export default function FounderPage() {
           activeModuleId !== "ai-automation" &&
           activeModuleId !== "forecasting" &&
           activeModuleId !== "anomaly-detection" &&
-          activeModuleId !== "ai-recommendations" &&
+          activeModuleId !== "recommendations" &&
           intelligenceWorkspaceIds.has(activeModuleId) && (
             <IntelligenceWorkspace item={activeNavigationItem} />
           )}
