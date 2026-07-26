@@ -1208,9 +1208,11 @@ export default function FounderPage() {
             <BusinessOperationsWorkspace item={activeNavigationItem} />
           )}
 
-        {intelligenceWorkspaceIds.has(activeModuleId) && (
-          <IntelligenceWorkspace item={activeNavigationItem} />
-        )}
+        {activeModuleId !== "ai-center" &&
+          activeModuleId !== "ai-assistant" &&
+          intelligenceWorkspaceIds.has(activeModuleId) && (
+            <IntelligenceWorkspace item={activeNavigationItem} />
+          )}
 
         {activeModuleId !== "dashboard" &&
           activeModuleId !== "analytics" &&
