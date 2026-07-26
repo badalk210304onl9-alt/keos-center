@@ -76,6 +76,7 @@ import AIAssistantManagement from "@/components/founder/ai-assistant-management"
 import AIAutomationManagement from "@/components/founder/ai-automation-management";
 import ForecastingManagement from "@/components/founder/forecasting-management";
 import AnomalyDetectionManagement from "@/components/founder/anomaly-detection-management";
+import AIRecommendationsManagement from "@/components/founder/ai-recommendations-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1204,6 +1205,10 @@ export default function FounderPage() {
           <AnomalyDetectionManagement />
         )}
 
+        {activeModuleId === "ai-recommendations" && (
+          <AIRecommendationsManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
@@ -1228,6 +1233,7 @@ export default function FounderPage() {
           activeModuleId !== "ai-automation" &&
           activeModuleId !== "forecasting" &&
           activeModuleId !== "anomaly-detection" &&
+          activeModuleId !== "ai-recommendations" &&
           intelligenceWorkspaceIds.has(activeModuleId) && (
             <IntelligenceWorkspace item={activeNavigationItem} />
           )}
