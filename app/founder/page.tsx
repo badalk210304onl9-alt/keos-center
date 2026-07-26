@@ -82,6 +82,7 @@ import ExecutiveReportsManagement from "@/components/founder/executive-reports-m
 import DepartmentReportsManagement from "@/components/founder/department-reports-management";
 import AuditReportsManagement from "@/components/founder/audit-reports-management";
 import AdministrationManagement from "@/components/founder/administration-management";
+import UsersRolesManagement from "@/components/founder/users-roles-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1234,6 +1235,10 @@ export default function FounderPage() {
           <AdministrationManagement />
         )}
 
+        {activeModuleId === "users-roles" && (
+          <UsersRolesManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
@@ -1264,6 +1269,7 @@ export default function FounderPage() {
           activeModuleId !== "department-reports" &&
           activeModuleId !== "audit-reports" &&
           activeModuleId !== "administration" &&
+          activeModuleId !== "users-roles" &&
           intelligenceWorkspaceIds.has(activeModuleId) && (
             <IntelligenceWorkspace item={activeNavigationItem} />
           )}
