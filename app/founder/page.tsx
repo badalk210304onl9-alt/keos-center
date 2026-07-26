@@ -69,6 +69,7 @@ import VendorManagement from "@/components/founder/vendor-management";
 import ProjectsTasksManagement from "@/components/founder/projects-tasks-management";
 import DocumentsManagement from "@/components/founder/documents-management";
 import LegalComplianceManagement from "@/components/founder/legal-compliance-management";
+import RiskManagement from "@/components/founder/risk-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1169,6 +1170,10 @@ export default function FounderPage() {
           <LegalComplianceManagement />
         )}
 
+        {activeModuleId === "risk-management" && (
+          <RiskManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
@@ -1180,6 +1185,7 @@ export default function FounderPage() {
           activeModuleId !== "projects" &&
           activeModuleId !== "documents" &&
           activeModuleId !== "legal-compliance" &&
+          activeModuleId !== "risk-management" &&
           businessWorkspaceIds.has(activeModuleId) && (
             <BusinessOperationsWorkspace item={activeNavigationItem} />
           )}
