@@ -54,6 +54,7 @@ import ReturnsRefundsManagement from "@/components/founder/returns-refunds-manag
 import PricingManagement from "@/components/founder/pricing-management";
 import DiscountsPromotionsManagement from "@/components/founder/discounts-promotions-management";
 import SalesChannelsManagement from "@/components/founder/sales-channels-management";
+import AbandonedCartsManagement from "@/components/founder/abandoned-carts-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -461,7 +462,6 @@ const navigationGroups: NavigationGroup[] = [
 ];
 
 const commerceWorkspaceIds = new Set([
-  "abandoned-carts",
   "checkout",
   "order-tracking",
   "commerce-reports",
@@ -1095,6 +1095,10 @@ export default function FounderPage() {
           <SalesChannelsManagement />
         )}
 
+        {activeModuleId === "abandoned-carts" && (
+          <AbandonedCartsManagement />
+        )}
+
         {commerceWorkspaceIds.has(activeModuleId) && (
           <CommerceModuleWorkspace item={activeNavigationItem} />
         )}
@@ -1119,6 +1123,7 @@ export default function FounderPage() {
           activeModuleId !== "pricing" &&
           activeModuleId !== "discounts-promotions" &&
           activeModuleId !== "sales-channels" &&
+          activeModuleId !== "abandoned-carts" &&
           !commerceWorkspaceIds.has(activeModuleId) &&
           !businessWorkspaceIds.has(activeModuleId) &&
           !intelligenceWorkspaceIds.has(activeModuleId) && (
