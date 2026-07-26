@@ -57,6 +57,7 @@ import SalesChannelsManagement from "@/components/founder/sales-channels-managem
 import AbandonedCartsManagement from "@/components/founder/abandoned-carts-management";
 import CheckoutManagement from "@/components/founder/checkout-management";
 import OrderTrackingManagement from "@/components/founder/order-tracking-management";
+import CommerceReportsManagement from "@/components/founder/commerce-reports-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -463,11 +464,10 @@ const navigationGroups: NavigationGroup[] = [
   },
 ];
 
-const commerceWorkspaceIds = new Set([
-  "commerce-reports",
+const commerceWorkspaceIds = new Set<string>([
 ]);
 
-const businessWorkspaceIds = new Set([
+const businessWorkspaceIds = new Set<string>([
   "customers",
   "finance",
   "employees",
@@ -483,7 +483,7 @@ const businessWorkspaceIds = new Set([
   "facilities",
 ]);
 
-const intelligenceWorkspaceIds = new Set([
+const intelligenceWorkspaceIds = new Set<string>([
   "ai-center",
   "ai-assistant",
   "ai-automation",
@@ -1107,6 +1107,10 @@ export default function FounderPage() {
           <OrderTrackingManagement />
         )}
 
+        {activeModuleId === "commerce-reports" && (
+          <CommerceReportsManagement />
+        )}
+
         {commerceWorkspaceIds.has(activeModuleId) && (
           <CommerceModuleWorkspace item={activeNavigationItem} />
         )}
@@ -1134,6 +1138,7 @@ export default function FounderPage() {
           activeModuleId !== "abandoned-carts" &&
           activeModuleId !== "checkout" &&
           activeModuleId !== "order-tracking" &&
+          activeModuleId !== "commerce-reports" &&
           !commerceWorkspaceIds.has(activeModuleId) &&
           !businessWorkspaceIds.has(activeModuleId) &&
           !intelligenceWorkspaceIds.has(activeModuleId) && (
