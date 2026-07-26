@@ -60,6 +60,7 @@ import OrderTrackingManagement from "@/components/founder/order-tracking-managem
 import CommerceReportsManagement from "@/components/founder/commerce-reports-management";
 import CustomersManagement from "@/components/founder/customers-management";
 import FinanceManagement from "@/components/founder/finance-management";
+import HumanResourcesManagement from "@/components/founder/human-resources-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1124,8 +1125,13 @@ export default function FounderPage() {
           <FinanceManagement />
         )}
 
+        {activeModuleId === "human-resources" && (
+          <HumanResourcesManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
+          activeModuleId !== "human-resources" &&
           businessWorkspaceIds.has(activeModuleId) && (
             <BusinessOperationsWorkspace item={activeNavigationItem} />
           )}
