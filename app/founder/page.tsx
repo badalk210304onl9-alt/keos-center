@@ -1125,13 +1125,13 @@ export default function FounderPage() {
           <FinanceManagement />
         )}
 
-        {activeModuleId === "human-resources" && (
+        {activeModuleId === "employees" && (
           <HumanResourcesManagement />
         )}
 
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
-          activeModuleId !== "human-resources" &&
+          activeModuleId !== "employees" &&
           businessWorkspaceIds.has(activeModuleId) && (
             <BusinessOperationsWorkspace item={activeNavigationItem} />
           )}
