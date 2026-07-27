@@ -1275,7 +1275,7 @@ export default function FounderPage() {
           <NotificationsManagement />
         )}
 
-        {activeModuleId === "settings" && (
+        {activeModuleId === "system-settings" && (
           <SystemSettingsManagement />
         )}
 
@@ -1317,7 +1317,7 @@ export default function FounderPage() {
           activeModuleId !== "audit-logs" &&
           activeModuleId !== "data-management" &&
           activeModuleId !== "notifications" &&
-          activeModuleId !== "settings" &&
+          activeModuleId !== "system-settings" &&
           intelligenceWorkspaceIds.has(activeModuleId) && (
             <IntelligenceWorkspace item={activeNavigationItem} />
           )}
