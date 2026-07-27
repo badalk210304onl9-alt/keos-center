@@ -27,18 +27,26 @@ export type KeosUser = {
 
 export type KeosSession = Omit<KeosUser, "password"> & {
   loginTime: string;
+  isAuthenticated?: boolean;
 };
+
+const PRIMARY_SESSION_KEY = "keos-founder-session";
+
+const LEGACY_SESSION_KEYS = [
+  "keos_session",
+  "keos-auth-session",
+  "keos-user",
+];
 
 export const keosUsers: KeosUser[] = [
   {
     userId: "FOUNDER001",
-    password: "KEOS@2026",
+    password: "KRVE@2026",
     name: "Badal Kumar",
     role: "Founder",
     department: "Founder Office",
     allowedModules: ["*"],
   },
-
   {
     userId: "FIN001",
     password: "FIN@2026",
@@ -60,7 +68,6 @@ export const keosUsers: KeosUser[] = [
       "finance-reports",
     ],
   },
-
   {
     userId: "MKT001",
     password: "MKT@2026",
@@ -78,7 +85,6 @@ export const keosUsers: KeosUser[] = [
       "marketing-reports",
     ],
   },
-
   {
     userId: "HR001",
     password: "HR@2026",
@@ -96,7 +102,6 @@ export const keosUsers: KeosUser[] = [
       "hr-reports",
     ],
   },
-
   {
     userId: "SALES001",
     password: "SALES@2026",
@@ -114,7 +119,6 @@ export const keosUsers: KeosUser[] = [
       "sales-reports",
     ],
   },
-
   {
     userId: "INV001",
     password: "INV@2026",
@@ -133,7 +137,6 @@ export const keosUsers: KeosUser[] = [
       "inventory-reports",
     ],
   },
-
   {
     userId: "SUPPORT001",
     password: "SUPPORT@2026",
@@ -157,13 +160,52 @@ export function authenticateUser(
   password: string,
 ): KeosUser | null {
   const normalizedUserId = userId.trim().toUpperCase();
+  const normalizedPassword = password.trim();
 
   return (
     keosUsers.find(
       (user) =>
-        user.userId === normalizedUserId && user.password === password,
+        user.userId === normalizedUserId &&
+        user.password === normalizedPassword,
     ) ?? null
   );
+}
+
+export function createSession(user: KeosUser): KeosSession {
+  return {
+    userId: user.userId,
+    name: user.name,
+    role: user.role,
+    department: user.department,
+    allowedModules: user.allowedModules,
+    loginTime: new Date().toISOString(),
+    isAuthenticated: true,
+  };
+}
+
+export function storeSession(
+  session: KeosSession,
+  keepSignedIn = true,
+): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  clearStoredSession();
+
+  const serializedSession = JSON.stringify(session);
+
+  if (keepSignedIn) {
+    window.localStorage.setItem(
+      PRIMARY_SESSION_KEY,
+      serializedSession,
+    );
+  } else {
+    window.sessionStorage.setItem(
+      PRIMARY_SESSION_KEY,
+      serializedSession,
+    );
+  }
 }
 
 export function canAccessModule(
@@ -176,33 +218,122 @@ export function canAccessModule(
   );
 }
 
+function normalizeSession(
+  parsedValue: unknown,
+): KeosSession | null {
+  if (
+    typeof parsedValue !== "object" ||
+    parsedValue === null
+  ) {
+    return null;
+  }
+
+  const value = parsedValue as Partial<KeosSession>;
+
+  if (
+    typeof value.userId !== "string" ||
+    typeof value.name !== "string" ||
+    typeof value.role !== "string" ||
+    typeof value.department !== "string"
+  ) {
+    return null;
+  }
+
+  const matchingUser = keosUsers.find(
+    (user) => user.userId === value.userId,
+  );
+
+  const allowedModules =
+    Array.isArray(value.allowedModules) &&
+    value.allowedModules.every(
+      (moduleId) => typeof moduleId === "string",
+    )
+      ? value.allowedModules
+      : matchingUser?.allowedModules ?? [];
+
+  return {
+    userId: value.userId,
+    name: value.name,
+    role: value.role as KeosRole,
+    department: value.department as KeosDepartment,
+    allowedModules,
+    loginTime:
+      typeof value.loginTime === "string"
+        ? value.loginTime
+        : new Date().toISOString(),
+    isAuthenticated: true,
+  };
+}
+
 export function getStoredSession(): KeosSession | null {
   if (typeof window === "undefined") {
     return null;
   }
 
-  const storedSession =
-    window.localStorage.getItem("keos_session") ??
-    window.sessionStorage.getItem("keos_session");
+  const sessionKeys = [
+    PRIMARY_SESSION_KEY,
+    ...LEGACY_SESSION_KEYS,
+  ];
 
-  if (!storedSession) {
-    return null;
+  for (const key of sessionKeys) {
+    const storedSession =
+      window.localStorage.getItem(key) ??
+      window.sessionStorage.getItem(key);
+
+    if (!storedSession) {
+      continue;
+    }
+
+    try {
+      const parsedSession = JSON.parse(storedSession);
+      const normalizedSession =
+        normalizeSession(parsedSession);
+
+      if (!normalizedSession) {
+        window.localStorage.removeItem(key);
+        window.sessionStorage.removeItem(key);
+        continue;
+      }
+
+      /*
+       * Purani session ko automatically primary key
+       * me migrate kar diya jayega.
+       */
+      if (key !== PRIMARY_SESSION_KEY) {
+        window.localStorage.setItem(
+          PRIMARY_SESSION_KEY,
+          JSON.stringify(normalizedSession),
+        );
+
+        window.localStorage.removeItem(key);
+        window.sessionStorage.removeItem(key);
+      }
+
+      return normalizedSession;
+    } catch {
+      window.localStorage.removeItem(key);
+      window.sessionStorage.removeItem(key);
+    }
   }
 
-  try {
-    return JSON.parse(storedSession) as KeosSession;
-  } catch {
-    window.localStorage.removeItem("keos_session");
-    window.sessionStorage.removeItem("keos_session");
-    return null;
-  }
+  return null;
 }
 
-export function clearStoredSession() {
+export function clearStoredSession(): void {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.removeItem("keos_session");
-  window.sessionStorage.removeItem("keos_session");
+  const sessionKeys = [
+    PRIMARY_SESSION_KEY,
+    ...LEGACY_SESSION_KEYS,
+  ];
+
+  sessionKeys.forEach((key) => {
+    window.localStorage.removeItem(key);
+    window.sessionStorage.removeItem(key);
+  });
+
+  document.cookie =
+    "keos-authenticated=; Path=/; Max-Age=0; SameSite=Lax";
 }
