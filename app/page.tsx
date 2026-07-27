@@ -23,12 +23,12 @@ import {
 const FOUNDER_USER_ID = "FOUNDER001";
 const FOUNDER_PASSWORD = "KRVE@2026";
 
-type LoginSession = {
+type KeosSession = {
   userId: string;
   name: string;
-  role: string;
+  role: "Founder";
   department: string;
-  isAuthenticated: boolean;
+  isAuthenticated: true;
   loginTime: string;
 };
 
@@ -41,92 +41,135 @@ export default function LoginPage() {
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
-    const storedSession =
-      localStorage.getItem("keos-auth-session") ||
-      sessionStorage.getItem("keos-auth-session");
-
-    if (!storedSession) return;
-
     try {
-      const session = JSON.parse(storedSession) as LoginSession;
+      const localSession = window.localStorage.getItem(
+        "keos-auth-session",
+      );
 
-      if (session.isAuthenticated && session.role === "Founder") {
-        router.replace("/founder");
+      const browserSession = window.sessionStorage.getItem(
+        "keos-auth-session",
+      );
+
+      const storedSession = localSession || browserSession;
+
+      if (!storedSession) {
+        setSessionChecked(true);
+        return;
       }
+
+      const session = JSON.parse(
+        storedSession,
+      ) as Partial<KeosSession>;
+
+      const validFounderSession =
+        session.isAuthenticated === true &&
+        session.role === "Founder" &&
+        session.userId === FOUNDER_USER_ID;
+
+      if (validFounderSession) {
+        router.replace("/founder");
+        return;
+      }
+
+      window.localStorage.removeItem("keos-auth-session");
+      window.sessionStorage.removeItem("keos-auth-session");
+      window.localStorage.removeItem("keos-user");
+      setSessionChecked(true);
     } catch {
-      localStorage.removeItem("keos-auth-session");
-      sessionStorage.removeItem("keos-auth-session");
+      window.localStorage.removeItem("keos-auth-session");
+      window.sessionStorage.removeItem("keos-auth-session");
+      window.localStorage.removeItem("keos-user");
+      setSessionChecked(true);
     }
   }, [router]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
+
+    if (isLoading) return;
 
     setError("");
 
-    const normalizedUserId = userId.trim().toUpperCase();
-    const normalizedPassword = password.trim();
+    const enteredUserId = userId.trim().toUpperCase();
+    const enteredPassword = password.trim();
 
-    if (!normalizedUserId || !normalizedPassword) {
+    if (!enteredUserId || !enteredPassword) {
       setError("Please enter your User ID and password.");
       return;
     }
 
     setIsLoading(true);
 
-    window.setTimeout(() => {
-      if (
-        normalizedUserId === FOUNDER_USER_ID &&
-        normalizedPassword === FOUNDER_PASSWORD
-      ) {
-        const session: LoginSession = {
-          userId: FOUNDER_USER_ID,
-          name: "Badal Kumar",
-          role: "Founder",
-          department: "Founder Office",
-          isAuthenticated: true,
-          loginTime: new Date().toISOString(),
-        };
+    if (
+      enteredUserId !== FOUNDER_USER_ID ||
+      enteredPassword !== FOUNDER_PASSWORD
+    ) {
+      setError("Invalid User ID or password.");
+      setIsLoading(false);
+      return;
+    }
 
-        localStorage.removeItem("keos-auth-session");
-        sessionStorage.removeItem("keos-auth-session");
+    const session: KeosSession = {
+      userId: FOUNDER_USER_ID,
+      name: "Badal Kumar",
+      role: "Founder",
+      department: "Founder Office",
+      isAuthenticated: true,
+      loginTime: new Date().toISOString(),
+    };
 
-        const storage = keepSignedIn
-          ? localStorage
-          : sessionStorage;
+    try {
+      window.localStorage.removeItem("keos-auth-session");
+      window.sessionStorage.removeItem(
+        "keos-auth-session",
+      );
+      window.localStorage.removeItem("keos-user");
 
-        storage.setItem(
+      if (keepSignedIn) {
+        window.localStorage.setItem(
           "keos-auth-session",
           JSON.stringify(session),
         );
-
-        localStorage.setItem(
-          "keos-user",
+      } else {
+        window.sessionStorage.setItem(
+          "keos-auth-session",
           JSON.stringify(session),
         );
-
-        document.cookie =
-          "keos-authenticated=true; path=/; max-age=86400; SameSite=Lax";
-
-        router.replace("/founder");
-        router.refresh();
-        return;
       }
 
-      setError("Invalid User ID or password.");
+      window.localStorage.setItem(
+        "keos-user",
+        JSON.stringify(session),
+      );
+
+      document.cookie =
+        "keos-authenticated=true; Path=/; Max-Age=86400; SameSite=Lax";
+
+      router.replace("/founder");
+    } catch {
+      setError(
+        "Unable to save login session. Please allow browser storage and try again.",
+      );
       setIsLoading(false);
-    }, 500);
+    }
   };
+
+  if (!sessionChecked) {
+    return <LoginLoadingScreen />;
+  }
 
   return (
     <main className="min-h-screen bg-[#f3f6fb]">
       <div className="grid min-h-screen lg:grid-cols-[1.08fr_0.92fr]">
         <section className="relative hidden overflow-hidden bg-[#0d172c] px-12 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-14">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_85%,rgba(76,29,149,0.30),transparent_38%)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_85%,rgba(76,29,149,0.30),transparent_38%)]" />
 
-          <div className="absolute -left-32 top-20 h-72 w-72 rounded-full bg-blue-600/10 blur-3xl" />
+          <div className="pointer-events-none absolute -left-32 top-20 h-72 w-72 rounded-full bg-blue-600/10 blur-3xl" />
 
           <div className="relative z-10">
             <div className="flex items-center gap-4">
@@ -161,7 +204,7 @@ export default function LoginPage() {
               <p className="mt-7 max-w-xl text-base leading-8 text-slate-300 xl:text-lg">
                 Finance, human resources, sales, products,
                 inventory, marketing, customer support and
-                business intelligence — all connected in one
+                business intelligence—all connected in one
                 secure enterprise platform.
               </p>
             </div>
@@ -250,13 +293,14 @@ export default function LoginPage() {
                       name="userId"
                       type="text"
                       autoComplete="username"
+                      spellCheck={false}
                       value={userId}
                       onChange={(event) => {
                         setUserId(event.target.value);
                         setError("");
                       }}
                       placeholder="Enter your User ID"
-                      className="h-13 w-full rounded-xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-base font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      className="h-[52px] w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-base font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
                 </div>
@@ -278,7 +322,9 @@ export default function LoginPage() {
                     <input
                       id="password"
                       name="password"
-                      type={showPassword ? "text" : "password"}
+                      type={
+                        showPassword ? "text" : "password"
+                      }
                       autoComplete="current-password"
                       value={password}
                       onChange={(event) => {
@@ -286,13 +332,15 @@ export default function LoginPage() {
                         setError("");
                       }}
                       placeholder="Enter your password"
-                      className="h-13 w-full rounded-xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-12 text-base font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      className="h-[52px] w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-12 text-base font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     />
 
                     <button
                       type="button"
                       onClick={() =>
-                        setShowPassword((current) => !current)
+                        setShowPassword(
+                          (current) => !current,
+                        )
                       }
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
                       aria-label={
@@ -315,7 +363,9 @@ export default function LoginPage() {
                     type="checkbox"
                     checked={keepSignedIn}
                     onChange={(event) =>
-                      setKeepSignedIn(event.target.checked)
+                      setKeepSignedIn(
+                        event.target.checked,
+                      )
                     }
                     className="h-4 w-4 cursor-pointer accent-blue-600"
                   />
@@ -365,7 +415,8 @@ export default function LoginPage() {
             </div>
 
             <p className="mt-6 text-center text-xs text-slate-400">
-              Need access? Contact the KRVE system administrator.
+              Need access? Contact the KRVE system
+              administrator.
             </p>
           </div>
         </section>
@@ -395,5 +446,25 @@ function FeatureCard({
         {description}
       </p>
     </article>
+  );
+}
+
+function LoginLoadingScreen() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#f3f6fb]">
+      <div className="text-center">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-blue-600 text-xl font-black text-white shadow-lg shadow-blue-600/20">
+          K
+        </div>
+
+        <div className="mx-auto mt-6 h-1.5 w-44 overflow-hidden rounded-full bg-slate-200">
+          <div className="h-full w-1/2 animate-pulse rounded-full bg-blue-600" />
+        </div>
+
+        <p className="mt-5 text-sm font-semibold text-slate-600">
+          Checking secure session...
+        </p>
+      </div>
+    </main>
   );
 }
