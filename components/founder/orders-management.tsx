@@ -20,6 +20,7 @@ import {
   RotateCcw,
   Search,
   Send,
+  ShieldCheck,
   ShoppingBag,
   Sparkles,
   Truck,
