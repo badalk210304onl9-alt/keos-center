@@ -86,6 +86,7 @@ import UsersRolesManagement from "@/components/founder/users-roles-management";
 import DepartmentsManagement from "@/components/founder/departments-management";
 import PermissionsManagement from "@/components/founder/permissions-management";
 import IntegrationsManagement from "@/components/founder/integrations-management";
+import SecurityCenterManagement from "@/components/founder/security-center-management";
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -1254,6 +1255,10 @@ export default function FounderPage() {
           <IntegrationsManagement />
         )}
 
+        {activeModuleId === "security" && (
+          <SecurityCenterManagement />
+        )}
+
         {activeModuleId !== "customers" &&
           activeModuleId !== "finance" &&
           activeModuleId !== "employees" &&
@@ -1288,6 +1293,7 @@ export default function FounderPage() {
           activeModuleId !== "departments" &&
           activeModuleId !== "permissions" &&
           activeModuleId !== "integrations" &&
+          activeModuleId !== "security" &&
           intelligenceWorkspaceIds.has(activeModuleId) && (
             <IntelligenceWorkspace item={activeNavigationItem} />
           )}
