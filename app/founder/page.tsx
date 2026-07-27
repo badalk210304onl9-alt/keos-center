@@ -1318,6 +1318,7 @@ export default function FounderPage() {
           activeModuleId !== "data-management" &&
           activeModuleId !== "notifications" &&
           activeModuleId !== "system-settings" &&
+          activeModuleId !== "orders" &&
           intelligenceWorkspaceIds.has(activeModuleId) && (
             <IntelligenceWorkspace item={activeNavigationItem} />
           )}
