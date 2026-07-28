@@ -1,43 +1,64 @@
 import { NextResponse } from "next/server";
 
+import type { FounderDashboardData } from "@/lib/keos-founder-data";
+
+export const dynamic = "force-dynamic";
+
 export async function GET() {
-  return NextResponse.json({
-    success: true,
-
-    data: {
-      statistics: {
-        totalRevenue: "₹12.84L",
-        totalOrders: "1,486",
-        totalCustomers: "4,294",
-        totalEmployees: "128",
-      },
-
-      recentOrders: [
-        {
-          id: "KRVE-10482",
-          customer: "Aarav Sharma",
-          amount: "₹18,999",
-          status: "Paid",
-        },
-        {
-          id: "KRVE-10481",
-          customer: "Ananya Singh",
-          amount: "₹8,499",
-          status: "Processing",
-        },
-        {
-          id: "KRVE-10480",
-          customer: "Rohan Verma",
-          amount: "₹12,999",
-          status: "Shipped",
-        },
-        {
-          id: "KRVE-10479",
-          customer: "Priya Mehta",
-          amount: "₹6,799",
-          status: "Pending",
-        },
-      ],
+  const dashboardData: FounderDashboardData = {
+    statistics: {
+      totalRevenue: "₹12.84L",
+      totalOrders: "1,486",
+      totalCustomers: "4,294",
+      totalEmployees: "128",
     },
-  });
+
+    recentOrders: [
+      {
+        id: "KRVE-1048",
+        customer: "Aarav Sharma",
+        product: "KRVE Noir Blazer",
+        amount: "₹18,999",
+        status: "Processing",
+        date: "28 Jul 2026",
+      },
+      {
+        id: "KRVE-1047",
+        customer: "Ananya Singh",
+        product: "Signature Evening Dress",
+        amount: "₹14,499",
+        status: "Shipped",
+        date: "28 Jul 2026",
+      },
+      {
+        id: "KRVE-1046",
+        customer: "Rohan Verma",
+        product: "Obsidian Double-Breasted Suit",
+        amount: "₹24,999",
+        status: "Delivered",
+        date: "27 Jul 2026",
+      },
+      {
+        id: "KRVE-1045",
+        customer: "Ishita Mehra",
+        product: "KRVE Icon Sneakers",
+        amount: "₹8,999",
+        status: "Pending",
+        date: "27 Jul 2026",
+      },
+    ],
+  };
+
+  return NextResponse.json(
+    {
+      success: true,
+      data: dashboardData,
+    },
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+      },
+    }
+  );
 }
