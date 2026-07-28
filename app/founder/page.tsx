@@ -2033,8 +2033,93 @@ export default function FounderPage() {
         </div>
 
          {selectedNotification && (
-          // <-- Yahan actual notification modal ka poora JSX hoga
-         )}
+  <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+    <button
+      type="button"
+      aria-label="Close notification detail"
+      onClick={() => setSelectedNotification(null)}
+      className="absolute inset-0 cursor-default"
+    />
+
+    <section className="relative z-10 w-full max-w-xl overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-2xl">
+      <div className="flex items-start justify-between border-b border-zinc-100 px-6 py-5">
+        <div className="flex items-start gap-3">
+          <div
+            className={`mt-1 h-3 w-3 shrink-0 rounded-full ${
+              selectedNotification.unread
+                ? "bg-[#b89047]"
+                : "bg-zinc-300"
+            }`}
+          />
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#94743a]">
+              Founder Notification
+            </p>
+
+            <h2 className="mt-2 font-serif text-2xl font-semibold text-zinc-950">
+              {selectedNotification.title}
+            </h2>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setSelectedNotification(null)}
+          className="rounded-xl border border-zinc-200 p-2.5 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+          aria-label="Close notification"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className="px-6 py-6">
+        <p className="text-sm leading-7 text-zinc-600">
+          {selectedNotification.message}
+        </p>
+
+        <div className="mt-6 rounded-2xl border border-zinc-100 bg-[#fafaf8] p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+            Received
+          </p>
+
+          <p className="mt-2 text-sm font-medium text-zinc-800">
+            {selectedNotification.time}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col-reverse gap-3 border-t border-zinc-100 px-6 py-4 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          onClick={() => setSelectedNotification(null)}
+          className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+        >
+          Close
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (selectedNotification.id === 1) {
+              handleNavigation("approvals");
+            } else if (selectedNotification.id === 2) {
+              handleNavigation("inventory");
+            } else if (selectedNotification.id === 3) {
+              handleNavigation("hr");
+            }
+
+            setSelectedNotification(null);
+          }}
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#171714] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2b2923]"
+        >
+          Open Related Module
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </section>
+  </div>
+)}
 
          {/* Founder profile editor */}
          {profileEditorOpen && (
