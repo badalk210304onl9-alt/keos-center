@@ -1,7 +1,7 @@
 "use client";
 
-import type { ComponentType } from "react";
-import { useEffect, useMemo, useState } from "react";
+import type { ChangeEvent, ComponentType } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useKeosFounderData } from "@/hooks/use-keos-founder-data";
 
@@ -33,7 +33,6 @@ import {
   Menu,
   Package,
   Phone,
-  Plus,
   ReceiptIndianRupee,
   RotateCcw,
   Save,
@@ -148,6 +147,23 @@ type DashboardStatistic = {
   tone: "blue" | "red" | "green" | "orange";
 };
 
+type FounderNotification = {
+  id: number;
+  title: string;
+  message: string;
+  time: string;
+  unread: boolean;
+  relatedSection: string;
+};
+
+type FounderRecentOrder = {
+  id: string;
+  customer: string;
+  product: string;
+  amount: string;
+  status: string;
+  date: string;
+};
 const navigationGroups: NavigationGroup[] = [
   {
     title: "Command Center",
@@ -274,7 +290,7 @@ const navigationGroups: NavigationGroup[] = [
       },
     ],
   },
-    {
+  {
     title: "Enterprise",
     items: [
       {
@@ -370,7 +386,6 @@ const navigationGroups: NavigationGroup[] = [
       },
     ],
   },
-
   {
     title: "KRVE AI",
     items: [
@@ -418,7 +433,6 @@ const navigationGroups: NavigationGroup[] = [
       },
     ],
   },
-
   {
     title: "Reports",
     items: [
@@ -440,7 +454,7 @@ const navigationGroups: NavigationGroup[] = [
         id: "department-reports",
         name: "Department Reports",
         description:
-          "Department wise reports and KPIs",
+          "Department-wise reports and KPIs",
         icon: ClipboardCheck,
       },
       {
@@ -452,7 +466,7 @@ const navigationGroups: NavigationGroup[] = [
       },
     ],
   },
-    {
+  {
     title: "Administration",
     items: [
       {
@@ -528,7 +542,6 @@ const navigationGroups: NavigationGroup[] = [
     ],
   },
 ];
-
 const defaultFounderProfile: FounderProfile = {
   name: "Badal Kumar",
   userId: "KRVE-FOUNDER-001",
@@ -577,7 +590,7 @@ const fallbackDashboardStatistics: DashboardStatistic[] = [
   },
 ];
 
-const fallbackRecentOrders = [
+const fallbackRecentOrders: FounderRecentOrder[] = [
   {
     id: "KRVE-1048",
     customer: "Aarav Sharma",
@@ -612,13 +625,14 @@ const fallbackRecentOrders = [
   },
 ];
 
-const notificationItems = [
+const notificationItems: FounderNotification[] = [
   {
     id: 1,
     title: "Founder approval required",
     message: "Finance submitted a vendor payment request of ₹2,40,000.",
     time: "8 minutes ago",
     unread: true,
+    relatedSection: "approvals",
   },
   {
     id: 2,
@@ -626,6 +640,7 @@ const notificationItems = [
     message: "Four products have reached their minimum stock level.",
     time: "24 minutes ago",
     unread: true,
+    relatedSection: "inventory",
   },
   {
     id: 3,
@@ -633,6 +648,7 @@ const notificationItems = [
     message: "HR created credentials for three new employees.",
     time: "1 hour ago",
     unread: false,
+    relatedSection: "hr",
   },
 ];
 
@@ -648,7 +664,10 @@ function getInitials(name: string) {
 function getStatusClasses(status: string) {
   const normalizedStatus = status.toLowerCase();
 
-  if (normalizedStatus.includes("delivered")) {
+  if (
+    normalizedStatus.includes("delivered") ||
+    normalizedStatus.includes("paid")
+  ) {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
 
@@ -662,7 +681,8 @@ function getStatusClasses(status: string) {
 
   if (
     normalizedStatus.includes("cancelled") ||
-    normalizedStatus.includes("failed")
+    normalizedStatus.includes("failed") ||
+    normalizedStatus.includes("refunded")
   ) {
     return "border-red-200 bg-red-50 text-red-700";
   }
@@ -693,8 +713,33 @@ function getStatisticToneClasses(tone: DashboardStatistic["tone"]) {
   return toneClasses[tone];
 }
 
+function isSupportedImage(file: File) {
+  return ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+}
+
+function readImageFile(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error("Invalid image data"));
+    };
+
+    reader.onerror = () => {
+      reject(new Error("Photo could not be loaded"));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
 export default function FounderPage() {
   const router = useRouter();
+  const profileImageInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
     data: liveFounderData,
@@ -704,20 +749,28 @@ export default function FounderPage() {
 
   const [session, setSession] = useState<KeosSession | null>(null);
   const [activeSection, setActiveSection] = useState("dashboard");
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
+
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] =
+    useState<FounderNotification | null>(null);
+
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
+
   const [founderProfile, setFounderProfile] =
     useState<FounderProfile>(defaultFounderProfile);
+
   const [profileDraft, setProfileDraft] =
     useState<FounderProfile>(defaultFounderProfile);
+
   const [profileSaved, setProfileSaved] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState<
-    (typeof notificationItems)[number] | null
-  >(null);
+  const [profileImageError, setProfileImageError] = useState("");
+  const [profileImageLoading, setProfileImageLoading] = useState(false);
 
   useEffect(() => {
     const storedSession = getStoredSession();
@@ -740,12 +793,40 @@ export default function FounderPage() {
     }
 
     try {
-      const parsedProfile = JSON.parse(storedProfile) as FounderProfile;
-      setFounderProfile(parsedProfile);
-      setProfileDraft(parsedProfile);
+      const parsedProfile = JSON.parse(
+        storedProfile
+      ) as Partial<FounderProfile>;
+
+      const safeProfile: FounderProfile = {
+        ...defaultFounderProfile,
+        ...parsedProfile,
+      };
+
+      setFounderProfile(safeProfile);
+      setProfileDraft(safeProfile);
     } catch {
       window.localStorage.removeItem("keos-founder-profile");
     }
+  }, []);
+
+  useEffect(() => {
+    function closeMenusOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      setNotificationOpen(false);
+      setSelectedNotification(null);
+      setProfileOpen(false);
+      setProfileEditorOpen(false);
+      setMobileSidebarOpen(false);
+    }
+
+    window.addEventListener("keydown", closeMenusOnEscape);
+
+    return () => {
+      window.removeEventListener("keydown", closeMenusOnEscape);
+    };
   }, []);
 
   const activeNavigationItem = useMemo(() => {
@@ -774,40 +855,47 @@ export default function FounderPage() {
       .filter((group) => group.items.length > 0);
   }, [searchQuery]);
 
-  const resolvedDashboardStatistics = useMemo<DashboardStatistic[]>(() => {
-    const statistics = liveFounderData?.statistics;
+  const unreadNotificationCount = useMemo(() => {
+    return notificationItems.filter(
+      (notification) => notification.unread
+    ).length;
+  }, []);
 
-    if (!statistics) {
-      return fallbackDashboardStatistics;
-    }
+  const resolvedDashboardStatistics =
+    useMemo<DashboardStatistic[]>(() => {
+      const statistics = liveFounderData?.statistics;
 
-    return [
-      {
-        ...fallbackDashboardStatistics[0],
-        value:
-          statistics.totalRevenue ??
-          fallbackDashboardStatistics[0].value,
-      },
-      {
-        ...fallbackDashboardStatistics[1],
-        value:
-          statistics.totalOrders ??
-          fallbackDashboardStatistics[1].value,
-      },
-      {
-        ...fallbackDashboardStatistics[2],
-        value:
-          statistics.totalCustomers ??
-          fallbackDashboardStatistics[2].value,
-      },
-      {
-        ...fallbackDashboardStatistics[3],
-        value:
-          statistics.totalEmployees ??
-          fallbackDashboardStatistics[3].value,
-      },
-    ];
-  }, [liveFounderData]);
+      if (!statistics) {
+        return fallbackDashboardStatistics;
+      }
+
+      return [
+        {
+          ...fallbackDashboardStatistics[0],
+          value:
+            statistics.totalRevenue ??
+            fallbackDashboardStatistics[0].value,
+        },
+        {
+          ...fallbackDashboardStatistics[1],
+          value:
+            statistics.totalOrders ??
+            fallbackDashboardStatistics[1].value,
+        },
+        {
+          ...fallbackDashboardStatistics[2],
+          value:
+            statistics.totalCustomers ??
+            fallbackDashboardStatistics[2].value,
+        },
+        {
+          ...fallbackDashboardStatistics[3],
+          value:
+            statistics.totalEmployees ??
+            fallbackDashboardStatistics[3].value,
+        },
+      ];
+    }, [liveFounderData]);
 
   const resolvedRecentOrders = useMemo(() => {
     if (
@@ -824,6 +912,7 @@ export default function FounderPage() {
     setActiveSection(sectionId);
     setMobileSidebarOpen(false);
     setNotificationOpen(false);
+    setSelectedNotification(null);
     setProfileOpen(false);
   }
 
@@ -835,26 +924,175 @@ export default function FounderPage() {
   function handleProfileEdit() {
     setProfileDraft(founderProfile);
     setProfileSaved(false);
+    setProfileImageError("");
     setProfileEditorOpen(true);
     setProfileOpen(false);
+    setNotificationOpen(false);
+  }
+
+  function handleProfileFieldChange(
+    field: keyof FounderProfile,
+    value: string
+  ) {
+    setProfileDraft((currentProfile) => ({
+      ...currentProfile,
+      [field]: value,
+    }));
+
+    setProfileSaved(false);
+  }
+
+  function handleProfileImageButtonClick() {
+    setProfileImageError("");
+    profileImageInputRef.current?.click();
+  }
+
+  async function handleProfileImageChange(
+    event: ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setProfileImageError("");
+    setProfileSaved(false);
+
+    if (!isSupportedImage(file)) {
+      setProfileImageError(
+        "Only JPG, PNG and WEBP image files are supported."
+      );
+
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setProfileImageError(
+        "Please select an image smaller than 2 MB."
+      );
+
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      setProfileImageLoading(true);
+
+      const imageData = await readImageFile(file);
+
+      setProfileDraft((currentProfile) => ({
+        ...currentProfile,
+        avatar: imageData,
+      }));
+    } catch {
+      setProfileImageError(
+        "The selected photo could not be loaded. Please try another image."
+      );
+    } finally {
+      setProfileImageLoading(false);
+      event.target.value = "";
+    }
+  }
+
+  function handleRemoveProfileImage() {
+    setProfileDraft((currentProfile) => ({
+      ...currentProfile,
+      avatar: "",
+    }));
+
+    setProfileImageError("");
+    setProfileSaved(false);
+
+    if (profileImageInputRef.current) {
+      profileImageInputRef.current.value = "";
+    }
   }
 
   function handleProfileSave() {
-    setFounderProfile(profileDraft);
-    window.localStorage.setItem(
-      "keos-founder-profile",
-      JSON.stringify(profileDraft)
-    );
-    setProfileSaved(true);
+    const cleanedProfile: FounderProfile = {
+      ...profileDraft,
+      name:
+        profileDraft.name.trim() || defaultFounderProfile.name,
+      userId:
+        profileDraft.userId.trim() ||
+        defaultFounderProfile.userId,
+      email:
+        profileDraft.email.trim() ||
+        defaultFounderProfile.email,
+      phone:
+        profileDraft.phone.trim() ||
+        defaultFounderProfile.phone,
+      designation:
+        profileDraft.designation.trim() ||
+        defaultFounderProfile.designation,
+      department:
+        profileDraft.department.trim() ||
+        defaultFounderProfile.department,
+      location:
+        profileDraft.location.trim() ||
+        defaultFounderProfile.location,
+      joiningDate:
+        profileDraft.joiningDate.trim() ||
+        defaultFounderProfile.joiningDate,
+      bio:
+        profileDraft.bio.trim() ||
+        defaultFounderProfile.bio,
+    };
 
-    window.setTimeout(() => {
-      setProfileEditorOpen(false);
-      setProfileSaved(false);
-    }, 700);
+    try {
+      window.localStorage.setItem(
+        "keos-founder-profile",
+        JSON.stringify(cleanedProfile)
+      );
+
+      setFounderProfile(cleanedProfile);
+      setProfileDraft(cleanedProfile);
+      setProfileSaved(true);
+      setProfileImageError("");
+
+      window.setTimeout(() => {
+        setProfileEditorOpen(false);
+        setProfileSaved(false);
+      }, 700);
+    } catch {
+      setProfileImageError(
+        "Profile could not be saved. Try using a smaller image."
+      );
+    }
   }
 
   function handleProfileReset() {
     setProfileDraft(defaultFounderProfile);
+    setProfileSaved(false);
+    setProfileImageError("");
+
+    if (profileImageInputRef.current) {
+      profileImageInputRef.current.value = "";
+    }
+  }
+
+  function handleNotificationClick(
+    notification: FounderNotification
+  ) {
+    setSelectedNotification(notification);
+    setNotificationOpen(false);
+    setProfileOpen(false);
+  }
+
+  function handleOpenNotificationModule() {
+    if (!selectedNotification) {
+      return;
+    }
+
+    handleNavigation(selectedNotification.relatedSection);
+    setSelectedNotification(null);
+  }
+
+  function handleViewAllNotifications() {
+    handleNavigation("notifications");
+    setNotificationOpen(false);
   }
 
   if (!session) {
@@ -862,6 +1100,7 @@ export default function FounderPage() {
       <div className="flex min-h-screen items-center justify-center bg-[#f6f6f3]">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-300 border-t-[#b89b5e]" />
+
           <p className="text-sm font-medium text-zinc-500">
             Loading Founder Center...
           </p>
@@ -869,12 +1108,11 @@ export default function FounderPage() {
       </div>
     );
   }
-
-  return (
+    return (
     <div className="min-h-screen bg-[#f6f6f3] text-zinc-950">
-      {/* Desktop sidebar */}
+      {/* Desktop Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 hidden border-r border-white/10 bg-[#10100f] text-white transition-all duration-300 lg:flex lg:flex-col ${
+        className={`fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/10 bg-[#10100f] text-white transition-all duration-300 lg:flex ${
           sidebarOpen ? "w-[292px]" : "w-[88px]"
         }`}
       >
@@ -895,6 +1133,7 @@ export default function FounderPage() {
                 <p className="truncate font-serif text-lg font-semibold tracking-[0.12em]">
                   KEOS
                 </p>
+
                 <p className="truncate text-[10px] uppercase tracking-[0.22em] text-zinc-500">
                   Founder Command
                 </p>
@@ -1021,13 +1260,16 @@ export default function FounderPage() {
             {filteredNavigationGroups.length === 0 && sidebarOpen && (
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
                 <Search size={20} className="mx-auto mb-2 text-zinc-600" />
-                <p className="text-xs text-zinc-500">No module found</p>
+
+                <p className="text-xs text-zinc-500">
+                  No module found
+                </p>
               </div>
             )}
           </div>
         </nav>
 
-        <div className="shrink-0 border-t border-white/10 p-3">
+        <div className="relative shrink-0 border-t border-white/10 p-3">
           <button
             type="button"
             onClick={() => {
@@ -1059,6 +1301,7 @@ export default function FounderPage() {
                   <p className="truncate text-sm font-medium text-white">
                     {founderProfile.name}
                   </p>
+
                   <p className="truncate text-[11px] text-zinc-500">
                     Founder & CEO
                   </p>
@@ -1077,16 +1320,36 @@ export default function FounderPage() {
           {profileOpen && (
             <div
               className={`absolute bottom-20 rounded-2xl border border-zinc-200 bg-white p-2 text-zinc-950 shadow-2xl ${
-                sidebarOpen ? "left-4 w-[260px]" : "left-20 w-[240px]"
+                sidebarOpen
+                  ? "left-4 w-[260px]"
+                  : "left-20 w-[240px]"
               }`}
             >
               <div className="border-b border-zinc-100 px-3 py-3">
-                <p className="truncate text-sm font-semibold">
-                  {founderProfile.name}
-                </p>
-                <p className="mt-1 truncate text-xs text-zinc-500">
-                  {founderProfile.email}
-                </p>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#171714] text-xs font-semibold text-[#d7ba7d]">
+                    {founderProfile.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={founderProfile.avatar}
+                        alt={founderProfile.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      getInitials(founderProfile.name)
+                    )}
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">
+                      {founderProfile.name}
+                    </p>
+
+                    <p className="mt-1 truncate text-xs text-zinc-500">
+                      {founderProfile.email}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <button
@@ -1120,7 +1383,7 @@ export default function FounderPage() {
         </div>
       </aside>
 
-      {/* Mobile sidebar backdrop */}
+      {/* Mobile Sidebar Backdrop */}
       {mobileSidebarOpen && (
         <button
           type="button"
@@ -1129,10 +1392,9 @@ export default function FounderPage() {
           className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
         />
       )}
-
-      {/* Mobile sidebar */}
+            {/* Mobile Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[290px] flex-col bg-[#10100f] text-white shadow-2xl transition-transform duration-300 lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[292px] flex-col bg-[#10100f] text-white shadow-2xl transition-transform duration-300 lg:hidden ${
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -1140,19 +1402,20 @@ export default function FounderPage() {
           <button
             type="button"
             onClick={() => handleNavigation("dashboard")}
-            className="flex items-center gap-3"
+            className="flex min-w-0 items-center gap-3 text-left"
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#c7a96b]/30 bg-[#c7a96b]/10">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#c7a96b]/30 bg-[#c7a96b]/10">
               <span className="font-serif text-lg font-semibold tracking-[0.12em] text-[#d7ba7d]">
                 K
               </span>
             </div>
 
-            <div className="text-left">
-              <p className="font-serif text-lg font-semibold tracking-[0.12em]">
+            <div className="min-w-0">
+              <p className="truncate font-serif text-lg font-semibold tracking-[0.12em]">
                 KEOS
               </p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+
+              <p className="truncate text-[10px] uppercase tracking-[0.22em] text-zinc-500">
                 Founder Command
               </p>
             </div>
@@ -1162,20 +1425,33 @@ export default function FounderPage() {
             type="button"
             onClick={() => setMobileSidebarOpen(false)}
             className="rounded-xl p-2 text-zinc-500 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close sidebar"
           >
-            <X size={20} />
+            <X size={19} />
           </button>
         </div>
 
-        <div className="shrink-0 px-4 py-4">
+        <div className="shrink-0 px-4 pb-3 pt-4">
           <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-            <Search size={16} className="text-zinc-500" />
+            <Search size={16} className="shrink-0 text-zinc-500" />
+
             <input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search modules..."
-              className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-600"
+              className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-600"
             />
+
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="text-zinc-500 transition hover:text-white"
+                aria-label="Clear search"
+              >
+                <X size={15} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -1199,21 +1475,27 @@ export default function FounderPage() {
                         onClick={() => handleNavigation(item.id)}
                         className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${
                           isActive
-                            ? "bg-[#c7a96b] text-[#15130f]"
+                            ? "bg-[#c7a96b] text-[#15130f] shadow-[0_10px_25px_rgba(199,169,107,0.18)]"
                             : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"
                         }`}
                       >
-                        <Icon size={18} />
+                        <Icon
+                          size={18}
+                          strokeWidth={isActive ? 2.2 : 1.8}
+                          className="shrink-0"
+                        />
 
-                        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
-                          {item.name}
-                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[13px] font-medium">
+                            {item.name}
+                          </p>
+                        </div>
 
                         {item.badge && (
                           <span
                             className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                               isActive
-                                ? "bg-black/10"
+                                ? "bg-black/10 text-[#15130f]"
                                 : "bg-white/10 text-zinc-400"
                             }`}
                           >
@@ -1226,94 +1508,120 @@ export default function FounderPage() {
                 </div>
               </div>
             ))}
+
+            {filteredNavigationGroups.length === 0 && (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <Search size={20} className="mx-auto mb-2 text-zinc-600" />
+
+                <p className="text-xs text-zinc-500">
+                  No module found
+                </p>
+              </div>
+            )}
           </div>
         </nav>
 
-        <div className="border-t border-white/10 p-4">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm text-zinc-400 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
-          >
-            <LogOut size={17} />
-            Secure Logout
-          </button>
+        <div className="shrink-0 border-t border-white/10 p-4">
+          <div className="flex items-center gap-3 rounded-2xl bg-white/[0.04] p-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#c7a96b]/40 bg-[#c7a96b]/10">
+              {founderProfile.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={founderProfile.avatar}
+                  alt={founderProfile.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-semibold text-[#d7ba7d]">
+                  {getInitials(founderProfile.name)}
+                </span>
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-white">
+                {founderProfile.name}
+              </p>
+
+              <p className="truncate text-[11px] text-zinc-500">
+                Founder & CEO
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-xl p-2 text-zinc-500 transition hover:bg-red-500/10 hover:text-red-400"
+              aria-label="Logout"
+            >
+              <LogOut size={17} />
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Main workspace */}
+      {/* Main Area */}
       <div
         className={`min-h-screen transition-all duration-300 ${
           sidebarOpen ? "lg:pl-[292px]" : "lg:pl-[88px]"
         }`}
       >
+        {/* Top Header */}
         <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-[#f6f6f3]/90 backdrop-blur-xl">
-          <div className="flex min-h-[82px] items-center justify-between gap-4 px-4 sm:px-6 xl:px-8">
+          <div className="flex min-h-[76px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 onClick={() => setMobileSidebarOpen(true)}
-                className="rounded-xl border border-zinc-200 bg-white p-2.5 text-zinc-700 shadow-sm lg:hidden"
+                className="rounded-xl border border-zinc-200 bg-white p-2.5 text-zinc-700 shadow-sm transition hover:bg-zinc-50 lg:hidden"
+                aria-label="Open sidebar"
               >
                 <Menu size={19} />
               </button>
 
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-[#9a7b3f]">
-                    Founder Office
+                  <p className="truncate text-sm font-semibold text-zinc-950 sm:text-base">
+                    {activeNavigationItem?.name ?? "Founder Dashboard"}
                   </p>
 
-                  <span className="hidden h-1 w-1 rounded-full bg-zinc-300 sm:block" />
-
-                  <p className="hidden text-xs text-zinc-400 sm:block">
-                    KRVE Enterprise Operating System
-                  </p>
+                  <span className="hidden rounded-full border border-[#c7a96b]/30 bg-[#c7a96b]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#8b6c30] sm:inline-flex">
+                    Founder Access
+                  </span>
                 </div>
 
-                <h1 className="mt-1 truncate font-serif text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">
-                  {activeNavigationItem?.name ?? "Founder Dashboard"}
-                </h1>
+                <p className="mt-1 hidden max-w-2xl truncate text-xs text-zinc-500 sm:block">
+                  {activeNavigationItem?.description ??
+                    "Complete enterprise overview and Founder-level operational control"}
+                </p>
               </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <div
-                className={`hidden items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium xl:flex ${
-                  liveDataLoading
-                    ? "border-amber-200 bg-amber-50 text-amber-700"
-                    : liveDataSource === "api"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-zinc-200 bg-white text-zinc-600"
-                }`}
-              >
+              <div className="hidden items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-500 shadow-sm xl:flex">
                 <span
                   className={`h-2 w-2 rounded-full ${
-                    liveDataLoading
-                      ? "animate-pulse bg-amber-500"
-                      : liveDataSource === "api"
-                        ? "bg-emerald-500"
-                        : "bg-zinc-400"
+                    liveDataSource === "api"
+                      ? "bg-emerald-500"
+                      : "bg-amber-500"
                   }`}
                 />
 
-                {liveDataLoading
-                  ? "Connecting data"
-                  : liveDataSource === "api"
-                    ? "Live website data"
-                    : "Demo data mode"}
+                <span>
+                  {liveDataLoading
+                    ? "Syncing data"
+                    : liveDataSource === "api"
+                      ? "Live system"
+                      : "Local data"}
+                </span>
               </div>
 
               <button
                 type="button"
-                onClick={() => {
-                  setActiveSection("krve-ai");
-                  setProfileOpen(false);
-                  setNotificationOpen(false);
-                }}
-                className="hidden items-center gap-2 rounded-xl border border-[#c7a96b]/40 bg-[#c7a96b]/10 px-3.5 py-2.5 text-sm font-medium text-[#7c612f] transition hover:bg-[#c7a96b]/20 md:flex"
+                onClick={() => handleNavigation("krve-ai")}
+                className="hidden items-center gap-2 rounded-xl border border-[#c7a96b]/30 bg-[#c7a96b]/10 px-3.5 py-2.5 text-xs font-semibold text-[#7c612c] transition hover:bg-[#c7a96b]/20 md:flex"
               >
-                <Sparkles size={16} />
+                <Sparkles size={15} />
                 KRVE AI
               </button>
 
@@ -1324,58 +1632,82 @@ export default function FounderPage() {
                     setNotificationOpen((current) => !current);
                     setProfileOpen(false);
                   }}
-                  className="relative rounded-xl border border-zinc-200 bg-white p-2.5 text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50"
-                  aria-label="Notifications"
+                  className="relative rounded-xl border border-zinc-200 bg-white p-2.5 text-zinc-700 shadow-sm transition hover:bg-zinc-50"
+                  aria-label="Open notifications"
                 >
-                  <Bell size={19} />
+                  <Bell size={18} />
 
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-red-500" />
+                  {unreadNotificationCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#f6f6f3] bg-red-500 px-1 text-[9px] font-bold text-white">
+                      {unreadNotificationCount}
+                    </span>
+                  )}
                 </button>
 
                 {notificationOpen && (
-                  <div className="absolute right-0 top-[52px] w-[330px] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl sm:w-[380px]">
-                    <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
+                  <div className="absolute right-0 top-14 w-[calc(100vw-32px)] max-w-[380px] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+                    <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-4">
                       <div>
                         <p className="text-sm font-semibold text-zinc-950">
                           Notifications
                         </p>
-                        <p className="mt-0.5 text-xs text-zinc-500">
-                          Latest Founder alerts
+
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {unreadNotificationCount} unread updates
                         </p>
                       </div>
 
-                      <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-semibold text-red-600">
-                        2 new
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setNotificationOpen(false)}
+                        className="rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+                        aria-label="Close notifications"
+                      >
+                        <X size={16} />
+                      </button>
                     </div>
 
-                    <div className="max-h-[390px] overflow-y-auto">
+                    <div className="max-h-[360px] overflow-y-auto">
                       {notificationItems.map((notification) => (
                         <button
                           key={notification.id}
                           type="button"
-                          onClick={() => {
-                            setSelectedNotification(notification);
-                            setNotificationOpen(false);
-                          }}
-                          className="flex w-full gap-3 border-b border-zinc-100 px-5 py-4 text-left transition last:border-0 hover:bg-zinc-50"
+                          onClick={() =>
+                            handleNotificationClick(notification)
+                          }
+                          className="flex w-full gap-3 border-b border-zinc-100 px-4 py-4 text-left transition last:border-b-0 hover:bg-zinc-50"
                         >
                           <div
                             className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
                               notification.unread
-                                ? "bg-[#b89047]"
+                                ? "bg-[#b89b5e]"
                                 : "bg-zinc-300"
                             }`}
                           />
 
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-zinc-900">
-                              {notification.title}
-                            </p>
-                            <p className="mt-1 text-xs leading-5 text-zinc-500">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3">
+                              <p
+                                className={`text-sm ${
+                                  notification.unread
+                                    ? "font-semibold text-zinc-950"
+                                    : "font-medium text-zinc-700"
+                                }`}
+                              >
+                                {notification.title}
+                              </p>
+
+                              <ArrowRight
+                                size={14}
+                                className="mt-0.5 shrink-0 text-zinc-400"
+                              />
+                            </div>
+
+                            <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-zinc-500">
                               {notification.message}
                             </p>
-                            <p className="mt-2 text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+
+                            <p className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-400">
                               {notification.time}
                             </p>
                           </div>
@@ -1383,30 +1715,26 @@ export default function FounderPage() {
                       ))}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNotificationOpen(false);
-                        handleNavigation("notifications");
-                      }}
-                      className="flex w-full items-center justify-center gap-2 border-t border-zinc-100 px-5 py-3.5 text-xs font-semibold text-[#8b6b32] transition hover:bg-[#c7a96b]/10"
-                    >
-                      View all notifications
-                      <ArrowRight size={14} />
-                    </button>
+                    <div className="border-t border-zinc-100 p-3">
+                      <button
+                        type="button"
+                        onClick={handleViewAllNotifications}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#171714] px-4 py-3 text-xs font-semibold text-white transition hover:bg-black"
+                      >
+                        View all notifications
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
 
               <button
                 type="button"
-                onClick={() => {
-                  setProfileOpen((current) => !current);
-                  setNotificationOpen(false);
-                }}
-                className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white p-1.5 pr-2.5 shadow-sm transition hover:border-zinc-300"
+                onClick={handleProfileEdit}
+                className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white p-1.5 pr-2.5 shadow-sm transition hover:bg-zinc-50"
               >
-                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-[#171714] text-[11px] font-semibold text-[#d7ba7d]">
+                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-[#171714]">
                   {founderProfile.avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -1415,159 +1743,118 @@ export default function FounderPage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    getInitials(founderProfile.name)
+                    <span className="text-[10px] font-semibold text-[#d7ba7d]">
+                      {getInitials(founderProfile.name)}
+                    </span>
                   )}
                 </div>
 
-                <div className="hidden max-w-[130px] text-left sm:block">
-                  <p className="truncate text-xs font-semibold text-zinc-900">
+                <div className="hidden text-left sm:block">
+                  <p className="max-w-[120px] truncate text-xs font-semibold text-zinc-900">
                     {founderProfile.name}
                   </p>
-                  <p className="truncate text-[10px] text-zinc-500">
-                    Founder & CEO
+
+                  <p className="text-[10px] text-zinc-500">
+                    Founder
                   </p>
                 </div>
-
-                <ChevronDown
-                  size={15}
-                  className={`hidden text-zinc-400 transition sm:block ${
-                    profileOpen ? "rotate-180" : ""
-                  }`}
-                />
               </button>
             </div>
           </div>
         </header>
+                <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          {activeSection === "dashboard" && (
+            <div className="mx-auto max-w-[1600px]">
+              <section className="overflow-hidden rounded-[28px] border border-zinc-200 bg-[#171714] text-white shadow-sm">
+                <div className="relative px-6 py-8 sm:px-8 lg:px-10 lg:py-10">
+                  <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-[#c7a96b]/10 blur-3xl" />
+                  <div className="absolute bottom-0 left-1/3 h-40 w-40 rounded-full bg-white/[0.03] blur-3xl" />
 
-        <main className="px-4 py-6 sm:px-6 xl:px-8 xl:py-8">
-                    {activeSection === "dashboard" && (
-            <div className="space-y-6">
-              <section className="overflow-hidden rounded-[28px] border border-zinc-200 bg-[#151512] text-white shadow-sm">
-                <div className="grid gap-8 px-6 py-8 sm:px-8 xl:grid-cols-[1fr_auto] xl:items-center xl:px-10 xl:py-10">
-                  <div className="max-w-3xl">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="rounded-full border border-[#c7a96b]/30 bg-[#c7a96b]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#d7ba7d]">
-                        Founder Control Center
-                      </span>
+                  <div className="relative flex flex-col justify-between gap-8 xl:flex-row xl:items-end">
+                    <div className="max-w-3xl">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="inline-flex items-center gap-2 rounded-full border border-[#c7a96b]/30 bg-[#c7a96b]/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#d7ba7d]">
+                          <Sparkles size={13} />
+                          Founder Command Center
+                        </span>
 
-                      <span className="flex items-center gap-2 text-xs text-zinc-400">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                        Enterprise systems operational
-                      </span>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[10px] font-medium text-zinc-400">
+                          <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                          Enterprise operational
+                        </span>
+                      </div>
+
+                      <h1 className="mt-6 max-w-2xl font-serif text-3xl font-semibold leading-tight tracking-[-0.02em] text-white sm:text-4xl lg:text-5xl">
+                        Welcome back, {founderProfile.name.split(" ")[0]}.
+                      </h1>
+
+                      <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400 sm:text-base">
+                        Monitor KRVE performance, review critical approvals and
+                        control every department from one unified enterprise
+                        operating center.
+                      </p>
                     </div>
 
-                    <h2 className="mt-5 max-w-2xl font-serif text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
-                      Welcome back, {founderProfile.name.split(" ")[0]}.
-                    </h2>
-
-                    <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400 sm:text-base">
-                      Monitor KRVE operations, revenue, customers, employees,
-                      orders and departmental performance from one unified
-                      enterprise command center.
-                    </p>
-
-                    <div className="mt-7 flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleNavigation("analytics")}
-                        className="flex items-center gap-2 rounded-xl bg-[#c7a96b] px-4 py-3 text-sm font-semibold text-[#17140f] transition hover:bg-[#d4b878]"
-                      >
-                        View Business Analytics
-                        <ArrowUpRight size={16} />
-                      </button>
-
+                    <div className="flex flex-wrap gap-3">
                       <button
                         type="button"
                         onClick={() => handleNavigation("approvals")}
-                        className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-sm font-medium text-white transition hover:bg-white/[0.08]"
+                        className="inline-flex items-center gap-2 rounded-2xl bg-[#c7a96b] px-5 py-3 text-sm font-semibold text-[#17130d] transition hover:bg-[#d4b878]"
                       >
-                        Review Approvals
-                        <ClipboardCheck size={16} />
+                        Review approvals
+                        <ArrowRight size={16} />
                       </button>
-                    </div>
-                  </div>
 
-                  <div className="hidden min-w-[240px] rounded-[24px] border border-white/10 bg-white/[0.04] p-5 xl:block">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
-                          Today
-                        </p>
-                        <p className="mt-2 font-serif text-2xl font-semibold">
-                          28 July 2026
-                        </p>
-                      </div>
-
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#c7a96b]/10 text-[#d7ba7d]">
-                        <CalendarDays size={21} />
-                      </div>
-                    </div>
-
-                    <div className="mt-5 space-y-3 border-t border-white/10 pt-5">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-500">Pending approvals</span>
-                        <span className="font-semibold text-white">08</span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-500">Open alerts</span>
-                        <span className="font-semibold text-amber-400">04</span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-zinc-500">System health</span>
-                        <span className="font-semibold text-emerald-400">
-                          99.9%
-                        </span>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleNavigation("enterprise-reports")}
+                        className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/[0.06] px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.1]"
+                      >
+                        View reports
+                        <FileChartColumn size={16} />
+                      </button>
                     </div>
                   </div>
                 </div>
               </section>
 
-              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {resolvedDashboardStatistics.map((statistic) => {
                   const Icon = statistic.icon;
-                  const toneClasses = getStatisticToneClasses(statistic.tone);
+                  const toneClasses = getStatisticToneClasses(
+                    statistic.tone
+                  );
 
                   return (
                     <article
                       key={statistic.title}
-                      className="rounded-[24px] border border-zinc-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                      className="rounded-[24px] border border-zinc-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-6"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                            {statistic.title}
-                          </p>
-
-                          <p className="mt-3 text-2xl font-semibold tracking-tight text-zinc-950">
-                            {statistic.value}
-                          </p>
-                        </div>
-
                         <div
-                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${toneClasses.icon}`}
+                          className={`flex h-12 w-12 items-center justify-center rounded-2xl ${toneClasses.icon}`}
                         >
-                          <Icon size={20} />
+                          <Icon size={21} strokeWidth={1.9} />
                         </div>
+
+                        <span
+                          className={`inline-flex items-center gap-1 text-xs font-semibold ${toneClasses.change}`}
+                        >
+                          <TrendingUp size={13} />
+                          {statistic.change}
+                        </span>
                       </div>
 
-                      <div className="mt-5 border-t border-zinc-100 pt-4">
-                        <div className="flex items-center gap-2">
-                          <TrendingUp
-                            size={14}
-                            className={toneClasses.change}
-                          />
+                      <div className="mt-6">
+                        <p className="text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                          {statistic.title}
+                        </p>
 
-                          <span
-                            className={`text-xs font-semibold ${toneClasses.change}`}
-                          >
-                            {statistic.change}
-                          </span>
-                        </div>
+                        <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-zinc-950 sm:text-3xl">
+                          {statistic.value}
+                        </p>
 
-                        <p className="mt-2 text-xs leading-5 text-zinc-500">
+                        <p className="mt-3 text-xs leading-5 text-zinc-500">
                           {statistic.description}
                         </p>
                       </div>
@@ -1575,124 +1862,123 @@ export default function FounderPage() {
                   );
                 })}
               </section>
-
-              <section className="grid gap-6 xl:grid-cols-[1.45fr_0.85fr]">
-                <article className="rounded-[28px] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-                  <div className="flex flex-col gap-4 border-b border-zinc-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                            <section className="mt-6 grid gap-6 xl:grid-cols-[1.45fr_0.85fr]">
+                <article className="rounded-[26px] border border-zinc-200 bg-white shadow-sm">
+                  <div className="flex flex-col gap-4 border-b border-zinc-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#9a7b3f]">
-                        Enterprise Performance
+                      <p className="text-sm font-semibold text-zinc-950">
+                        Recent Orders
                       </p>
 
-                      <h3 className="mt-2 font-serif text-xl font-semibold text-zinc-950">
-                        Business Overview
-                      </h3>
-
-                      <p className="mt-1 text-sm text-zinc-500">
-                        Revenue and order performance across KRVE channels.
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Latest customer transactions across KRVE sales channels
                       </p>
                     </div>
 
                     <button
                       type="button"
-                      onClick={() => handleNavigation("analytics")}
-                      className="flex items-center gap-2 self-start rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
+                      onClick={() => handleNavigation("orders")}
+                      className="inline-flex items-center gap-2 self-start rounded-xl border border-zinc-200 px-3.5 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 sm:self-auto"
                     >
-                      Full analytics
+                      View all orders
                       <ArrowRight size={14} />
                     </button>
                   </div>
 
-                  <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                    <div className="rounded-2xl bg-zinc-50 p-4">
-                      <p className="text-xs text-zinc-500">Revenue Target</p>
-                      <p className="mt-2 text-xl font-semibold text-zinc-950">
-                        ₹18.00L
-                      </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[760px] border-collapse">
+                      <thead>
+                        <tr className="border-b border-zinc-100 bg-zinc-50/70">
+                          <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                            Order
+                          </th>
 
-                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-200">
-                        <div className="h-full w-[71%] rounded-full bg-zinc-900" />
-                      </div>
+                          <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                            Customer
+                          </th>
 
-                      <p className="mt-2 text-[11px] text-zinc-500">
-                        71.3% target achieved
-                      </p>
-                    </div>
+                          <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                            Product
+                          </th>
 
-                    <div className="rounded-2xl bg-zinc-50 p-4">
-                      <p className="text-xs text-zinc-500">Average Order Value</p>
-                      <p className="mt-2 text-xl font-semibold text-zinc-950">
-                        ₹8,642
-                      </p>
+                          <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                            Amount
+                          </th>
 
-                      <div className="mt-4 flex items-center gap-2 text-xs font-medium text-emerald-700">
-                        <TrendingUp size={14} />
-                        9.8% increase
-                      </div>
+                          <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                            Status
+                          </th>
 
-                      <p className="mt-2 text-[11px] text-zinc-500">
-                        Compared with last month
-                      </p>
-                    </div>
+                          <th className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                            Date
+                          </th>
+                        </tr>
+                      </thead>
 
-                    <div className="rounded-2xl bg-zinc-50 p-4">
-                      <p className="text-xs text-zinc-500">Conversion Rate</p>
-                      <p className="mt-2 text-xl font-semibold text-zinc-950">
-                        8.6%
-                      </p>
-
-                      <div className="mt-4 flex items-center gap-2 text-xs font-medium text-blue-700">
-                        <Activity size={14} />
-                        3.1% improvement
-                      </div>
-
-                      <p className="mt-2 text-[11px] text-zinc-500">
-                        Website and mobile traffic
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 rounded-[22px] border border-zinc-100 bg-[#fafaf8] p-5">
-                    <div className="flex h-[220px] items-end gap-2 sm:gap-3">
-                      {[42, 56, 49, 68, 61, 75, 72, 86, 79, 91, 84, 96].map(
-                        (height, index) => (
-                          <div
-                            key={`${height}-${index}`}
-                            className="flex h-full flex-1 items-end"
+                      <tbody>
+                        {resolvedRecentOrders.map((order) => (
+                          <tr
+                            key={order.id}
+                            className="border-b border-zinc-100 transition last:border-b-0 hover:bg-zinc-50/70"
                           >
-                            <div
-                              className="w-full rounded-t-lg bg-[#181815] transition hover:bg-[#b89655]"
-                              style={{ height: `${height}%` }}
-                              title={`Month ${index + 1}`}
-                            />
-                          </div>
-                        )
-                      )}
-                    </div>
+                            <td className="px-6 py-4">
+                              <button
+                                type="button"
+                                onClick={() => handleNavigation("orders")}
+                                className="text-sm font-semibold text-zinc-950 transition hover:text-[#9b7b3f]"
+                              >
+                                {order.id}
+                              </button>
+                            </td>
 
-                    <div className="mt-4 flex justify-between text-[10px] font-medium uppercase tracking-wide text-zinc-400">
-                      <span>Jan</span>
-                      <span>Mar</span>
-                      <span>May</span>
-                      <span>Jul</span>
-                      <span>Sep</span>
-                      <span>Nov</span>
-                    </div>
+                            <td className="px-6 py-4">
+                              <p className="text-sm font-medium text-zinc-800">
+                                {order.customer}
+                              </p>
+                            </td>
+
+                            <td className="max-w-[220px] px-6 py-4">
+                              <p className="truncate text-sm text-zinc-600">
+                                {order.product}
+                              </p>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <p className="text-sm font-semibold text-zinc-900">
+                                {order.amount}
+                              </p>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <span
+                                className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${getStatusClasses(
+                                  order.status
+                                )}`}
+                              >
+                                {order.status}
+                              </span>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              <p className="text-xs text-zinc-500">
+                                {order.date}
+                              </p>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </article>
 
-                <article className="rounded-[28px] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-                  <div className="border-b border-zinc-100 pb-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#9a7b3f]">
-                      Founder Attention
+                <article className="rounded-[26px] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-950">
+                      Quick Actions
                     </p>
 
-                    <h3 className="mt-2 font-serif text-xl font-semibold text-zinc-950">
-                      Priority Actions
-                    </h3>
-
-                    <p className="mt-1 text-sm text-zinc-500">
-                      Important matters requiring review.
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Open frequently used Founder controls
                     </p>
                   </div>
 
@@ -1700,203 +1986,299 @@ export default function FounderPage() {
                     <button
                       type="button"
                       onClick={() => handleNavigation("approvals")}
-                      className="flex w-full items-center gap-4 rounded-2xl border border-zinc-100 p-4 text-left transition hover:border-amber-200 hover:bg-amber-50/50"
+                      className="group flex w-full items-center gap-4 rounded-2xl border border-zinc-200 p-4 text-left transition hover:border-[#c7a96b]/50 hover:bg-[#c7a96b]/5"
                     >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
-                        <ClipboardCheck size={18} />
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                        <ClipboardCheck size={19} />
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-zinc-900">
-                          8 approvals pending
+                          Pending Approvals
                         </p>
+
                         <p className="mt-1 text-xs text-zinc-500">
-                          Finance, HR and procurement
+                          Review finance and department requests
                         </p>
                       </div>
 
-                      <ArrowRight size={16} className="text-zinc-400" />
+                      <ArrowRight
+                        size={16}
+                        className="shrink-0 text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-[#9b7b3f]"
+                      />
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => handleNavigation("inventory")}
-                      className="flex w-full items-center gap-4 rounded-2xl border border-zinc-100 p-4 text-left transition hover:border-red-200 hover:bg-red-50/50"
+                      onClick={() => handleNavigation("products")}
+                      className="group flex w-full items-center gap-4 rounded-2xl border border-zinc-200 p-4 text-left transition hover:border-[#c7a96b]/50 hover:bg-[#c7a96b]/5"
                     >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-700">
-                        <AlertTriangle size={18} />
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                        <Package size={19} />
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-zinc-900">
-                          4 low-stock products
+                          Product Catalogue
                         </p>
+
                         <p className="mt-1 text-xs text-zinc-500">
-                          Replenishment required
+                          Manage products, variants and collections
                         </p>
                       </div>
 
-                      <ArrowRight size={16} className="text-zinc-400" />
+                      <ArrowRight
+                        size={16}
+                        className="shrink-0 text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-[#9b7b3f]"
+                      />
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => handleNavigation("support")}
-                      className="flex w-full items-center gap-4 rounded-2xl border border-zinc-100 p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/50"
+                      onClick={() => handleNavigation("finance")}
+                      className="group flex w-full items-center gap-4 rounded-2xl border border-zinc-200 p-4 text-left transition hover:border-[#c7a96b]/50 hover:bg-[#c7a96b]/5"
                     >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                        <Headphones size={18} />
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                        <ReceiptIndianRupee size={19} />
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-zinc-900">
-                          12 support tickets
+                          Finance Center
                         </p>
+
                         <p className="mt-1 text-xs text-zinc-500">
-                          3 marked as urgent
+                          Monitor revenue, expenses and accounting
                         </p>
                       </div>
 
-                      <ArrowRight size={16} className="text-zinc-400" />
+                      <ArrowRight
+                        size={16}
+                        className="shrink-0 text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-[#9b7b3f]"
+                      />
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => handleNavigation("security-center")}
-                      className="flex w-full items-center gap-4 rounded-2xl border border-zinc-100 p-4 text-left transition hover:border-emerald-200 hover:bg-emerald-50/50"
+                      onClick={() => handleNavigation("krve-ai")}
+                      className="group flex w-full items-center gap-4 rounded-2xl border border-zinc-200 p-4 text-left transition hover:border-[#c7a96b]/50 hover:bg-[#c7a96b]/5"
                     >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                        <ShieldCheck size={18} />
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+                        <Sparkles size={19} />
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-zinc-900">
-                          Security status normal
+                          KRVE AI Center
                         </p>
+
                         <p className="mt-1 text-xs text-zinc-500">
-                          No critical threat detected
+                          Open enterprise intelligence and automation
                         </p>
                       </div>
 
-                      <ArrowRight size={16} className="text-zinc-400" />
+                      <ArrowRight
+                        size={16}
+                        className="shrink-0 text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-[#9b7b3f]"
+                      />
                     </button>
                   </div>
                 </article>
               </section>
+                            <section className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+                <article className="rounded-[26px] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-zinc-950">
+                        Department Performance
+                      </p>
 
-              <section className="rounded-[28px] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-                <div className="flex flex-col gap-4 border-b border-zinc-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Current operational performance across key KRVE departments
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleNavigation("department-reports")}
+                      className="inline-flex items-center gap-2 self-start rounded-xl border border-zinc-200 px-3.5 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 sm:self-auto"
+                    >
+                      Department reports
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+
+                  <div className="mt-6 space-y-5">
+                    {[
+                      {
+                        name: "Commerce Operations",
+                        value: 92,
+                        detail: "Orders, inventory and fulfilment",
+                      },
+                      {
+                        name: "Finance",
+                        value: 84,
+                        detail: "Accounting, cash flow and compliance",
+                      },
+                      {
+                        name: "Human Resources",
+                        value: 78,
+                        detail: "Employees, recruitment and payroll",
+                      },
+                      {
+                        name: "Marketing",
+                        value: 88,
+                        detail: "Campaigns, traffic and customer acquisition",
+                      },
+                      {
+                        name: "Customer Support",
+                        value: 81,
+                        detail: "Tickets, complaints and customer satisfaction",
+                      },
+                    ].map((department) => (
+                      <div key={department.name}>
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-zinc-900">
+                              {department.name}
+                            </p>
+
+                            <p className="mt-1 truncate text-xs text-zinc-500">
+                              {department.detail}
+                            </p>
+                          </div>
+
+                          <span className="shrink-0 text-sm font-semibold text-zinc-900">
+                            {department.value}%
+                          </span>
+                        </div>
+
+                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-100">
+                          <div
+                            className="h-full rounded-full bg-[#b89b5e]"
+                            style={{
+                              width: `${department.value}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+
+                <article className="rounded-[26px] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#9a7b3f]">
-                      Commerce Operations
+                    <p className="text-sm font-semibold text-zinc-950">
+                      System Health
                     </p>
 
-                    <h3 className="mt-2 font-serif text-xl font-semibold text-zinc-950">
-                      Recent Orders
-                    </h3>
-
-                    <p className="mt-1 text-sm text-zinc-500">
-                      Latest customer orders received across active channels.
+                    <p className="mt-1 text-xs text-zinc-500">
+                      KEOS infrastructure and enterprise service status
                     </p>
+                  </div>
+
+                  <div className="mt-6 space-y-3">
+                    {[
+                      {
+                        name: "KEOS Core System",
+                        status: "Operational",
+                        icon: Activity,
+                      },
+                      {
+                        name: "Website Integration",
+                        status: "Connected",
+                        icon: Link2,
+                      },
+                      {
+                        name: "Payment Services",
+                        status: "Operational",
+                        icon: CreditCard,
+                      },
+                      {
+                        name: "Data Backup",
+                        status: "Completed",
+                        icon: ShieldCheck,
+                      },
+                      {
+                        name: "KRVE AI Services",
+                        status: "Active",
+                        icon: Sparkles,
+                      },
+                    ].map((service) => {
+                      const Icon = service.icon;
+
+                      return (
+                        <div
+                          key={service.name}
+                          className="flex items-center gap-4 rounded-2xl border border-zinc-200 p-4"
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                            <Icon size={18} />
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-zinc-900">
+                              {service.name}
+                            </p>
+
+                            <p className="mt-1 text-xs text-zinc-500">
+                              {service.status}
+                            </p>
+                          </div>
+
+                          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => handleNavigation("orders")}
-                    className="flex items-center gap-2 self-start rounded-xl border border-zinc-200 px-3.5 py-2.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
+                    onClick={() => handleNavigation("security-center")}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-4 py-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
                   >
-                    View all orders
+                    Open Security Center
                     <ArrowRight size={14} />
                   </button>
-                </div>
-
-                <div className="mt-5 overflow-x-auto">
-                  <table className="min-w-[850px] w-full">
-                    <thead>
-                      <tr className="border-b border-zinc-100 text-left">
-                        <th className="pb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                          Order ID
-                        </th>
-                        <th className="pb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                          Customer
-                        </th>
-                        <th className="pb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                          Product
-                        </th>
-                        <th className="pb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                          Amount
-                        </th>
-                        <th className="pb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                          Status
-                        </th>
-                        <th className="pb-3 text-right text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                          Date
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {resolvedRecentOrders.map((order) => (
-                        <tr
-                          key={order.id}
-                          className="border-b border-zinc-100 last:border-0"
-                        >
-                          <td className="py-4 text-sm font-semibold text-zinc-950">
-                            {order.id}
-                          </td>
-
-                          <td className="py-4 text-sm text-zinc-700">
-                            {order.customer}
-                          </td>
-
-                          <td className="py-4 text-sm text-zinc-600">
-                            {order.product}
-                          </td>
-
-                          <td className="py-4 text-sm font-semibold text-zinc-900">
-                            {order.amount}
-                          </td>
-
-                          <td className="py-4">
-                            <span
-                              className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${getStatusClasses(
-                                order.status
-                              )}`}
-                            >
-                              {order.status}
-                            </span>
-                          </td>
-
-                          <td className="py-4 text-right text-sm text-zinc-500">
-                            {order.date}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                </article>
               </section>
             </div>
           )}
-                    {activeSection === "analytics" && <BusinessAnalytics />}
+                            {activeSection === "analytics" && (
+            <BusinessAnalytics />
+          )}
 
-          {activeSection === "approvals" && <TasksApprovals />}
+          {activeSection === "approvals" && (
+            <TasksApprovals />
+          )}
 
-          {activeSection === "orders" && <OrdersManagement />}
+          {activeSection === "orders" && (
+            <OrdersManagement />
+          )}
 
-          {activeSection === "products" && <ProductsManagement />}
+          {activeSection === "products" && (
+            <ProductsManagement />
+          )}
 
-          {activeSection === "inventory" && <InventoryManagement />}
+          {activeSection === "inventory" && (
+            <InventoryManagement />
+          )}
 
-          {activeSection === "warehouse" && <WarehouseManagement />}
+          {activeSection === "warehouse" && (
+            <WarehouseManagement />
+          )}
 
-          {activeSection === "shipping" && <ShippingManagement />}
+          {activeSection === "shipping" && (
+            <ShippingManagement />
+          )}
 
           {activeSection === "returns-refunds" && (
             <ReturnsRefundsManagement />
           )}
 
-          {activeSection === "pricing" && <PricingManagement />}
+          {activeSection === "pricing" && (
+            <PricingManagement />
+          )}
 
           {activeSection === "discounts-promotions" && (
             <DiscountsPromotionsManagement />
@@ -1910,7 +2292,9 @@ export default function FounderPage() {
             <AbandonedCartsManagement />
           )}
 
-          {activeSection === "checkout" && <CheckoutManagement />}
+          {activeSection === "checkout" && (
+            <CheckoutManagement />
+          )}
 
           {activeSection === "order-tracking" && (
             <OrderTrackingManagement />
@@ -1920,13 +2304,21 @@ export default function FounderPage() {
             <CommerceReportsManagement />
           )}
 
-          {activeSection === "customers" && <CustomersManagement />}
+          {activeSection === "customers" && (
+            <CustomersManagement />
+          )}
 
-          {activeSection === "finance" && <FinanceManagement />}
+          {activeSection === "finance" && (
+            <FinanceManagement />
+          )}
 
-          {activeSection === "hr" && <HumanResourcesManagement />}
+          {activeSection === "hr" && (
+            <HumanResourcesManagement />
+          )}
 
-          {activeSection === "marketing" && <MarketingManagement />}
+          {activeSection === "marketing" && (
+            <MarketingManagement />
+          )}
 
           {activeSection === "support" && (
             <CustomerSupportManagement />
@@ -1936,27 +2328,40 @@ export default function FounderPage() {
             <ProcurementManagement />
           )}
 
-          {activeSection === "crm" && <CRMManagement />}
+          {activeSection === "crm" && (
+            <CRMManagement />
+          )}
 
-          {activeSection === "vendors" && <VendorManagement />}
+          {activeSection === "vendors" && (
+            <VendorManagement />
+          )}
 
           {activeSection === "projects" && (
             <ProjectsTasksManagement />
           )}
 
-          {activeSection === "documents" && <DocumentsManagement />}
+          {activeSection === "documents" && (
+            <DocumentsManagement />
+          )}
 
           {activeSection === "legal" && (
             <LegalComplianceManagement />
           )}
 
-          {activeSection === "risk" && <RiskManagement />}
+          {activeSection === "risk" && (
+            <RiskManagement />
+          )}
 
           {activeSection === "assets" && (
             <FacilitiesAssetsManagement />
           )}
+                            {/* =========================
+              KRVE AI MODULES
+          ========================== */}
 
-          {activeSection === "krve-ai" && <KrveAICenterManagement />}
+          {activeSection === "krve-ai" && (
+            <KrveAICenterManagement />
+          )}
 
           {activeSection === "ai-assistant" && (
             <AIAssistantManagement />
@@ -1978,6 +2383,10 @@ export default function FounderPage() {
             <AIRecommendationsManagement />
           )}
 
+          {/* =========================
+              REPORTS
+          ========================== */}
+
           {activeSection === "enterprise-reports" && (
             <EnterpriseReportsManagement />
           )}
@@ -1993,6 +2402,10 @@ export default function FounderPage() {
           {activeSection === "audit-reports" && (
             <AuditReportsManagement />
           )}
+
+          {/* =========================
+              ADMINISTRATION
+          ========================== */}
 
           {activeSection === "administration" && (
             <AdministrationManagement />
@@ -2033,444 +2446,571 @@ export default function FounderPage() {
           {activeSection === "system-settings" && (
             <SystemSettingsManagement />
           )}
-        </main>
-        </div>
+                          </main>
 
-         {selectedNotification && (
-  <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-    <button
-      type="button"
-      aria-label="Close notification detail"
-      onClick={() => setSelectedNotification(null)}
-      className="absolute inset-0 cursor-default"
-    />
+        {/* Founder Profile Editor */}
+        {profileEditorOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm">
+            <button
+              type="button"
+              aria-label="Close profile editor"
+              onClick={() => {
+                setProfileEditorOpen(false);
+                setProfileImageError("");
+                setProfileSaved(false);
+              }}
+              className="absolute inset-0 cursor-default"
+            />
 
-    <section className="relative z-10 w-full max-w-xl overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-2xl">
-      <div className="flex items-start justify-between border-b border-zinc-100 px-6 py-5">
-        <div className="flex items-start gap-3">
-          <div
-            className={`mt-1 h-3 w-3 shrink-0 rounded-full ${
-              selectedNotification.unread
-                ? "bg-[#b89047]"
-                : "bg-zinc-300"
-            }`}
-          />
+            <section className="relative z-10 flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[30px] border border-white/10 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35)]">
+              <header className="flex shrink-0 items-start justify-between gap-5 border-b border-zinc-200 bg-[#171714] px-5 py-5 text-white sm:px-7">
+                <div className="flex min-w-0 items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#c7a96b]/30 bg-[#c7a96b]/10 text-[#d7ba7d]">
+                    <UserRound size={21} />
+                  </div>
 
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#94743a]">
-              Founder Notification
-            </p>
+                  <div className="min-w-0">
+                    <p className="text-lg font-semibold">
+                      Founder Profile
+                    </p>
 
-            <h2 className="mt-2 font-serif text-2xl font-semibold text-zinc-950">
-              {selectedNotification.title}
-            </h2>
-          </div>
-        </div>
+                    <p className="mt-1 text-xs leading-5 text-zinc-400">
+                      Update your KEOS identity, contact details and profile
+                      photograph.
+                    </p>
+                  </div>
+                </div>
 
-        <button
-          type="button"
-          onClick={() => setSelectedNotification(null)}
-          className="rounded-xl border border-zinc-200 p-2.5 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
-          aria-label="Close notification"
-        >
-          <X size={18} />
-        </button>
-      </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileEditorOpen(false);
+                    setProfileImageError("");
+                    setProfileSaved(false);
+                  }}
+                  className="rounded-xl border border-white/10 p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white"
+                  aria-label="Close profile editor"
+                >
+                  <X size={18} />
+                </button>
+              </header>
 
-      <div className="px-6 py-6">
-        <p className="text-sm leading-7 text-zinc-600">
-          {selectedNotification.message}
-        </p>
+              <div className="keos-sidebar-scroll flex-1 overflow-y-auto">
+                <div className="grid gap-7 p-5 sm:p-7 lg:grid-cols-[280px_1fr]">
+                  {/* Profile Photograph */}
+                  <aside>
+                    <div className="rounded-[24px] border border-zinc-200 bg-zinc-50 p-5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                        Profile Photograph
+                      </p>
 
-        <div className="mt-6 rounded-2xl border border-zinc-100 bg-[#fafaf8] p-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-            Received
-          </p>
+                      <div className="mt-5 flex flex-col items-center">
+                        <div className="relative">
+                          <div className="flex h-36 w-36 items-center justify-center overflow-hidden rounded-[30px] border-4 border-white bg-[#171714] shadow-lg">
+                            {profileDraft.avatar ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={profileDraft.avatar}
+                                alt={profileDraft.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="font-serif text-3xl font-semibold text-[#d7ba7d]">
+                                {getInitials(profileDraft.name)}
+                              </span>
+                            )}
+                          </div>
 
-          <p className="mt-2 text-sm font-medium text-zinc-800">
-            {selectedNotification.time}
-          </p>
-        </div>
-      </div>
+                          <button
+                            type="button"
+                            onClick={handleProfileImageButtonClick}
+                            disabled={profileImageLoading}
+                            className="absolute -bottom-2 -right-2 flex h-11 w-11 items-center justify-center rounded-2xl border-4 border-zinc-50 bg-[#c7a96b] text-[#17130d] shadow-lg transition hover:bg-[#d4b878] disabled:cursor-not-allowed disabled:opacity-60"
+                            aria-label="Upload profile photograph"
+                          >
+                            {profileImageLoading ? (
+                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black" />
+                            ) : (
+                              <Camera size={18} />
+                            )}
+                          </button>
+                        </div>
 
-      <div className="flex flex-col-reverse gap-3 border-t border-zinc-100 px-6 py-4 sm:flex-row sm:justify-end">
-        <button
-          type="button"
-          onClick={() => setSelectedNotification(null)}
-          className="rounded-xl border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
-        >
-          Close
-        </button>
+                        <input
+                          ref={profileImageInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleProfileImageChange}
+                          className="hidden"
+                        />
 
-        <button
-          type="button"
-          onClick={() => {
-            if (selectedNotification.id === 1) {
-              handleNavigation("approvals");
-            } else if (selectedNotification.id === 2) {
-              handleNavigation("inventory");
-            } else if (selectedNotification.id === 3) {
-              handleNavigation("hr");
-            }
+                        <p className="mt-5 text-center text-sm font-semibold text-zinc-900">
+                          {profileDraft.name || "Founder"}
+                        </p>
 
-            setSelectedNotification(null);
-          }}
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#171714] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2b2923]"
-        >
-          Open Related Module
-          <ArrowRight size={16} />
-        </button>
-      </div>
-    </section>
-  </div>
-)}
-      
-            {/* Founder profile editor */}
-      {profileEditorOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <button
-            type="button"
-            aria-label="Close profile editor"
-            onClick={() => setProfileEditorOpen(false)}
-            className="absolute inset-0 cursor-default"
-          />
+                        <p className="mt-1 text-center text-xs text-zinc-500">
+                          {profileDraft.designation || "Founder & CEO"}
+                        </p>
 
-          <section className="relative z-10 max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[30px] border border-zinc-200 bg-white shadow-2xl">
-            <div className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-200 bg-white/95 px-5 py-5 backdrop-blur-xl sm:px-7">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9a7b3f]">
-                  Founder Account
-                </p>
+                        <button
+                          type="button"
+                          onClick={handleProfileImageButtonClick}
+                          disabled={profileImageLoading}
+                          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#171714] px-4 py-3 text-xs font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <Camera size={15} />
 
-                <h2 className="mt-1 font-serif text-2xl font-semibold text-zinc-950">
-                  Edit Founder Profile
-                </h2>
-              </div>
+                          {profileImageLoading
+                            ? "Loading photograph..."
+                            : profileDraft.avatar
+                              ? "Change photograph"
+                              : "Upload photograph"}
+                        </button>
 
-              <button
-                type="button"
-                onClick={() => setProfileEditorOpen(false)}
-                className="rounded-xl border border-zinc-200 p-2.5 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
-                aria-label="Close founder profile"
-              >
-                <X size={19} />
-              </button>
-            </div>
+                        {profileDraft.avatar && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveProfileImage}
+                            className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+                          >
+                            <X size={15} />
+                            Remove photograph
+                          </button>
+                        )}
 
-            <div className="p-5 sm:p-7">
-              <div className="grid gap-7 lg:grid-cols-[260px_1fr]">
-                <aside className="rounded-[24px] border border-zinc-200 bg-[#fafaf8] p-5">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="relative">
-                      <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[28px] border border-[#c7a96b]/30 bg-[#171714] text-2xl font-semibold text-[#d7ba7d]">
-                        {profileDraft.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={profileDraft.avatar}
-                            alt={profileDraft.name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          getInitials(profileDraft.name)
+                        <div className="mt-5 w-full rounded-2xl border border-zinc-200 bg-white p-4">
+                          <p className="text-xs font-semibold text-zinc-800">
+                            Image requirements
+                          </p>
+
+                          <p className="mt-2 text-[11px] leading-5 text-zinc-500">
+                            Upload a JPG, PNG or WEBP image. Maximum supported
+                            file size is 2 MB.
+                          </p>
+                        </div>
+
+                        {profileImageError && (
+                          <div className="mt-4 flex w-full items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-red-700">
+                            <AlertTriangle
+                              size={16}
+                              className="mt-0.5 shrink-0"
+                            />
+
+                            <p className="text-xs leading-5">
+                              {profileImageError}
+                            </p>
+                          </div>
                         )}
                       </div>
+                    </div>
+                  </aside>
 
-                      <div className="absolute -bottom-2 -right-2 flex h-10 w-10 items-center justify-center rounded-xl border-4 border-[#fafaf8] bg-[#c7a96b] text-[#17140f]">
-                        <Camera size={17} />
-                      </div>
+                  {/* Profile Form */}
+                  <div>
+                    <div className="mb-5">
+                      <p className="text-sm font-semibold text-zinc-950">
+                        Personal Information
+                      </p>
+
+                      <p className="mt-1 text-xs text-zinc-500">
+                        These details will appear across the Founder Command
+                        Center.
+                      </p>
+                    </div>
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-semibold text-zinc-700">
+                          Full Name
+                        </span>
+
+                        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 transition focus-within:border-[#c7a96b] focus-within:ring-4 focus-within:ring-[#c7a96b]/10">
+                          <UserRound
+                            size={17}
+                            className="shrink-0 text-zinc-400"
+                          />
+
+                          <input
+                            type="text"
+                            value={profileDraft.name}
+                            onChange={(event) =>
+                              handleProfileFieldChange(
+                                "name",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Enter Founder name"
+                            className="w-full bg-transparent text-sm text-zinc-950 outline-none placeholder:text-zinc-400"
+                          />
+                        </div>
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-semibold text-zinc-700">
+                          Founder User ID
+                        </span>
+
+                        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                          <ShieldCheck
+                            size={17}
+                            className="shrink-0 text-zinc-400"
+                          />
+
+                          <input
+                            type="text"
+                            value={profileDraft.userId}
+                            onChange={(event) =>
+                              handleProfileFieldChange(
+                                "userId",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Enter Founder user ID"
+                            className="w-full bg-transparent text-sm text-zinc-950 outline-none placeholder:text-zinc-400"
+                          />
+                        </div>
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-semibold text-zinc-700">
+                          Email Address
+                        </span>
+
+                        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 transition focus-within:border-[#c7a96b] focus-within:ring-4 focus-within:ring-[#c7a96b]/10">
+                          <Mail
+                            size={17}
+                            className="shrink-0 text-zinc-400"
+                          />
+
+                          <input
+                            type="email"
+                            value={profileDraft.email}
+                            onChange={(event) =>
+                              handleProfileFieldChange(
+                                "email",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Enter email address"
+                            className="w-full bg-transparent text-sm text-zinc-950 outline-none placeholder:text-zinc-400"
+                          />
+                        </div>
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-semibold text-zinc-700">
+                          Phone Number
+                        </span>
+
+                        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 transition focus-within:border-[#c7a96b] focus-within:ring-4 focus-within:ring-[#c7a96b]/10">
+                          <Phone
+                            size={17}
+                            className="shrink-0 text-zinc-400"
+                          />
+
+                          <input
+                            type="tel"
+                            value={profileDraft.phone}
+                            onChange={(event) =>
+                              handleProfileFieldChange(
+                                "phone",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Enter phone number"
+                            className="w-full bg-transparent text-sm text-zinc-950 outline-none placeholder:text-zinc-400"
+                          />
+                        </div>
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-semibold text-zinc-700">
+                          Designation
+                        </span>
+
+                        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 transition focus-within:border-[#c7a96b] focus-within:ring-4 focus-within:ring-[#c7a96b]/10">
+                          <Building2
+                            size={17}
+                            className="shrink-0 text-zinc-400"
+                          />
+
+                          <input
+                            type="text"
+                            value={profileDraft.designation}
+                            onChange={(event) =>
+                              handleProfileFieldChange(
+                                "designation",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Enter designation"
+                            className="w-full bg-transparent text-sm text-zinc-950 outline-none placeholder:text-zinc-400"
+                          />
+                        </div>
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-semibold text-zinc-700">
+                          Department
+                        </span>
+
+                        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 transition focus-within:border-[#c7a96b] focus-within:ring-4 focus-within:ring-[#c7a96b]/10">
+                          <Boxes
+                            size={17}
+                            className="shrink-0 text-zinc-400"
+                          />
+
+                          <input
+                            type="text"
+                            value={profileDraft.department}
+                            onChange={(event) =>
+                              handleProfileFieldChange(
+                                "department",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Enter department"
+                            className="w-full bg-transparent text-sm text-zinc-950 outline-none placeholder:text-zinc-400"
+                          />
+                        </div>
+                      </label>
                     </div>
 
-                    <h3 className="mt-5 font-serif text-xl font-semibold text-zinc-950">
-                      {profileDraft.name || "Founder Name"}
-                    </h3>
+                    <div className="mt-7 border-t border-zinc-200 pt-6">
+                      <p className="text-sm font-semibold text-zinc-950">
+                        Enterprise Details
+                      </p>
 
-                    <p className="mt-1 text-xs font-medium text-[#94743a]">
-                      {profileDraft.designation || "Founder & CEO"}
-                    </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Add office location, joining date and profile
+                        description.
+                      </p>
+                    </div>
+                                        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-semibold text-zinc-700">
+                          Office Location
+                        </span>
 
-                    <div className="mt-5 w-full space-y-3 border-t border-zinc-200 pt-5 text-left">
-                      <div className="flex items-start gap-3">
-                        <Mail
-                          size={15}
-                          className="mt-0.5 shrink-0 text-zinc-400"
-                        />
-                        <p className="break-all text-xs leading-5 text-zinc-600">
-                          {profileDraft.email || "No email provided"}
-                        </p>
-                      </div>
+                        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 transition focus-within:border-[#c7a96b] focus-within:ring-4 focus-within:ring-[#c7a96b]/10">
+                          <MapPin
+                            size={17}
+                            className="shrink-0 text-zinc-400"
+                          />
 
-                      <div className="flex items-start gap-3">
-                        <Phone
-                          size={15}
-                          className="mt-0.5 shrink-0 text-zinc-400"
-                        />
-                        <p className="text-xs leading-5 text-zinc-600">
-                          {profileDraft.phone || "No phone provided"}
-                        </p>
-                      </div>
+                          <input
+                            type="text"
+                            value={profileDraft.location}
+                            onChange={(event) =>
+                              handleProfileFieldChange(
+                                "location",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Enter office location"
+                            className="w-full bg-transparent text-sm text-zinc-950 outline-none placeholder:text-zinc-400"
+                          />
+                        </div>
+                      </label>
 
-                      <div className="flex items-start gap-3">
-                        <MapPin
-                          size={15}
-                          className="mt-0.5 shrink-0 text-zinc-400"
-                        />
-                        <p className="text-xs leading-5 text-zinc-600">
-                          {profileDraft.location || "No location provided"}
-                        </p>
-                      </div>
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-semibold text-zinc-700">
+                          Joining Date
+                        </span>
+
+                        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 transition focus-within:border-[#c7a96b] focus-within:ring-4 focus-within:ring-[#c7a96b]/10">
+                          <CalendarDays
+                            size={17}
+                            className="shrink-0 text-zinc-400"
+                          />
+
+                          <input
+                            type="text"
+                            value={profileDraft.joiningDate}
+                            onChange={(event) =>
+                              handleProfileFieldChange(
+                                "joiningDate",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Enter joining date"
+                            className="w-full bg-transparent text-sm text-zinc-950 outline-none placeholder:text-zinc-400"
+                          />
+                        </div>
+                      </label>
                     </div>
 
-                    <div className="mt-5 w-full rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
-                      <div className="flex items-center justify-center gap-2 text-xs font-semibold text-emerald-700">
-                        <ShieldCheck size={15} />
-                        Founder Access Verified
+                    <label className="mt-5 block">
+                      <span className="mb-2 block text-xs font-semibold text-zinc-700">
+                        Founder Bio
+                      </span>
+
+                      <textarea
+                        value={profileDraft.bio}
+                        onChange={(event) =>
+                          handleProfileFieldChange(
+                            "bio",
+                            event.target.value
+                          )
+                        }
+                        rows={5}
+                        placeholder="Write a short Founder profile description"
+                        className="w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[#c7a96b] focus:ring-4 focus:ring-[#c7a96b]/10"
+                      />
+                    </label>
+
+                    {profileSaved && (
+                      <div className="mt-5 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">
+                        <ShieldCheck size={17} />
+
+                        <p className="text-xs font-semibold">
+                          Founder profile saved successfully.
+                        </p>
                       </div>
-                    </div>
+                    )}
                   </div>
-                </aside>
-
-                <div>
-                  <div className="mb-5 flex items-center gap-2">
-                    <Edit3 size={17} className="text-[#9a7b3f]" />
-
-                    <h3 className="text-sm font-semibold text-zinc-950">
-                      Personal and enterprise information
-                    </h3>
-                  </div>
-
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="mb-2 block text-xs font-semibold text-zinc-700">
-                        Full name
-                      </span>
-
-                      <input
-                        value={profileDraft.name}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({
-                            ...current,
-                            name: event.target.value,
-                          }))
-                        }
-                        placeholder="Enter founder name"
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[#b89655] focus:ring-4 focus:ring-[#c7a96b]/10"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-2 block text-xs font-semibold text-zinc-700">
-                        Founder user ID
-                      </span>
-
-                      <input
-                        value={profileDraft.userId}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({
-                            ...current,
-                            userId: event.target.value,
-                          }))
-                        }
-                        placeholder="Enter founder ID"
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[#b89655] focus:ring-4 focus:ring-[#c7a96b]/10"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-2 block text-xs font-semibold text-zinc-700">
-                        Email address
-                      </span>
-
-                      <input
-                        type="email"
-                        value={profileDraft.email}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({
-                            ...current,
-                            email: event.target.value,
-                          }))
-                        }
-                        placeholder="Enter email address"
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[#b89655] focus:ring-4 focus:ring-[#c7a96b]/10"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-2 block text-xs font-semibold text-zinc-700">
-                        Phone number
-                      </span>
-
-                      <input
-                        value={profileDraft.phone}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({
-                            ...current,
-                            phone: event.target.value,
-                          }))
-                        }
-                        placeholder="Enter phone number"
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[#b89655] focus:ring-4 focus:ring-[#c7a96b]/10"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-2 block text-xs font-semibold text-zinc-700">
-                        Designation
-                      </span>
-
-                      <input
-                        value={profileDraft.designation}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({
-                            ...current,
-                            designation: event.target.value,
-                          }))
-                        }
-                        placeholder="Enter designation"
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[#b89655] focus:ring-4 focus:ring-[#c7a96b]/10"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-2 block text-xs font-semibold text-zinc-700">
-                        Department
-                      </span>
-
-                      <input
-                        value={profileDraft.department}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({
-                            ...current,
-                            department: event.target.value,
-                          }))
-                        }
-                        placeholder="Enter department"
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[#b89655] focus:ring-4 focus:ring-[#c7a96b]/10"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-2 block text-xs font-semibold text-zinc-700">
-                        Location
-                      </span>
-
-                      <input
-                        value={profileDraft.location}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({
-                            ...current,
-                            location: event.target.value,
-                          }))
-                        }
-                        placeholder="Enter location"
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[#b89655] focus:ring-4 focus:ring-[#c7a96b]/10"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-2 block text-xs font-semibold text-zinc-700">
-                        Joining date
-                      </span>
-
-                      <input
-                        value={profileDraft.joiningDate}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({
-                            ...current,
-                            joiningDate: event.target.value,
-                          }))
-                        }
-                        placeholder="Enter joining date"
-                        className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[#b89655] focus:ring-4 focus:ring-[#c7a96b]/10"
-                      />
-                    </label>
-                  </div>
-
-                  <label className="mt-5 block">
-                    <span className="mb-2 block text-xs font-semibold text-zinc-700">
-                      Profile image URL
-                    </span>
-
-                    <input
-                      value={profileDraft.avatar}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          avatar: event.target.value,
-                        }))
-                      }
-                      placeholder="Paste an image URL"
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[#b89655] focus:ring-4 focus:ring-[#c7a96b]/10"
-                    />
-
-                    <p className="mt-2 text-[11px] leading-5 text-zinc-500">
-                      Paste a direct image URL. Leaving this field empty will
-                      display the Founder initials.
-                    </p>
-                  </label>
-
-                  <label className="mt-5 block">
-                    <span className="mb-2 block text-xs font-semibold text-zinc-700">
-                      Founder bio
-                    </span>
-
-                    <textarea
-                      rows={5}
-                      value={profileDraft.bio}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          bio: event.target.value,
-                        }))
-                      }
-                      placeholder="Write a short Founder profile"
-                      className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[#b89655] focus:ring-4 focus:ring-[#c7a96b]/10"
-                    />
-                  </label>
                 </div>
               </div>
-            </div>
 
-            <div className="sticky bottom-0 z-20 flex flex-col-reverse gap-3 border-t border-zinc-200 bg-white/95 px-5 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-7">
-              <button
-                type="button"
-                onClick={handleProfileReset}
-                className="flex items-center justify-center gap-2 rounded-xl border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
-              >
-                <RotateCcw size={16} />
-                Reset default details
-              </button>
-
-              <div className="flex flex-col-reverse gap-3 sm:flex-row">
+              <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-zinc-200 bg-zinc-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
                 <button
                   type="button"
-                  onClick={() => setProfileEditorOpen(false)}
-                  className="rounded-xl border border-zinc-200 px-5 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+                  onClick={handleProfileReset}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100"
                 >
-                  Cancel
+                  <RotateCcw size={15} />
+                  Reset profile
                 </button>
+
+                <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileEditorOpen(false);
+                      setProfileDraft(founderProfile);
+                      setProfileImageError("");
+                      setProfileSaved(false);
+                    }}
+                    className="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleProfileSave}
+                    disabled={profileImageLoading}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#171714] px-5 py-3 text-xs font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Save size={15} />
+                    Save profile
+                  </button>
+                </div>
+              </footer>
+            </section>
+          </div>
+        )}
+                {/* Notification Detail Popup */}
+        {selectedNotification && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm">
+            <button
+              type="button"
+              aria-label="Close notification details"
+              onClick={() => setSelectedNotification(null)}
+              className="absolute inset-0 cursor-default"
+            />
+
+            <section className="relative z-10 w-full max-w-lg overflow-hidden rounded-[28px] border border-white/10 bg-white shadow-[0_30px_100px_rgba(0,0,0,0.35)]">
+              <header className="flex items-start justify-between gap-4 bg-[#171714] px-5 py-5 text-white sm:px-6">
+                <div className="flex min-w-0 items-start gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#c7a96b]/30 bg-[#c7a96b]/10 text-[#d7ba7d]">
+                    <Bell size={19} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">
+                      Notification Details
+                    </p>
+
+                    <p className="mt-1 text-xs text-zinc-400">
+                      Founder Command Center update
+                    </p>
+                  </div>
+                </div>
 
                 <button
                   type="button"
-                  onClick={handleProfileSave}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-[#171714] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#292925]"
+                  onClick={() => setSelectedNotification(null)}
+                  className="rounded-xl border border-white/10 p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white"
+                  aria-label="Close notification"
                 >
-                  {profileSaved ? (
-                    <>
-                      <ShieldCheck size={16} />
-                      Profile saved
-                    </>
-                  ) : (
-                    <>
-                      <Save size={16} />
-                      Save founder profile
-                    </>
-                  )}
+                  <X size={17} />
                 </button>
+              </header>
+
+              <div className="px-5 py-6 sm:px-6">
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`mt-1 h-3 w-3 shrink-0 rounded-full ${
+                      selectedNotification.unread
+                        ? "bg-[#b89b5e]"
+                        : "bg-zinc-300"
+                    }`}
+                  />
+
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-semibold text-zinc-950">
+                      {selectedNotification.title}
+                    </h2>
+
+                    <p className="mt-3 text-sm leading-7 text-zinc-600">
+                      {selectedNotification.message}
+                    </p>
+
+                    <div className="mt-5 flex items-center gap-2 text-xs text-zinc-400">
+                      <CalendarDays size={14} />
+                      {selectedNotification.time}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                    Related Module
+                  </p>
+
+                  <p className="mt-2 text-sm font-semibold text-zinc-900">
+                    {navigationGroups
+                      .flatMap((group) => group.items)
+                      .find(
+                        (item) =>
+                          item.id === selectedNotification.relatedSection
+                      )?.name ?? "KEOS Module"}
+                  </p>
+                </div>
               </div>
-            </div>
-          </section>
-        </div>
-      )}
+
+              <footer className="flex flex-col-reverse gap-3 border-t border-zinc-200 bg-zinc-50 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+                <button
+                  type="button"
+                  onClick={() => setSelectedNotification(null)}
+                  className="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100"
+                >
+                  Close
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenNotificationModule}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#171714] px-5 py-3 text-xs font-semibold text-white transition hover:bg-black"
+                >
+                  Open related module
+                  <ArrowRight size={15} />
+                </button>
+              </footer>
+            </section>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
