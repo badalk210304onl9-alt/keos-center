@@ -1,18 +1,23 @@
-export interface FounderDashboardData {
-  statistics: {
-    totalRevenue: string;
-    totalOrders: string;
-    totalCustomers: string;
-    totalEmployees: string;
-  };
+export type FounderDashboardStatistics = {
+  totalRevenue: string;
+  totalOrders: string;
+  totalCustomers: string;
+  totalEmployees: string;
+};
 
-  recentOrders: {
-    id: string;
-    customer: string;
-    amount: string;
-    status: string;
-  }[];
-}
+export type FounderRecentOrder = {
+  id: string;
+  customer: string;
+  product: string;
+  amount: string;
+  status: string;
+  date: string;
+};
+
+export type FounderDashboardData = {
+  statistics: FounderDashboardStatistics;
+  recentOrders: FounderRecentOrder[];
+};
 
 export const founderDemoData: FounderDashboardData = {
   statistics: {
@@ -24,28 +29,36 @@ export const founderDemoData: FounderDashboardData = {
 
   recentOrders: [
     {
-      id: "KRVE-10482",
+      id: "KRVE-1048",
       customer: "Aarav Sharma",
+      product: "KRVE Noir Blazer",
       amount: "₹18,999",
-      status: "Paid",
-    },
-    {
-      id: "KRVE-10481",
-      customer: "Ananya Singh",
-      amount: "₹8,499",
       status: "Processing",
+      date: "28 Jul 2026",
     },
     {
-      id: "KRVE-10480",
-      customer: "Rohan Verma",
-      amount: "₹12,999",
+      id: "KRVE-1047",
+      customer: "Ananya Singh",
+      product: "Signature Evening Dress",
+      amount: "₹14,499",
       status: "Shipped",
+      date: "28 Jul 2026",
     },
     {
-      id: "KRVE-10479",
-      customer: "Priya Mehta",
-      amount: "₹6,799",
+      id: "KRVE-1046",
+      customer: "Rohan Verma",
+      product: "Obsidian Double-Breasted Suit",
+      amount: "₹24,999",
+      status: "Delivered",
+      date: "27 Jul 2026",
+    },
+    {
+      id: "KRVE-1045",
+      customer: "Ishita Mehra",
+      product: "KRVE Icon Sneakers",
+      amount: "₹8,999",
       status: "Pending",
+      date: "27 Jul 2026",
     },
   ],
 };
