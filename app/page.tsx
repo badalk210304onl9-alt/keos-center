@@ -1,5 +1,7 @@
 "use client";
 
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   BarChart3,
@@ -13,457 +15,371 @@ import {
   Sparkles,
   UserRound,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import {
-  useEffect,
-  useState,
-  type FormEvent,
-} from "react";
 
 const FOUNDER_USER_ID = "FOUNDER001";
-const FOUNDER_PASSWORD = "KRVE@2026";
+const FOUNDER_PASSWORD = "Founder@123";
 
-type KeosSession = {
+type LoginSession = {
   userId: string;
   name: string;
-  role: "Founder";
+  email: string;
+  role: string;
   department: string;
-  isAuthenticated: true;
+  isAuthenticated: boolean;
   loginTime: string;
 };
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState("FOUNDER001");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    try {
-      const localSession = window.localStorage.getItem(
-        "keos-auth-session",
-      );
+    const rememberedUserId = window.localStorage.getItem(
+      "keos-remembered-user-id"
+    );
 
-      const browserSession = window.sessionStorage.getItem(
-        "keos-auth-session",
-      );
-
-      const storedSession = localSession || browserSession;
-
-      if (!storedSession) {
-        setSessionChecked(true);
-        return;
-      }
-
-      const session = JSON.parse(
-        storedSession,
-      ) as Partial<KeosSession>;
-
-      const validFounderSession =
-        session.isAuthenticated === true &&
-        session.role === "Founder" &&
-        session.userId === FOUNDER_USER_ID;
-
-      if (validFounderSession) {
-        router.replace("/founder");
-        return;
-      }
-
-      window.localStorage.removeItem("keos-auth-session");
-      window.sessionStorage.removeItem("keos-auth-session");
-      window.localStorage.removeItem("keos-user");
-      setSessionChecked(true);
-    } catch {
-      window.localStorage.removeItem("keos-auth-session");
-      window.sessionStorage.removeItem("keos-auth-session");
-      window.localStorage.removeItem("keos-user");
-      setSessionChecked(true);
+    if (rememberedUserId) {
+      setUserId(rememberedUserId);
+      setRememberMe(true);
     }
-  }, [router]);
+  }, []);
 
-  const handleSubmit = (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
-
-    if (isLoading) return;
-
-    setError("");
-
-    const enteredUserId = userId.trim().toUpperCase();
-    const enteredPassword = password.trim();
-
-    if (!enteredUserId || !enteredPassword) {
-      setError("Please enter your User ID and password.");
-      return;
-    }
-
-    setIsLoading(true);
-
-    if (
-      enteredUserId !== FOUNDER_USER_ID ||
-      enteredPassword !== FOUNDER_PASSWORD
-    ) {
-      setError("Invalid User ID or password.");
-      setIsLoading(false);
-      return;
-    }
-
-    const session: KeosSession = {
+  function saveFounderSession() {
+    const session: LoginSession = {
       userId: FOUNDER_USER_ID,
       name: "Badal Kumar",
-      role: "Founder",
+      email: "founder@krve.in",
+      role: "founder",
       department: "Founder Office",
       isAuthenticated: true,
       loginTime: new Date().toISOString(),
     };
 
-    try {
-      window.localStorage.removeItem("keos-auth-session");
-      window.sessionStorage.removeItem(
-        "keos-auth-session",
-      );
-      window.localStorage.removeItem("keos-user");
+    /*
+     * Multiple keys are stored so this page remains compatible
+     * with common KEOS session implementations.
+     */
+    window.localStorage.setItem("keos-session", JSON.stringify(session));
+    window.localStorage.setItem("keos_session", JSON.stringify(session));
+    window.localStorage.setItem("keosSession", JSON.stringify(session));
 
-      if (keepSignedIn) {
-        window.localStorage.setItem(
-          "keos-auth-session",
-          JSON.stringify(session),
-        );
-      } else {
-        window.sessionStorage.setItem(
-          "keos-auth-session",
-          JSON.stringify(session),
-        );
-      }
-
+    if (rememberMe) {
       window.localStorage.setItem(
-        "keos-user",
-        JSON.stringify(session),
+        "keos-remembered-user-id",
+        FOUNDER_USER_ID
       );
-
-      document.cookie =
-        "keos-authenticated=true; Path=/; Max-Age=86400; SameSite=Lax";
-
-      router.replace("/founder");
-    } catch {
-      setError(
-        "Unable to save login session. Please allow browser storage and try again.",
-      );
-      setIsLoading(false);
+    } else {
+      window.localStorage.removeItem("keos-remembered-user-id");
     }
-  };
+  }
 
-  if (!sessionChecked) {
-    return <LoginLoadingScreen />;
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+
+    const normalizedUserId = userId.trim().toUpperCase();
+
+    if (!normalizedUserId) {
+      setError("Please enter your User ID.");
+      return;
+    }
+
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
+    if (
+      normalizedUserId !== FOUNDER_USER_ID ||
+      password !== FOUNDER_PASSWORD
+    ) {
+      setError("The User ID or password is incorrect.");
+      return;
+    }
+
+    setSubmitting(true);
+    saveFounderSession();
+
+    window.setTimeout(() => {
+      router.push("/founder");
+    }, 550);
   }
 
   return (
-    <main className="min-h-screen bg-[#f3f6fb]">
-      <div className="grid min-h-screen lg:grid-cols-[1.08fr_0.92fr]">
-        <section className="relative hidden overflow-hidden bg-[#0d172c] px-12 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-14">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_85%,rgba(76,29,149,0.30),transparent_38%)]" />
+    <main className="min-h-screen bg-[#f5f3ee] text-zinc-950">
+      <div className="grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
+        {/* Left luxury brand panel */}
+        <section className="relative hidden overflow-hidden bg-[#11110f] text-white lg:flex lg:flex-col">
+          <div className="absolute -left-40 top-20 h-[420px] w-[420px] rounded-full bg-[#c9a861]/10 blur-[130px]" />
 
-          <div className="pointer-events-none absolute -left-32 top-20 h-72 w-72 rounded-full bg-blue-600/10 blur-3xl" />
+          <div className="absolute -bottom-48 right-[-100px] h-[500px] w-[500px] rounded-full bg-[#c9a861]/10 blur-[150px]" />
 
-          <div className="relative z-10">
+          <div className="relative z-10 flex min-h-screen flex-col px-12 py-10 xl:px-16 xl:py-12">
             <div className="flex items-center gap-4">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600 text-xl font-black shadow-lg shadow-blue-950/30">
-                K
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#c7a96b]/40 bg-[#c7a96b]/10">
+                <span className="font-serif text-2xl font-semibold text-[#ddbf7e]">
+                  K
+                </span>
               </div>
 
               <div>
-                <p className="text-xl font-black tracking-[0.24em]">
+                <p className="font-serif text-2xl font-semibold tracking-[0.18em]">
                   KEOS
                 </p>
 
-                <p className="mt-1 text-xs text-blue-300">
+                <p className="mt-1 text-[10px] uppercase tracking-[0.23em] text-zinc-500">
                   KRVE Enterprise Operating System
                 </p>
               </div>
             </div>
 
-            <div className="mt-12 inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-xs font-bold text-blue-200">
-              <Sparkles size={15} />
-              Enterprise Command Center
-            </div>
+            <div className="my-auto max-w-2xl py-16">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#c7a96b]/30 bg-[#c7a96b]/10 px-4 py-2">
+                <Sparkles size={15} className="text-[#ddbf7e]" />
 
-            <div className="mt-8 max-w-2xl">
-              <h1 className="text-5xl font-black leading-[1.08] tracking-tight xl:text-6xl">
-                Control your entire
-                <span className="block text-blue-400">
-                  business operation.
+                <span className="text-xs font-semibold uppercase tracking-[0.15em] text-[#ddbf7e]">
+                  Founder Command Center
                 </span>
+              </div>
+
+              <h1 className="mt-8 max-w-xl font-serif text-5xl font-semibold leading-[1.06] tracking-tight xl:text-6xl">
+                Control your entire enterprise from one place.
               </h1>
 
-              <p className="mt-7 max-w-xl text-base leading-8 text-slate-300 xl:text-lg">
-                Finance, human resources, sales, products,
-                inventory, marketing, customer support and
-                business intelligence—all connected in one
-                secure enterprise platform.
+              <p className="mt-7 max-w-xl text-base leading-8 text-zinc-400 xl:text-lg">
+                Finance, employees, products, inventory, customers, marketing
+                and enterprise intelligence—connected through one secure
+                operating system.
               </p>
+
+              <div className="mt-10 grid max-w-xl gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c7a96b]/10 text-[#d9bb79]">
+                    <ShieldCheck size={19} />
+                  </div>
+
+                  <p className="mt-4 text-sm font-semibold">
+                    Secure Access
+                  </p>
+
+                  <p className="mt-2 text-xs leading-5 text-zinc-500">
+                    Protected enterprise workspace
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c7a96b]/10 text-[#d9bb79]">
+                    <BarChart3 size={19} />
+                  </div>
+
+                  <p className="mt-4 text-sm font-semibold">
+                    Live Intelligence
+                  </p>
+
+                  <p className="mt-2 text-xs leading-5 text-zinc-500">
+                    Unified operational insights
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c7a96b]/10 text-[#d9bb79]">
+                    <Building2 size={19} />
+                  </div>
+
+                  <p className="mt-4 text-sm font-semibold">
+                    Full Control
+                  </p>
+
+                  <p className="mt-2 text-xs leading-5 text-zinc-500">
+                    Every department connected
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="relative z-10 mt-10 grid gap-4 xl:grid-cols-3">
-            <FeatureCard
-              icon={ShieldCheck}
-              title="Secure Access"
-              description="Role-based enterprise protection."
-            />
-
-            <FeatureCard
-              icon={BarChart3}
-              title="Live Insights"
-              description="Real-time operational intelligence."
-            />
-
-            <FeatureCard
-              icon={Building2}
-              title="One Platform"
-              description="All departments in one system."
-            />
-          </div>
-
-          <div className="relative z-10 mt-8 flex items-center justify-between border-t border-white/10 pt-6 text-xs text-slate-400">
-            <span>© 2026 KRVE Enterprise</span>
-            <span>Private & Confidential</span>
+            <div className="flex items-center justify-between border-t border-white/10 pt-6 text-[11px] uppercase tracking-[0.14em] text-zinc-600">
+              <span>KRVE Enterprise</span>
+              <span>Founder Access Portal</span>
+            </div>
           </div>
         </section>
 
-        <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
-          <div className="w-full max-w-[448px]">
-            <div className="mb-7 flex items-center gap-3 lg:hidden">
-              <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-600 text-lg font-black text-white">
-                K
+        {/* Login form */}
+        <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10 sm:px-8">
+          <div className="absolute right-[-180px] top-[-180px] h-[420px] w-[420px] rounded-full bg-[#c7a96b]/10 blur-[100px]" />
+
+          <div className="relative z-10 w-full max-w-[470px]">
+            <div className="mb-8 flex items-center gap-3 lg:hidden">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#171714] text-[#d8b976]">
+                <span className="font-serif text-xl font-semibold">K</span>
               </div>
 
               <div>
-                <p className="font-black tracking-[0.22em] text-slate-950">
+                <p className="font-serif text-xl font-semibold tracking-[0.15em]">
                   KEOS
                 </p>
 
-                <p className="text-xs text-slate-500">
+                <p className="text-[9px] uppercase tracking-[0.18em] text-zinc-500">
                   Enterprise Operating System
                 </p>
               </div>
             </div>
 
-            <div className="rounded-[30px] border border-slate-200 bg-white px-6 py-8 shadow-[0_24px_70px_rgba(15,23,42,0.12)] sm:px-9 sm:py-9">
-              <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 text-xs font-black text-blue-700">
-                <LockKeyhole size={15} />
-                Authorized Personnel Only
+            <div className="rounded-[30px] border border-zinc-200 bg-white p-6 shadow-[0_24px_70px_rgba(24,24,20,0.10)] sm:p-9">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#c7a96b]/30 bg-[#c7a96b]/10 px-3.5 py-2">
+                <LockKeyhole size={14} className="text-[#937238]" />
+
+                <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#84652f]">
+                  Authorized Personnel Only
+                </span>
               </div>
 
-              <h2 className="mt-6 text-3xl font-black tracking-tight text-slate-950">
+              <h2 className="mt-7 font-serif text-4xl font-semibold tracking-tight text-[#171714]">
                 Welcome to KEOS
               </h2>
 
-              <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">
-                Sign in using the credentials provided by your
-                organization.
+              <p className="mt-3 max-w-sm text-sm leading-6 text-zinc-500">
+                Sign in using the credentials provided by your organization.
               </p>
 
-              <form
-                onSubmit={handleSubmit}
-                className="mt-8"
-                noValidate
-              >
-                <div>
-                  <label
-                    htmlFor="userId"
-                    className="text-sm font-black text-slate-800"
-                  >
+              <form onSubmit={handleSubmit} className="mt-8">
+                <label className="block">
+                  <span className="mb-2.5 block text-xs font-semibold text-zinc-800">
                     User ID
-                  </label>
+                  </span>
 
-                  <div className="relative mt-2">
+                  <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-[#faf9f6] px-4 transition focus-within:border-[#b49556] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#c7a96b]/10">
                     <UserRound
-                      size={19}
-                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                      size={18}
+                      className="shrink-0 text-zinc-400"
                     />
 
                     <input
-                      id="userId"
-                      name="userId"
-                      type="text"
-                      autoComplete="username"
-                      spellCheck={false}
                       value={userId}
                       onChange={(event) => {
                         setUserId(event.target.value);
                         setError("");
                       }}
                       placeholder="Enter your User ID"
-                      className="h-[52px] w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-base font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      autoComplete="username"
+                      className="h-14 w-full bg-transparent text-sm font-medium uppercase text-zinc-950 outline-none placeholder:normal-case placeholder:text-zinc-400"
                     />
                   </div>
-                </div>
+                </label>
 
-                <div className="mt-5">
-                  <label
-                    htmlFor="password"
-                    className="text-sm font-black text-slate-800"
-                  >
+                <label className="mt-5 block">
+                  <span className="mb-2.5 block text-xs font-semibold text-zinc-800">
                     Password
-                  </label>
+                  </span>
 
-                  <div className="relative mt-2">
+                  <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-[#faf9f6] px-4 transition focus-within:border-[#b49556] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#c7a96b]/10">
                     <KeyRound
-                      size={19}
-                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                      size={18}
+                      className="shrink-0 text-zinc-400"
                     />
 
                     <input
-                      id="password"
-                      name="password"
-                      type={
-                        showPassword ? "text" : "password"
-                      }
-                      autoComplete="current-password"
+                      type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(event) => {
                         setPassword(event.target.value);
                         setError("");
                       }}
                       placeholder="Enter your password"
-                      className="h-[52px] w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-12 text-base font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      autoComplete="current-password"
+                      className="h-14 w-full bg-transparent text-sm text-zinc-950 outline-none placeholder:text-zinc-400"
                     />
 
                     <button
                       type="button"
-                      onClick={() =>
-                        setShowPassword(
-                          (current) => !current,
-                        )
-                      }
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
+                      onClick={() => setShowPassword((current) => !current)}
+                      className="shrink-0 rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
                       aria-label={
-                        showPassword
-                          ? "Hide password"
-                          : "Show password"
+                        showPassword ? "Hide password" : "Show password"
                       }
                     >
                       {showPassword ? (
-                        <EyeOff size={19} />
+                        <EyeOff size={18} />
                       ) : (
-                        <Eye size={19} />
+                        <Eye size={18} />
                       )}
                     </button>
                   </div>
-                </div>
-
-                <label className="mt-5 flex w-fit cursor-pointer items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={keepSignedIn}
-                    onChange={(event) =>
-                      setKeepSignedIn(
-                        event.target.checked,
-                      )
-                    }
-                    className="h-4 w-4 cursor-pointer accent-blue-600"
-                  />
-
-                  <span className="text-sm font-medium text-slate-600">
-                    Keep me signed in
-                  </span>
                 </label>
 
+                <div className="mt-5 flex items-center justify-between gap-4">
+                  <label className="flex cursor-pointer items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(event) =>
+                        setRememberMe(event.target.checked)
+                      }
+                      className="h-4 w-4 accent-[#a88542]"
+                    />
+
+                    <span className="text-xs text-zinc-600">
+                      Keep me signed in
+                    </span>
+                  </label>
+
+                  <span className="text-[11px] font-medium text-zinc-400">
+                    Credentials issued by HR
+                  </span>
+                </div>
+
                 {error && (
-                  <div className="mt-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm font-medium text-red-700">
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-red-600" />
-                    <span>{error}</span>
+                  <div className="mt-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5">
+                    <LockKeyhole
+                      size={17}
+                      className="mt-0.5 shrink-0 text-red-600"
+                    />
+
+                    <p className="text-xs leading-5 text-red-700">
+                      {error}
+                    </p>
                   </div>
                 )}
 
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="mt-5 flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 px-5 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={submitting}
+                  className="mt-7 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#171714] px-5 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(23,23,20,0.18)] transition hover:bg-[#2b2923] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {isLoading ? (
+                  {submitting ? (
                     <>
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                      Signing In...
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Signing in...
                     </>
                   ) : (
                     <>
                       Sign In
-                      <ArrowRight size={19} />
+                      <ArrowRight size={17} />
                     </>
                   )}
                 </button>
               </form>
 
-              <div className="mt-7 flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
-                <CheckCircle2
-                  size={19}
-                  className="mt-0.5 shrink-0 text-emerald-600"
-                />
+              <div className="mt-7 flex items-center justify-center gap-2 border-t border-zinc-100 pt-6">
+                <CheckCircle2 size={14} className="text-emerald-600" />
 
-                <p className="text-xs leading-5 text-slate-500">
-                  Your access is protected and monitored under
-                  KRVE enterprise security policies.
+                <p className="text-[11px] text-zinc-500">
+                  Secure access protected by KEOS authentication
                 </p>
               </div>
             </div>
 
-            <p className="mt-6 text-center text-xs text-slate-400">
-              Need access? Contact the KRVE system
-              administrator.
+            <p className="mt-6 text-center text-[11px] leading-5 text-zinc-500">
+              KRVE Enterprise Operating System · Founder Command Center
             </p>
           </div>
         </section>
-      </div>
-    </main>
-  );
-}
-
-function FeatureCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: typeof ShieldCheck;
-  title: string;
-  description: string;
-}) {
-  return (
-    <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
-      <Icon size={22} className="text-blue-400" />
-
-      <h3 className="mt-4 font-black text-white">
-        {title}
-      </h3>
-
-      <p className="mt-2 text-xs leading-5 text-slate-400">
-        {description}
-      </p>
-    </article>
-  );
-}
-
-function LoginLoadingScreen() {
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f3f6fb]">
-      <div className="text-center">
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-blue-600 text-xl font-black text-white shadow-lg shadow-blue-600/20">
-          K
-        </div>
-
-        <div className="mx-auto mt-6 h-1.5 w-44 overflow-hidden rounded-full bg-slate-200">
-          <div className="h-full w-1/2 animate-pulse rounded-full bg-blue-600" />
-        </div>
-
-        <p className="mt-5 text-sm font-semibold text-slate-600">
-          Checking secure session...
-        </p>
       </div>
     </main>
   );
