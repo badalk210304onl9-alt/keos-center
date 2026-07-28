@@ -91,11 +91,45 @@ textarea::placeholder {
 .keos-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
-/* KEOS Luxury Sidebar Scrollbar */
+/* ================================
+   KEOS Luxury Scrollbar
+================================ */
 
 .keos-sidebar-scroll {
+  overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #9d7a3d #171714;
+  scrollbar-color: #b89047 #171714;
+}
+
+/* Chrome / Edge */
+
+.keos-sidebar-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.keos-sidebar-scroll::-webkit-scrollbar-track {
+  background: #111111;
+  border-radius: 100px;
+}
+
+.keos-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #d6ba76 0%,
+    #b89047 50%,
+    #8a6730 100%
+  );
+  border-radius: 100px;
+  border: 2px solid #111111;
+}
+
+.keos-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    #e8cc84 0%,
+    #c39a4c 50%,
+    #987238 100%
+  );
 }
 
 /* Chrome, Edge, Safari */
