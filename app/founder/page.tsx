@@ -14,21 +14,27 @@ import {
   Bell,
   Boxes,
   Building2,
+  CalendarDays,
+  Camera,
   ChevronDown,
   CircleDollarSign,
   ClipboardCheck,
   CreditCard,
+  Edit3,
   FileChartColumn,
   Headphones,
   LayoutDashboard,
   Link2,
   LogOut,
+  Mail,
+  MapPin,
   Megaphone,
   Menu,
   Package,
   Plus,
   ReceiptIndianRupee,
   RotateCcw,
+  Save,
   Search,
   Settings,
   ShieldCheck,
@@ -39,6 +45,7 @@ import {
   TrendingUp,
   Truck,
   UserRound,
+  Phone,
   Users,
   Warehouse,
   X,
@@ -116,6 +123,19 @@ type NavigationItem = {
 type NavigationGroup = {
   title: string;
   items: NavigationItem[];
+};
+
+type FounderProfile = {
+  name: string;
+  userId: string;
+  email: string;
+  phone: string;
+  designation: string;
+  department: string;
+  location: string;
+  joiningDate: string;
+  bio: string;
+  avatar: string;
 };
 
 type DashboardStatistic = {
@@ -640,6 +660,22 @@ export default function FounderPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [aiCommandOpen, setAiCommandOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [founderProfileOpen, setFounderProfileOpen] = useState(false);
+  const [profileEditing, setProfileEditing] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [founderProfile, setFounderProfile] = useState<FounderProfile>({
+    name: "Badal Kumar",
+    userId: "FOUNDER001",
+    email: "founder@krve.in",
+    phone: "+91 98765 43210",
+    designation: "Founder & CEO",
+    department: "Founder Office",
+    location: "Varanasi, Uttar Pradesh",
+    joiningDate: "2026-01-01",
+    bio: "Founder of KRVE and architect of the KRVE Enterprise Operating System.",
+    avatar: "",
+  });
+  const [profileDraft, setProfileDraft] = useState<FounderProfile>(founderProfile);
 
   useEffect(() => {
     const currentSession = getStoredSession();
@@ -655,6 +691,35 @@ export default function FounderPage() {
     }
 
     setSession(currentSession);
+
+    const storedProfile = window.localStorage.getItem("keos-founder-profile");
+    const defaultProfile: FounderProfile = {
+      name: currentSession.name || "Badal Kumar",
+      userId: currentSession.userId || "FOUNDER001",
+      email: "founder@krve.in",
+      phone: "+91 98765 43210",
+      designation: "Founder & CEO",
+      department: "Founder Office",
+      location: "Varanasi, Uttar Pradesh",
+      joiningDate: "2026-01-01",
+      bio: "Founder of KRVE and architect of the KRVE Enterprise Operating System.",
+      avatar: "",
+    };
+
+    if (storedProfile) {
+      try {
+        const parsedProfile = JSON.parse(storedProfile) as Partial<FounderProfile>;
+        const completeProfile = { ...defaultProfile, ...parsedProfile };
+        setFounderProfile(completeProfile);
+        setProfileDraft(completeProfile);
+      } catch {
+        setFounderProfile(defaultProfile);
+        setProfileDraft(defaultProfile);
+      }
+    } else {
+      setFounderProfile(defaultProfile);
+      setProfileDraft(defaultProfile);
+    }
   }, [router]);
 
   const allNavigationItems = useMemo(
@@ -695,6 +760,61 @@ export default function FounderPage() {
       top: 0,
       behavior: "smooth",
     });
+  }
+
+  function openFounderProfile() {
+    setProfileOpen(false);
+    setProfileDraft(founderProfile);
+    setProfileEditing(false);
+    setProfileSaved(false);
+    setFounderProfileOpen(true);
+  }
+
+  function closeFounderProfile() {
+    setProfileDraft(founderProfile);
+    setProfileEditing(false);
+    setProfileSaved(false);
+    setFounderProfileOpen(false);
+  }
+
+  function updateProfileField(field: keyof FounderProfile, value: string) {
+    setProfileDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        updateProfileField("avatar", reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function saveFounderProfile() {
+    const cleanedProfile = {
+      ...profileDraft,
+      name: profileDraft.name.trim() || founderProfile.name,
+      email: profileDraft.email.trim(),
+      phone: profileDraft.phone.trim(),
+      location: profileDraft.location.trim(),
+      bio: profileDraft.bio.trim(),
+    };
+
+    setFounderProfile(cleanedProfile);
+    setProfileDraft(cleanedProfile);
+    window.localStorage.setItem(
+      "keos-founder-profile",
+      JSON.stringify(cleanedProfile),
+    );
+    setProfileEditing(false);
+    setProfileSaved(true);
+    window.setTimeout(() => setProfileSaved(false), 2500);
   }
 
   function handleLogout() {
@@ -890,13 +1010,26 @@ export default function FounderPage() {
                 }
                 className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-2 transition hover:bg-slate-50"
               >
-                <div className="grid h-8 w-8 place-items-center rounded-lg bg-blue-100 text-xs font-black text-blue-700">
-                  BK
+                <div className="grid h-8 w-8 place-items-center overflow-hidden rounded-lg bg-blue-100 text-xs font-black text-blue-700">
+                  {founderProfile.avatar ? (
+                    <img
+                      src={founderProfile.avatar}
+                      alt={founderProfile.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    founderProfile.name
+                      .split(" ")
+                      .map((part) => part[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()
+                  )}
                 </div>
 
                 <div className="hidden text-left sm:block">
                   <strong className="block text-xs text-slate-900">
-                    {session.name}
+                    {founderProfile.name}
                   </strong>
 
                   <span className="text-[10px] text-red-600">
@@ -916,11 +1049,11 @@ export default function FounderPage() {
                 <div className="absolute right-0 top-14 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
                   <div className="border-b border-slate-100 p-3">
                     <strong className="block text-sm text-slate-900">
-                      {session.name}
+                      {founderProfile.name}
                     </strong>
 
                     <span className="mt-1 block text-xs text-slate-500">
-                      {session.userId}
+                      {founderProfile.userId}
                     </span>
 
                     <span className="mt-1 block text-xs font-semibold text-red-600">
@@ -930,6 +1063,7 @@ export default function FounderPage() {
 
                   <button
                     type="button"
+                    onClick={openFounderProfile}
                     className="mt-2 flex w-full items-center gap-3 rounded-lg p-3 text-left text-sm text-slate-600 transition hover:bg-slate-50"
                   >
                     <UserRound size={17} />
@@ -938,6 +1072,7 @@ export default function FounderPage() {
 
                   <button
                     type="button"
+                    onClick={() => openModule("system-settings")}
                     className="flex w-full items-center gap-3 rounded-lg p-3 text-left text-sm text-slate-600 transition hover:bg-slate-50"
                   >
                     <Settings size={17} />
@@ -957,6 +1092,271 @@ export default function FounderPage() {
             </div>
           </div>
         </header>
+
+
+        {founderProfileOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={closeFounderProfile}
+              className="absolute inset-0"
+              aria-label="Close Founder profile"
+            />
+
+            <section className="relative z-10 max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-white/20 bg-white shadow-2xl">
+              <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-blue-950 p-6 text-white sm:p-8">
+                <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+
+                <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
+                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                    <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-3xl border-4 border-white/20 bg-white/15 shadow-xl">
+                      {profileDraft.avatar ? (
+                        <img
+                          src={profileDraft.avatar}
+                          alt={profileDraft.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="grid h-full w-full place-items-center text-3xl font-black">
+                          {profileDraft.name
+                            .split(" ")
+                            .map((part) => part[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase() || "BK"}
+                        </div>
+                      )}
+
+                      {profileEditing && (
+                        <label className="absolute inset-x-2 bottom-2 flex cursor-pointer items-center justify-center gap-1 rounded-xl bg-slate-950/75 px-2 py-2 text-[10px] font-bold backdrop-blur">
+                          <Camera size={13} />
+                          Change
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-200">
+                        Founder Identity
+                      </p>
+                      <h2 className="mt-2 text-3xl font-black sm:text-4xl">
+                        {profileDraft.name}
+                      </h2>
+                      <p className="mt-2 text-sm font-semibold text-blue-100">
+                        {profileDraft.designation}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold">
+                          {profileDraft.userId}
+                        </span>
+                        <span className="rounded-full bg-emerald-400/15 px-3 py-1.5 text-xs font-bold text-emerald-100">
+                          Full Enterprise Access
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 self-end sm:self-start">
+                    {!profileEditing && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileDraft(founderProfile);
+                          setProfileEditing(true);
+                          setProfileSaved(false);
+                        }}
+                        className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-blue-700 transition hover:bg-blue-50"
+                      >
+                        <Edit3 size={16} />
+                        Edit Profile
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={closeFounderProfile}
+                      className="grid h-11 w-11 place-items-center rounded-xl border border-white/20 bg-white/10 transition hover:bg-white/20"
+                      aria-label="Close profile"
+                    >
+                      <X size={19} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_0.36fr]">
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-black text-slate-950">
+                          Personal Information
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Contact and professional profile details.
+                        </p>
+                      </div>
+
+                      {profileSaved && (
+                        <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
+                          Profile saved
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                      <ProfileField label="Full Name" icon={UserRound}>
+                        <input
+                          value={profileDraft.name}
+                          onChange={(event) => updateProfileField("name", event.target.value)}
+                          disabled={!profileEditing}
+                          className={profileInputClass(profileEditing)}
+                        />
+                      </ProfileField>
+
+                      <ProfileField label="Employee ID" icon={ShieldCheck}>
+                        <input
+                          value={profileDraft.userId}
+                          disabled
+                          className={profileInputClass(false)}
+                        />
+                      </ProfileField>
+
+                      <ProfileField label="Email Address" icon={Mail}>
+                        <input
+                          type="email"
+                          value={profileDraft.email}
+                          onChange={(event) => updateProfileField("email", event.target.value)}
+                          disabled={!profileEditing}
+                          className={profileInputClass(profileEditing)}
+                        />
+                      </ProfileField>
+
+                      <ProfileField label="Phone Number" icon={Phone}>
+                        <input
+                          value={profileDraft.phone}
+                          onChange={(event) => updateProfileField("phone", event.target.value)}
+                          disabled={!profileEditing}
+                          className={profileInputClass(profileEditing)}
+                        />
+                      </ProfileField>
+
+                      <ProfileField label="Designation" icon={Building2}>
+                        <input
+                          value={profileDraft.designation}
+                          disabled
+                          className={profileInputClass(false)}
+                        />
+                      </ProfileField>
+
+                      <ProfileField label="Department" icon={Users}>
+                        <input
+                          value={profileDraft.department}
+                          disabled
+                          className={profileInputClass(false)}
+                        />
+                      </ProfileField>
+
+                      <ProfileField label="Location" icon={MapPin}>
+                        <input
+                          value={profileDraft.location}
+                          onChange={(event) => updateProfileField("location", event.target.value)}
+                          disabled={!profileEditing}
+                          className={profileInputClass(profileEditing)}
+                        />
+                      </ProfileField>
+
+                      <ProfileField label="Joining Date" icon={CalendarDays}>
+                        <input
+                          type="date"
+                          value={profileDraft.joiningDate}
+                          disabled
+                          className={profileInputClass(false)}
+                        />
+                      </ProfileField>
+
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                          Profile Bio
+                        </label>
+                        <textarea
+                          rows={4}
+                          value={profileDraft.bio}
+                          onChange={(event) => updateProfileField("bio", event.target.value)}
+                          disabled={!profileEditing}
+                          className={`mt-2 w-full resize-none rounded-xl border px-4 py-3 text-sm leading-6 outline-none transition ${
+                            profileEditing
+                              ? "border-slate-300 bg-white text-slate-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                              : "border-slate-200 bg-slate-50 text-slate-600"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {profileEditing && (
+                    <div className="flex flex-col-reverse justify-end gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileDraft(founderProfile);
+                          setProfileEditing(false);
+                        }}
+                        className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={saveFounderProfile}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
+                      >
+                        <Save size={17} />
+                        Save Profile
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <aside className="space-y-5">
+                  <div className="rounded-2xl bg-[#0f172a] p-5 text-white shadow-xl">
+                    <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-600">
+                      <ShieldCheck size={21} />
+                    </div>
+                    <h3 className="mt-5 text-lg font-black">Access Level</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">
+                      Founder has complete access to all departments, records, approvals and enterprise controls.
+                    </p>
+                    <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                      <p className="text-xs font-bold text-emerald-300">Account Status</p>
+                      <p className="mt-2 text-sm font-semibold">Active & Secure</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h3 className="text-sm font-black text-slate-950">Editable by employee</h3>
+                    <ul className="mt-4 space-y-3 text-xs leading-5 text-slate-500">
+                      <li>• Profile photo</li>
+                      <li>• Full name</li>
+                      <li>• Email and phone</li>
+                      <li>• Location and bio</li>
+                    </ul>
+                    <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-800">
+                      Employee ID, role, department and joining date remain protected and can only be changed through HR or Founder administration.
+                    </p>
+                  </div>
+                </aside>
+              </div>
+            </section>
+          </div>
+        )}
 
 
         {aiCommandOpen && (
@@ -1349,6 +1749,34 @@ export default function FounderPage() {
       </section>
     </main>
   );
+}
+
+function ProfileField({
+  label,
+  icon: Icon,
+  children,
+}: {
+  label: string;
+  icon: IconType;
+  children: React.ReactNode;
+}) {
+  return (
+    <label>
+      <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+        <Icon size={14} />
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function profileInputClass(editable: boolean) {
+  return `mt-2 h-12 w-full rounded-xl border px-4 text-sm outline-none transition ${
+    editable
+      ? "border-slate-300 bg-white text-slate-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+      : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-600"
+  }`;
 }
 
 function FounderDashboard({
