@@ -1,1576 +1,730 @@
 "use client";
 
+import { useMemo, useState, type ElementType, type FormEvent } from "react";
 import {
-  Activity,
   AlertTriangle,
   ArrowRight,
+  BadgePercent,
   BarChart3,
   Calculator,
   CheckCircle2,
-  ChevronRight,
   CircleDollarSign,
-  Download,
-  FileBarChart,
-  Filter,
-  History,
+  FileCheck2,
   IndianRupee,
-  Layers3,
+  Landmark,
   LineChart,
-  Package,
+  ListChecks,
+  PackageSearch,
   Percent,
   Plus,
-  RefreshCcw,
   Search,
-  Settings2,
   ShieldCheck,
+  SlidersHorizontal,
   Sparkles,
-  Tags,
-  TrendingDown,
+  Store,
+  Tag,
   TrendingUp,
+  Users,
   X,
 } from "lucide-react";
-import { useMemo, useState, type ComponentType } from "react";
 
-type IconType = ComponentType<{
-  size?: number;
-  className?: string;
-  strokeWidth?: number;
-}>;
-
-type PricingTab =
-  | "dashboard"
-  | "price-lists"
-  | "product-pricing"
-  | "costs"
-  | "margins"
-  | "rules"
-  | "history"
-  | "approvals"
-  | "analytics"
-  | "reports"
-  | "settings";
-
-type PriceStatus = "Active" | "Draft" | "Scheduled" | "Expired";
-type ApprovalStatus = "Pending" | "Approved" | "Rejected";
-type MarginHealth = "Healthy" | "Low" | "Critical";
-
-type PriceList = {
+type PricingModule = {
   id: string;
-  name: string;
-  channel: string;
-  currency: string;
-  products: number;
-  validFrom: string;
-  validTo: string;
-  status: PriceStatus;
-};
-
-type ProductPrice = {
-  id: string;
-  sku: string;
-  product: string;
-  category: string;
-  cost: number;
-  price: number;
-  compareAt: number;
-  channel: string;
-  margin: number;
-  lastUpdated: string;
-  health: MarginHealth;
-};
-
-type PricingRule = {
-  id: string;
-  name: string;
-  scope: string;
-  condition: string;
-  action: string;
-  priority: number;
-  status: "Active" | "Inactive";
-};
-
-type PriceApproval = {
-  id: string;
-  title: string;
-  requestedBy: string;
-  requestedAt: string;
-  affectedProducts: number;
-  currentValue: number;
-  proposedValue: number;
-  impact: string;
-  status: ApprovalStatus;
-};
-
-const tabs: Array<{
-  id: PricingTab;
-  label: string;
-  icon: IconType;
-}> = [
-  { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-  { id: "price-lists", label: "Price Lists", icon: Tags },
-  { id: "product-pricing", label: "Product Pricing", icon: Package },
-  { id: "costs", label: "Cost Management", icon: Calculator },
-  { id: "margins", label: "Margins", icon: Percent },
-  { id: "rules", label: "Pricing Rules", icon: Layers3 },
-  { id: "history", label: "Price History", icon: History },
-  { id: "approvals", label: "Approvals", icon: ShieldCheck },
-  { id: "analytics", label: "Analytics", icon: LineChart },
-  { id: "reports", label: "Reports", icon: FileBarChart },
-  { id: "settings", label: "Settings", icon: Settings2 },
-];
-
-const priceLists: PriceList[] = [
-  {
-    id: "PL-001",
-    name: "KRVE Website Retail",
-    channel: "Website",
-    currency: "INR",
-    products: 148,
-    validFrom: "1 Jul 2026",
-    validTo: "31 Dec 2026",
-    status: "Active",
-  },
-  {
-    id: "PL-002",
-    name: "Mobile App Exclusive",
-    channel: "Mobile App",
-    currency: "INR",
-    products: 96,
-    validFrom: "15 Jul 2026",
-    validTo: "30 Sep 2026",
-    status: "Active",
-  },
-  {
-    id: "PL-003",
-    name: "Marketplace Standard",
-    channel: "Marketplaces",
-    currency: "INR",
-    products: 124,
-    validFrom: "1 Aug 2026",
-    validTo: "31 Dec 2026",
-    status: "Scheduled",
-  },
-  {
-    id: "PL-004",
-    name: "Offline Store Premium",
-    channel: "Offline Stores",
-    currency: "INR",
-    products: 82,
-    validFrom: "1 Jun 2026",
-    validTo: "31 Mar 2027",
-    status: "Active",
-  },
-];
-
-const productPrices: ProductPrice[] = [
-  {
-    id: "PR-001",
-    sku: "KRVE-NB-BLK-M",
-    product: "KRVE Noir Blazer",
-    category: "Blazers",
-    cost: 8400,
-    price: 18999,
-    compareAt: 21999,
-    channel: "Website",
-    margin: 55.8,
-    lastUpdated: "26 Jul 2026, 12:45 AM",
-    health: "Healthy",
-  },
-  {
-    id: "PR-002",
-    sku: "KRVE-OS-BLK-42",
-    product: "Obsidian Oxford Shoes",
-    category: "Footwear",
-    cost: 3900,
-    price: 8999,
-    compareAt: 9999,
-    channel: "Website",
-    margin: 56.7,
-    lastUpdated: "26 Jul 2026, 12:12 AM",
-    health: "Healthy",
-  },
-  {
-    id: "PR-003",
-    sku: "KRVE-DB-NVY-XL",
-    product: "Double-Breasted Navy Suit",
-    category: "Suits",
-    cost: 14900,
-    price: 32999,
-    compareAt: 35999,
-    channel: "Website",
-    margin: 54.8,
-    lastUpdated: "25 Jul 2026, 11:42 PM",
-    health: "Healthy",
-  },
-  {
-    id: "PR-004",
-    sku: "KRVE-IC-SNK-09",
-    product: "KRVE Icon Sneakers",
-    category: "Footwear",
-    cost: 3200,
-    price: 6499,
-    compareAt: 7999,
-    channel: "Mobile App",
-    margin: 50.8,
-    lastUpdated: "25 Jul 2026, 10:55 PM",
-    health: "Low",
-  },
-  {
-    id: "PR-005",
-    sku: "KRVE-WL-BLK",
-    product: "Signature Leather Wallet",
-    category: "Accessories",
-    cost: 2100,
-    price: 3499,
-    compareAt: 3999,
-    channel: "Marketplace",
-    margin: 40.0,
-    lastUpdated: "25 Jul 2026, 09:20 PM",
-    health: "Critical",
-  },
-];
-
-const pricingRules: PricingRule[] = [
-  {
-    id: "RULE-001",
-    name: "Minimum Margin Protection",
-    scope: "All Products",
-    condition: "Margin below 45%",
-    action: "Block discount and require approval",
-    priority: 1,
-    status: "Active",
-  },
-  {
-    id: "RULE-002",
-    name: "App Launch Offer",
-    scope: "Mobile App",
-    condition: "First app order",
-    action: "Apply 10% discount up to ₹1,000",
-    priority: 2,
-    status: "Active",
-  },
-  {
-    id: "RULE-003",
-    name: "Overstock Price Action",
-    scope: "Inventory Overstock",
-    condition: "Stock above maximum level",
-    action: "Recommend markdown between 8% and 15%",
-    priority: 3,
-    status: "Active",
-  },
-  {
-    id: "RULE-004",
-    name: "VIP Customer Pricing",
-    scope: "Gold Loyalty Tier",
-    condition: "Customer tier is Gold",
-    action: "Apply 5% loyalty price",
-    priority: 4,
-    status: "Inactive",
-  },
-];
-
-const approvals: PriceApproval[] = [
-  {
-    id: "APR-2026-084",
-    title: "Footwear App Price Revision",
-    requestedBy: "Commerce Manager",
-    requestedAt: "26 Jul 2026, 12:25 AM",
-    affectedProducts: 18,
-    currentValue: 8999,
-    proposedValue: 8299,
-    impact: "Estimated conversion +7.4%, margin -3.1%",
-    status: "Pending",
-  },
-  {
-    id: "APR-2026-083",
-    title: "Marketplace Commission Adjustment",
-    requestedBy: "Finance Team",
-    requestedAt: "25 Jul 2026, 10:45 PM",
-    affectedProducts: 42,
-    currentValue: 12499,
-    proposedValue: 13299,
-    impact: "Protects 4.2% contribution margin",
-    status: "Pending",
-  },
-  {
-    id: "APR-2026-082",
-    title: "Noir Collection Premium Pricing",
-    requestedBy: "Founder Office",
-    requestedAt: "25 Jul 2026, 08:10 PM",
-    affectedProducts: 12,
-    currentValue: 18999,
-    proposedValue: 19999,
-    impact: "Revenue opportunity ₹1.8L monthly",
-    status: "Approved",
-  },
-];
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-export default function PricingManagement() {
-  const [activeTab, setActiveTab] = useState<PricingTab>("dashboard");
-  const [search, setSearch] = useState("");
-  const [showCreatePanel, setShowCreatePanel] = useState(false);
-
-  const filteredProducts = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    if (!query) {
-      return productPrices;
-    }
-
-    return productPrices.filter((item) =>
-      `${item.sku} ${item.product} ${item.category} ${item.channel}`
-        .toLowerCase()
-        .includes(query),
-    );
-  }, [search]);
-
-  return (
-    <div className="min-h-screen bg-[#f4f7fb] p-4 sm:p-6 lg:p-8">
-      <PricingHeader
-        onCreate={() => setShowCreatePanel(true)}
-        onOpenTab={setActiveTab}
-      />
-
-      <PricingTabBar activeTab={activeTab} onChange={setActiveTab} />
-
-      {activeTab === "dashboard" && (
-        <DashboardWorkspace onOpenTab={setActiveTab} />
-      )}
-
-      {activeTab === "price-lists" && (
-        <PriceListsWorkspace onCreate={() => setShowCreatePanel(true)} />
-      )}
-
-      {activeTab === "product-pricing" && (
-        <ProductPricingWorkspace
-          products={filteredProducts}
-          search={search}
-          setSearch={setSearch}
-        />
-      )}
-
-      {activeTab === "costs" && <CostManagementWorkspace />}
-
-      {activeTab === "margins" && <MarginsWorkspace />}
-
-      {activeTab === "rules" && <PricingRulesWorkspace />}
-
-      {activeTab === "history" && <PriceHistoryWorkspace />}
-
-      {activeTab === "approvals" && <ApprovalsWorkspace />}
-
-      {activeTab === "analytics" && <AnalyticsWorkspace />}
-
-      {activeTab === "reports" && <ReportsWorkspace />}
-
-      {activeTab === "settings" && <SettingsWorkspace />}
-
-      {showCreatePanel && (
-        <CreatePriceListPanel onClose={() => setShowCreatePanel(false)} />
-      )}
-    </div>
-  );
-}
-
-function PricingHeader({
-  onCreate,
-  onOpenTab,
-}: {
-  onCreate: () => void;
-  onOpenTab: (tab: PricingTab) => void;
-}) {
-  return (
-    <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-blue-700 to-blue-950 p-7 text-white shadow-xl sm:p-9">
-      <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15">
-              <Tags size={25} />
-            </div>
-
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
-              Commercial Controls
-            </p>
-          </div>
-
-          <h1 className="mt-5 text-3xl font-black sm:text-4xl">
-            Pricing Management
-          </h1>
-
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-blue-100">
-            Control product prices, cost structures, margins, channel price
-            lists, approval workflows, dynamic rules and pricing intelligence.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => onOpenTab("approvals")}
-            className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold transition hover:bg-white/20"
-          >
-            <ShieldCheck size={17} />
-            Review Approvals
-          </button>
-
-          <button
-            type="button"
-            onClick={onCreate}
-            className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-50"
-          >
-            <Plus size={17} />
-            Create Price List
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function PricingTabBar({
-  activeTab,
-  onChange,
-}: {
-  activeTab: PricingTab;
-  onChange: (tab: PricingTab) => void;
-}) {
-  return (
-    <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="keos-scrollbar flex overflow-x-auto p-2">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const active = activeTab === tab.id;
-
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onChange(tab.id)}
-              className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${
-                active
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <Icon size={17} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function DashboardWorkspace({
-  onOpenTab,
-}: {
-  onOpenTab: (tab: PricingTab) => void;
-}) {
-  const averageMargin =
-    productPrices.reduce((sum, item) => sum + item.margin, 0) /
-    productPrices.length;
-
-  const lowMarginCount = productPrices.filter(
-    (item) => item.health !== "Healthy",
-  ).length;
-
-  return (
-    <div className="mt-6 space-y-6">
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          title="Active Price Lists"
-          value="4"
-          note="Retail and channel based"
-          icon={Tags}
-          tone="blue"
-        />
-        <MetricCard
-          title="Average Margin"
-          value={`${averageMargin.toFixed(1)}%`}
-          note="Across catalogue"
-          icon={TrendingUp}
-          tone="green"
-        />
-        <MetricCard
-          title="Price Reviews"
-          value="11"
-          note="Pending approval"
-          icon={ShieldCheck}
-          tone="violet"
-        />
-        <MetricCard
-          title="Margin Alerts"
-          value={String(lowMarginCount)}
-          note="Below approved threshold"
-          icon={AlertTriangle}
-          tone="orange"
-        />
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="text-lg font-black text-slate-950">
-                Product Pricing Overview
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Current price, cost and margin health
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onOpenTab("product-pricing")}
-              className="flex items-center gap-2 text-sm font-bold text-blue-600"
-            >
-              Manage Product Pricing
-              <ArrowRight size={16} />
-            </button>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {productPrices.slice(0, 5).map((item) => (
-              <ProductPriceRow key={item.id} item={item} />
-            ))}
-          </div>
-        </article>
-
-        <article className="rounded-3xl bg-[#0f172a] p-6 text-white shadow-xl">
-          <div className="flex items-center justify-between">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-600">
-              <Sparkles size={22} />
-            </div>
-
-            <span className="rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-300">
-              AI Active
-            </span>
-          </div>
-
-          <h2 className="mt-6 text-xl font-black">
-            KRVE AI Pricing Intelligence
-          </h2>
-
-          <p className="mt-3 text-sm leading-7 text-slate-400">
-            KRVE AI analyses demand, inventory, conversion, cost, margin and
-            competitor signals to recommend safer pricing actions.
-          </p>
-
-          <div className="mt-6 space-y-3">
-            <InsightCard
-              title="Margin protection"
-              detail="One marketplace product is below the approved 45% margin threshold."
-              tone="orange"
-            />
-            <InsightCard
-              title="Revenue opportunity"
-              detail="A 5% price increase on the Noir collection may add ₹1.8L monthly revenue."
-              tone="green"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onOpenTab("analytics")}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold transition hover:bg-blue-700"
-          >
-            Open Pricing Intelligence
-            <ArrowRight size={16} />
-          </button>
-        </article>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-2">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black text-slate-950">
-                Approval Queue
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Price changes requiring review
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onOpenTab("approvals")}
-              className="text-sm font-bold text-blue-600"
-            >
-              Open Approvals
-            </button>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {approvals.map((approval) => (
-              <ApprovalListRow key={approval.id} approval={approval} />
-            ))}
-          </div>
-        </article>
-
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-black text-slate-950">
-            Quick Pricing Operations
-          </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Start daily commercial pricing workflows
-          </p>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <QuickAction
-              title="Create Price List"
-              description="Create channel or customer price lists"
-              icon={Tags}
-              onClick={() => onOpenTab("price-lists")}
-            />
-            <QuickAction
-              title="Update Product Price"
-              description="Review and change product pricing"
-              icon={Package}
-              onClick={() => onOpenTab("product-pricing")}
-            />
-            <QuickAction
-              title="Review Margins"
-              description="Find low-margin and critical products"
-              icon={Percent}
-              onClick={() => onOpenTab("margins")}
-            />
-            <QuickAction
-              title="Create Pricing Rule"
-              description="Automate safe pricing conditions"
-              icon={Layers3}
-              onClick={() => onOpenTab("rules")}
-            />
-          </div>
-        </article>
-      </section>
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-lg font-black text-slate-950">
-              Active Price Lists
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Channel and customer pricing coverage
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onOpenTab("price-lists")}
-            className="flex items-center gap-2 text-sm font-bold text-blue-600"
-          >
-            Manage Price Lists
-            <ArrowRight size={16} />
-          </button>
-        </div>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {priceLists.map((list) => (
-            <PriceListCard key={list.id} list={list} />
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function MetricCard({
-  title,
-  value,
-  note,
-  icon: Icon,
-  tone,
-}: {
-  title: string;
-  value: string;
-  note: string;
-  icon: IconType;
-  tone: "blue" | "green" | "violet" | "orange";
-}) {
-  const classes =
-    tone === "green"
-      ? "bg-green-50 text-green-600"
-      : tone === "violet"
-        ? "bg-violet-50 text-violet-600"
-        : tone === "orange"
-          ? "bg-orange-50 text-orange-600"
-          : "bg-blue-50 text-blue-600";
-
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-      <div className={`grid h-11 w-11 place-items-center rounded-xl ${classes}`}>
-        <Icon size={21} />
-      </div>
-      <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
-      <h2 className="mt-2 text-3xl font-black text-slate-950">{value}</h2>
-      <p className="mt-2 text-xs text-slate-400">{note}</p>
-    </article>
-  );
-}
-
-function ProductPriceRow({
-  item,
-}: {
-  item: ProductPrice;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-100 p-4 transition hover:bg-slate-50">
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
-        <Package size={18} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
-          <strong className="truncate text-sm text-slate-900">
-            {item.product}
-          </strong>
-          <span className="text-xs text-slate-400">{item.lastUpdated}</span>
-        </div>
-
-        <p className="mt-1 truncate text-xs text-slate-500">
-          {item.sku} · {item.channel} · Cost {formatCurrency(item.cost)}
-        </p>
-      </div>
-
-      <div className="text-right">
-        <strong className="block text-sm text-slate-900">
-          {formatCurrency(item.price)}
-        </strong>
-        <MarginBadge health={item.health} margin={item.margin} />
-      </div>
-    </div>
-  );
-}
-
-function ApprovalListRow({
-  approval,
-}: {
-  approval: PriceApproval;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-100 p-4 transition hover:bg-slate-50">
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-600">
-        <ShieldCheck size={18} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <strong className="block truncate text-sm text-slate-900">
-          {approval.title}
-        </strong>
-        <p className="mt-1 truncate text-xs text-slate-500">
-          {approval.requestedBy} · {approval.affectedProducts} products · {approval.impact}
-        </p>
-      </div>
-
-      <ApprovalBadge status={approval.status} />
-    </div>
-  );
-}
-
-function PriceListCard({
-  list,
-}: {
-  list: PriceList;
-}) {
-  return (
-    <article className="rounded-2xl border border-slate-200 p-5">
-      <div className="flex items-start justify-between">
-        <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
-          <Tags size={19} />
-        </div>
-        <PriceStatusBadge status={list.status} />
-      </div>
-
-      <h3 className="mt-4 text-sm font-black text-slate-900">{list.name}</h3>
-      <p className="mt-1 text-xs text-slate-500">{list.channel}</p>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <InfoBox label="Products" value={String(list.products)} />
-        <InfoBox label="Currency" value={list.currency} />
-      </div>
-    </article>
-  );
-}
-
-function InsightCard({
-  title,
-  detail,
-  tone,
-}: {
-  title: string;
-  detail: string;
-  tone: "green" | "orange";
-}) {
-  return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-      <strong
-        className={`text-xs ${
-          tone === "green" ? "text-green-300" : "text-orange-300"
-        }`}
-      >
-        {title}
-      </strong>
-      <p className="mt-2 text-xs leading-5 text-slate-400">{detail}</p>
-    </div>
-  );
-}
-
-function QuickAction({
-  title,
-  description,
-  icon: Icon,
-  onClick,
-}: {
   title: string;
   description: string;
-  icon: IconType;
-  onClick: () => void;
-}) {
+  features: number;
+  metric: string;
+  metricLabel: string;
+  icon: ElementType;
+};
+
+type KpiCard = {
+  label: string;
+  value: string;
+  helper: string;
+  icon: ElementType;
+  iconClass: string;
+};
+
+const pricingModules: PricingModule[] = [
+  {
+    id: "pricing-dashboard",
+    title: "Pricing Dashboard",
+    description:
+      "Monitor prices, margins, approvals, alerts, cost movements and pricing performance across KRVE.",
+    features: 10,
+    metric: "4",
+    metricLabel: "Active price lists",
+    icon: BarChart3,
+  },
+  {
+    id: "price-lists",
+    title: "Price Lists",
+    description:
+      "Create and manage standard, retail, wholesale, seasonal and customer-specific price lists.",
+    features: 12,
+    metric: "4",
+    metricLabel: "Active lists",
+    icon: Tag,
+  },
+  {
+    id: "product-pricing",
+    title: "Product Pricing",
+    description:
+      "Set product and variant prices, compare costs and manage selling prices across the catalogue.",
+    features: 12,
+    metric: "286",
+    metricLabel: "Priced products",
+    icon: PackageSearch,
+  },
+  {
+    id: "cost-management",
+    title: "Cost Management",
+    description:
+      "Maintain product costs, landed costs, freight, packaging, duties and supplier cost changes.",
+    features: 11,
+    metric: "₹8.4L",
+    metricLabel: "Monthly cost base",
+    icon: Calculator,
+  },
+  {
+    id: "margin-management",
+    title: "Margin Management",
+    description:
+      "Track gross margin, contribution margin, target margin and product-level profitability.",
+    features: 12,
+    metric: "51.6%",
+    metricLabel: "Average margin",
+    icon: TrendingUp,
+  },
+  {
+    id: "pricing-rules",
+    title: "Pricing Rules",
+    description:
+      "Configure automated pricing rules based on category, inventory, demand, season and customer segment.",
+    features: 11,
+    metric: "18",
+    metricLabel: "Active rules",
+    icon: SlidersHorizontal,
+  },
+  {
+    id: "price-approvals",
+    title: "Price Approvals",
+    description:
+      "Review proposed price changes, margin exceptions, discount requests and approval workflows.",
+    features: 10,
+    metric: "11",
+    metricLabel: "Reviews pending",
+    icon: FileCheck2,
+  },
+  {
+    id: "channel-pricing",
+    title: "Channel Pricing",
+    description:
+      "Control separate prices for website, app, marketplaces, retail outlets and partner channels.",
+    features: 12,
+    metric: "6",
+    metricLabel: "Sales channels",
+    icon: Store,
+  },
+  {
+    id: "customer-pricing",
+    title: "Customer Pricing",
+    description:
+      "Manage customer groups, membership pricing, corporate rates and negotiated commercial terms.",
+    features: 9,
+    metric: "8",
+    metricLabel: "Customer groups",
+    icon: Users,
+  },
+  {
+    id: "dynamic-pricing",
+    title: "Dynamic Pricing",
+    description:
+      "Automate price adjustments using inventory, demand, conversion, seasonality and market signals.",
+    features: 11,
+    metric: "7",
+    metricLabel: "Automations active",
+    icon: Sparkles,
+  },
+  {
+    id: "competitive-pricing",
+    title: "Competitive Intelligence",
+    description:
+      "Compare market positioning, competitor prices, price gaps and product-level commercial opportunities.",
+    features: 10,
+    metric: "34",
+    metricLabel: "Products monitored",
+    icon: LineChart,
+  },
+  {
+    id: "pricing-analytics",
+    title: "Pricing Analytics",
+    description:
+      "Analyse price realisation, elasticity, margin impact, revenue movement and pricing effectiveness.",
+    features: 12,
+    metric: "₹12.8L",
+    metricLabel: "Revenue analysed",
+    icon: CircleDollarSign,
+  },
+];
+
+const kpiCards: KpiCard[] = [
+  {
+    label: "Active Price Lists",
+    value: "4",
+    helper: "Across all channels",
+    icon: Tag,
+    iconClass: "bg-blue-50 text-blue-600",
+  },
+  {
+    label: "Average Margin",
+    value: "51.6%",
+    helper: "Current product portfolio",
+    icon: TrendingUp,
+    iconClass: "bg-emerald-50 text-emerald-600",
+  },
+  {
+    label: "Price Reviews",
+    value: "11",
+    helper: "Awaiting approval",
+    icon: ShieldCheck,
+    iconClass: "bg-violet-50 text-violet-600",
+  },
+  {
+    label: "Margin Alerts",
+    value: "2",
+    helper: "Require immediate attention",
+    icon: AlertTriangle,
+    iconClass: "bg-orange-50 text-orange-600",
+  },
+];
+
+export default function PricingManagement() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedModule, setSelectedModule] =
+    useState<PricingModule | null>(null);
+  const [showCreatePriceList, setShowCreatePriceList] = useState(false);
+
+  const filteredModules = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return pricingModules;
+    }
+
+    return pricingModules.filter((module) => {
+      return (
+        module.title.toLowerCase().includes(query) ||
+        module.description.toLowerCase().includes(query) ||
+        module.metricLabel.toLowerCase().includes(query)
+      );
+    });
+  }, [searchQuery]);
+
+  function handleCreatePriceList(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setShowCreatePriceList(false);
+  }
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50/40 hover:shadow-md"
-    >
-      <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600">
-        <Icon size={20} />
-      </div>
+    <div className="min-h-full bg-[#f5f7fb]">
+      <div className="mx-auto w-full max-w-[1500px] space-y-6 px-5 py-8 sm:px-6 lg:px-8">
+        {/* HERO SECTION */}
+        <section className="overflow-hidden rounded-[26px] bg-gradient-to-r from-[#1765ff] via-[#2352d5] to-[#192d68] px-7 py-8 text-white shadow-[0_18px_45px_rgba(27,56,137,0.22)] sm:px-9 lg:px-10 lg:py-9">
+          <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-center">
+            <div className="max-w-4xl">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/15 backdrop-blur">
+                  <Tag className="h-6 w-6" />
+                </div>
 
-      <strong className="mt-4 block text-sm text-slate-900">{title}</strong>
-      <span className="mt-2 block text-xs leading-5 text-slate-500">
-        {description}
-      </span>
-
-      <span className="mt-4 flex items-center gap-2 text-xs font-bold text-blue-600">
-        Open
-        <ChevronRight
-          size={14}
-          className="transition group-hover:translate-x-1"
-        />
-      </span>
-    </button>
-  );
-}
-
-function PriceListsWorkspace({
-  onCreate,
-}: {
-  onCreate: () => void;
-}) {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Price Lists"
-        description="Manage channel, customer, retail and scheduled price lists."
-        buttonLabel="Create Price List"
-        onClick={onCreate}
-      />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {priceLists.map((list) => (
-          <article
-            key={list.id}
-            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-          >
-            <div className="flex items-start justify-between">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-                <Tags size={22} />
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-100">
+                  Commercial Controls
+                </p>
               </div>
-              <PriceStatusBadge status={list.status} />
+
+              <h1 className="text-3xl font-black tracking-[-0.04em] sm:text-4xl lg:text-[40px]">
+                Pricing Management
+              </h1>
+
+              <p className="mt-4 max-w-4xl text-sm leading-7 text-blue-100 sm:text-[15px]">
+                Control product prices, cost structures, margins, channel price
+                lists, approval workflows, dynamic rules and pricing
+                intelligence across KRVE.
+              </p>
             </div>
 
-            <h2 className="mt-5 text-lg font-black text-slate-950">{list.name}</h2>
-            <p className="mt-1 text-xs text-slate-500">{list.channel}</p>
+            <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-[310px] lg:grid-cols-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const approvalModule = pricingModules.find(
+                    (module) => module.id === "price-approvals",
+                  );
 
-            <div className="mt-5 space-y-3 text-xs">
-              <InfoRow label="Products" value={String(list.products)} />
-              <InfoRow label="Currency" value={list.currency} />
-              <InfoRow label="Valid From" value={list.validFrom} />
-              <InfoRow label="Valid To" value={list.validTo} />
-            </div>
-
-            <button
-              type="button"
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-            >
-              Open Price List
-              <ArrowRight size={16} />
-            </button>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function ProductPricingWorkspace({
-  products,
-  search,
-  setSearch,
-}: {
-  products: ProductPrice[];
-  search: string;
-  setSearch: (value: string) => void;
-}) {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Product Pricing Register"
-        description="Review and update product prices, compare-at prices, cost and margin."
-        buttonLabel="Bulk Price Update"
-      />
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row">
-          <div className="flex h-12 flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 focus-within:border-blue-500 focus-within:bg-white">
-            <Search size={17} className="text-slate-400" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search product, SKU, category or channel..."
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-            />
-            {search && (
-              <button type="button" onClick={() => setSearch("")}>
-                <X size={15} className="text-slate-400" />
+                  setSelectedModule(approvalModule ?? null);
+                }}
+                className="flex min-h-14 items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-5 text-sm font-semibold text-white transition hover:bg-white/15"
+              >
+                <ShieldCheck className="h-5 w-5" />
+                Review Approvals
               </button>
-            )}
+
+              <button
+                type="button"
+                onClick={() => setShowCreatePriceList(true)}
+                className="flex min-h-14 items-center justify-center gap-3 rounded-2xl bg-white px-5 text-sm font-semibold text-[#164cff] shadow-sm transition hover:bg-blue-50"
+              >
+                <Plus className="h-5 w-5" />
+                Create Price List
+              </button>
+            </div>
           </div>
+        </section>
 
-          <button
-            type="button"
-            className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600"
-          >
-            <Filter size={17} />
-            Filters
-          </button>
+        {/* KPI CARDS */}
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {kpiCards.map((kpi) => {
+            const Icon = kpi.icon;
 
-          <button
-            type="button"
-            className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600"
-          >
-            <Download size={17} />
-            Export
-          </button>
-        </div>
-      </section>
+            return (
+              <article
+                key={kpi.label}
+                className="rounded-[20px] border border-[#dbe3ef] bg-white p-6 shadow-[0_2px_5px_rgba(15,23,42,0.08)]"
+              >
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-2xl ${kpi.iconClass}`}
+                >
+                  <Icon className="h-6 w-6" />
+                </div>
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1250px] border-collapse text-left">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-                <th className="px-5 py-4">Product</th>
-                <th className="px-5 py-4">SKU</th>
-                <th className="px-5 py-4">Category</th>
-                <th className="px-5 py-4">Channel</th>
-                <th className="px-5 py-4">Cost</th>
-                <th className="px-5 py-4">Price</th>
-                <th className="px-5 py-4">Compare At</th>
-                <th className="px-5 py-4">Margin</th>
-                <th className="px-5 py-4">Updated</th>
-                <th className="px-5 py-4">Action</th>
-              </tr>
-            </thead>
+                <p className="mt-5 text-sm font-medium text-[#5c7296]">
+                  {kpi.label}
+                </p>
 
-            <tbody>
-              {products.map((item) => (
-                <tr key={item.id} className="border-b border-slate-100 text-sm">
-                  <td className="px-5 py-4 font-bold text-slate-900">{item.product}</td>
-                  <td className="px-5 py-4 font-mono text-xs text-slate-600">{item.sku}</td>
-                  <td className="px-5 py-4 text-slate-600">{item.category}</td>
-                  <td className="px-5 py-4 text-slate-600">{item.channel}</td>
-                  <td className="px-5 py-4 font-bold text-slate-900">{formatCurrency(item.cost)}</td>
-                  <td className="px-5 py-4 font-bold text-blue-600">{formatCurrency(item.price)}</td>
-                  <td className="px-5 py-4 text-slate-600">{formatCurrency(item.compareAt)}</td>
-                  <td className="px-5 py-4">
-                    <MarginBadge health={item.health} margin={item.margin} />
-                  </td>
-                  <td className="px-5 py-4 text-xs text-slate-500">{item.lastUpdated}</td>
-                  <td className="px-5 py-4">
-                    <button type="button" className="text-xs font-bold text-blue-600">
-                      Edit Price
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
-}
+                <p className="mt-1 text-[30px] font-black tracking-[-0.04em] text-[#050b1a]">
+                  {kpi.value}
+                </p>
 
-function CostManagementWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Cost Management"
-        description="Manage landed cost, procurement cost, fulfilment cost and total product cost."
-        buttonLabel="Update Cost"
-      />
+                <p className="mt-2 text-xs font-medium text-[#93a3bd]">
+                  {kpi.helper}
+                </p>
+              </article>
+            );
+          })}
+        </section>
 
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Average Unit Cost" value="₹5,680" note="Across catalogue" icon={Calculator} tone="blue" />
-        <MetricCard title="Landed Cost Increase" value="3.8%" note="Current quarter" icon={TrendingUp} tone="orange" />
-        <MetricCard title="Cost Reviews Due" value="12" note="Within 30 days" icon={RefreshCcw} tone="violet" />
-        <MetricCard title="Cost Savings" value="₹2.14L" note="Current quarter" icon={IndianRupee} tone="green" />
-      </section>
+        {/* MODULES SECTION */}
+        <section className="rounded-[24px] border border-[#dbe3ef] bg-white px-5 py-6 shadow-[0_2px_5px_rgba(15,23,42,0.05)] sm:px-6">
+          <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.17em] text-[#1765ff]">
+                Commercial Operations
+              </p>
 
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {[
-          ["Procurement Cost", "Supplier price, freight and duties", "₹42.8L"],
-          ["Fulfilment Cost", "Packaging, handling and warehouse", "₹6.4L"],
-          ["Shipping Cost", "Courier and delivery allocation", "₹4.8L"],
-          ["Returns Cost", "Reverse logistics and inspection", "₹1.6L"],
-        ].map((item) => (
-          <article key={item[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-              <CircleDollarSign size={22} />
-            </div>
-            <h3 className="mt-5 text-base font-black text-slate-900">{item[0]}</h3>
-            <p className="mt-2 text-xs leading-5 text-slate-500">{item[1]}</p>
-            <p className="mt-5 text-2xl font-black text-slate-950">{item[2]}</p>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.035em] text-[#050b1a]">
+                Pricing Operations Modules
+              </h2>
 
-function MarginsWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Margin Management"
-        description="Monitor gross margin, contribution margin and low-margin product alerts."
-        buttonLabel="Set Margin Threshold"
-      />
-
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Average Gross Margin" value="57.8%" note="Across catalogue" icon={TrendingUp} tone="green" />
-        <MetricCard title="Contribution Margin" value="42.6%" note="After fulfilment and marketing" icon={Percent} tone="blue" />
-        <MetricCard title="Low Margin Products" value="2" note="Below 50%" icon={TrendingDown} tone="orange" />
-        <MetricCard title="Critical Margin" value="1" note="Below 45%" icon={AlertTriangle} tone="violet" />
-      </section>
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {productPrices.map((item) => (
-          <article key={item.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-                <Percent size={22} />
-              </div>
-              <MarginBadge health={item.health} margin={item.margin} />
-            </div>
-            <h3 className="mt-5 text-base font-black text-slate-900">{item.product}</h3>
-            <p className="mt-1 text-xs text-slate-500">{item.sku}</p>
-            <div className="mt-5 space-y-3 text-xs">
-              <InfoRow label="Cost" value={formatCurrency(item.cost)} />
-              <InfoRow label="Selling Price" value={formatCurrency(item.price)} />
-              <InfoRow label="Gross Profit" value={formatCurrency(item.price - item.cost)} />
-            </div>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function PricingRulesWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Pricing Rules"
-        description="Create automated rules for discounts, margin protection and dynamic pricing."
-        buttonLabel="Create Rule"
-      />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {pricingRules.map((rule) => (
-          <article key={rule.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-                <Layers3 size={22} />
-              </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-bold ${
-                rule.status === "Active"
-                  ? "bg-green-50 text-green-700"
-                  : "bg-slate-100 text-slate-700"
-              }`}>
-                {rule.status}
-              </span>
+              <p className="mt-2 text-sm leading-6 text-[#60759a]">
+                Open a module to manage its complete pricing and profitability
+                workflow.
+              </p>
             </div>
 
-            <p className="mt-5 text-xs font-bold uppercase tracking-wider text-blue-600">
-              Priority {rule.priority}
-            </p>
-            <h3 className="mt-2 text-base font-black text-slate-900">{rule.name}</h3>
-            <p className="mt-2 text-xs text-slate-500">{rule.scope}</p>
+            <div className="relative w-full lg:w-[330px]">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#91a2bc]" />
 
-            <div className="mt-5 space-y-3">
-              <InfoBox label="Condition" value={rule.condition} />
-              <InfoBox label="Action" value={rule.action} />
-            </div>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function PriceHistoryWorkspace() {
-  const history = [
-    ["26 Jul 2026, 12:45 AM", "KRVE Noir Blazer", "₹18,499", "₹18,999", "Founder Office"],
-    ["25 Jul 2026, 10:55 PM", "KRVE Icon Sneakers", "₹7,999", "₹6,499", "Commerce Manager"],
-    ["25 Jul 2026, 09:20 PM", "Signature Leather Wallet", "₹3,299", "₹3,499", "Marketplace Sync"],
-    ["25 Jul 2026, 07:30 PM", "Obsidian Oxford Shoes", "₹8,499", "₹8,999", "Pricing Team"],
-  ];
-
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Price History"
-        description="Review every price change with previous value, new value, source and timestamp."
-        buttonLabel="Export History"
-      />
-
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] border-collapse text-left">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-                <th className="px-5 py-4">Date</th>
-                <th className="px-5 py-4">Product</th>
-                <th className="px-5 py-4">Previous Price</th>
-                <th className="px-5 py-4">New Price</th>
-                <th className="px-5 py-4">Changed By</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((item) => (
-                <tr key={`${item[0]}-${item[1]}`} className="border-b border-slate-100 text-sm">
-                  <td className="px-5 py-4 text-xs text-slate-500">{item[0]}</td>
-                  <td className="px-5 py-4 font-bold text-slate-900">{item[1]}</td>
-                  <td className="px-5 py-4 text-slate-600">{item[2]}</td>
-                  <td className="px-5 py-4 font-bold text-blue-600">{item[3]}</td>
-                  <td className="px-5 py-4 text-slate-600">{item[4]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function ApprovalsWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Pricing Approvals"
-        description="Review, approve or reject price changes affecting margin and revenue."
-        buttonLabel="Create Approval Request"
-      />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {approvals.map((approval) => (
-          <article key={approval.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-50 text-violet-600">
-                <ShieldCheck size={22} />
-              </div>
-              <ApprovalBadge status={approval.status} />
-            </div>
-
-            <p className="mt-5 text-xs font-bold uppercase tracking-wider text-violet-600">
-              {approval.id}
-            </p>
-            <h3 className="mt-2 text-lg font-black text-slate-950">{approval.title}</h3>
-            <p className="mt-2 text-xs text-slate-500">
-              {approval.requestedBy} · {approval.affectedProducts} products
-            </p>
-
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <InfoBox label="Current" value={formatCurrency(approval.currentValue)} />
-              <InfoBox label="Proposed" value={formatCurrency(approval.proposedValue)} />
-            </div>
-
-            <p className="mt-4 text-xs leading-5 text-slate-600">{approval.impact}</p>
-
-            <button
-              type="button"
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white"
-            >
-              Review Approval
-              <ArrowRight size={16} />
-            </button>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function AnalyticsWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Pricing Analytics"
-        description="Analyse price movement, margin, revenue impact, discounting and channel performance."
-        buttonLabel="Export Analytics"
-      />
-
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Average Selling Price" value="₹14,286" note="Across active catalogue" icon={IndianRupee} tone="blue" />
-        <MetricCard title="Price Increase Impact" value="+₹2.8L" note="Forecast monthly revenue" icon={TrendingUp} tone="green" />
-        <MetricCard title="Discount Leakage" value="₹42,600" note="Current month" icon={TrendingDown} tone="orange" />
-        <MetricCard title="Approval Compliance" value="98.4%" note="Price changes with approval" icon={CheckCircle2} tone="violet" />
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-2">
-        <ChartCard
-          title="Average Selling Price Trend"
-          values={[52, 58, 61, 64, 67, 72, 76]}
-          labels={["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"]}
-        />
-        <ChartCard
-          title="Category Margin"
-          values={[62, 56, 58, 49, 44]}
-          labels={["Blazers", "Shoes", "Suits", "Sneakers", "Wallets"]}
-        />
-      </section>
-    </div>
-  );
-}
-
-function ChartCard({
-  title,
-  values,
-  labels,
-}: {
-  title: string;
-  values: number[];
-  labels: string[];
-}) {
-  return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-black text-slate-950">{title}</h2>
-      <div className="mt-8 flex h-64 items-end gap-4">
-        {values.map((value, index) => (
-          <div key={`${labels[index]}-${value}`} className="flex flex-1 flex-col items-center gap-3">
-            <div className="flex h-52 w-full items-end rounded-xl bg-slate-50 p-1">
-              <div
-                className="w-full rounded-lg bg-blue-600"
-                style={{ height: `${Math.max(8, value)}%` }}
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search pricing modules..."
+                className="h-12 w-full rounded-2xl border border-[#dbe3ef] bg-[#f8faff] pl-12 pr-11 text-sm font-medium text-[#17233b] outline-none transition placeholder:text-[#91a2bc] focus:border-[#1765ff] focus:bg-white focus:ring-4 focus:ring-blue-100"
               />
+
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#8495af] hover:bg-[#eaf0fa] hover:text-[#17233b]"
+                  aria-label="Clear pricing search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
-            <span className="text-xs text-slate-500">{labels[index]}</span>
           </div>
-        ))}
-      </div>
-    </article>
-  );
-}
 
-function ReportsWorkspace() {
-  const reports = [
-    ["Price List Report", "Channel, validity, products and status"],
-    ["Product Pricing Report", "Cost, price, compare-at and margin"],
-    ["Margin Report", "Gross and contribution margin by product"],
-    ["Price Change Report", "Previous value, new value and approval"],
-    ["Pricing Rule Report", "Rules, conditions, actions and status"],
-    ["Pricing Analytics Report", "Revenue, conversion and margin impact"],
-  ];
+          {filteredModules.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredModules.map((module, index) => {
+                const Icon = module.icon;
+                const isPrimary = index === 0 && searchQuery.length === 0;
 
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Pricing Reports"
-        description="Generate and export price, cost, margin, history and approval reports."
-        buttonLabel="Create Custom Report"
-      />
+                return (
+                  <article
+                    key={module.id}
+                    className={`group flex min-h-[266px] flex-col rounded-[18px] border bg-white p-5 transition duration-200 ${
+                      isPrimary
+                        ? "border-[#1765ff] shadow-[0_8px_24px_rgba(23,101,255,0.10)]"
+                        : "border-[#dbe3ef] hover:-translate-y-0.5 hover:border-[#94b7ff] hover:shadow-[0_10px_30px_rgba(23,49,99,0.08)]"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-5">
+                      <div
+                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+                          isPrimary
+                            ? "bg-[#1765ff] text-white"
+                            : "bg-[#eef5ff] text-[#1765ff]"
+                        }`}
+                      >
+                        <Icon className="h-6 w-6" />
+                      </div>
 
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {reports.map((report) => (
-          <article key={report[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-              <FileBarChart size={22} />
+                      <div className="text-right">
+                        <p className="text-lg font-black leading-none text-[#050b1a]">
+                          {module.metric}
+                        </p>
+
+                        <p className="mt-3 max-w-[130px] text-[10px] font-semibold leading-4 text-[#8da0bf]">
+                          {module.metricLabel}
+                        </p>
+                      </div>
+                    </div>
+
+                    <h3 className="mt-5 text-[17px] font-extrabold tracking-[-0.025em] text-[#050b1a]">
+                      {module.title}
+                    </h3>
+
+                    <p className="mt-3 flex-1 text-sm leading-6 text-[#617697]">
+                      {module.description}
+                    </p>
+
+                    <div className="mt-5 flex items-center justify-between gap-4">
+                      <span className="text-xs font-semibold text-[#91a2bd]">
+                        {module.features} features
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedModule(module)}
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-[#115cff] transition hover:gap-3"
+                      >
+                        Open
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-            <h3 className="mt-5 text-base font-black text-slate-900">{report[0]}</h3>
-            <p className="mt-2 text-xs leading-5 text-slate-500">{report[1]}</p>
-            <button type="button" className="mt-6 flex items-center gap-2 text-xs font-bold text-blue-600">
-              Generate Report
-              <ArrowRight size={15} />
-            </button>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
+          ) : (
+            <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[#cad6e8] bg-[#f8faff] px-5 text-center">
+              <Search className="h-10 w-10 text-[#99aac2]" />
 
-function SettingsWorkspace() {
-  const settings = [
-    ["Currency & Rounding", "Configure currency, decimal and rounding behaviour."],
-    ["Margin Thresholds", "Set minimum gross and contribution margin levels."],
-    ["Approval Rules", "Configure price-change approval limits by role."],
-    ["Channel Pricing", "Set website, app, marketplace and offline pricing rules."],
-    ["Dynamic Pricing", "Configure inventory, demand and customer pricing signals."],
-    ["Audit & History", "Set price history retention and change logging."],
-  ];
+              <h3 className="mt-4 text-lg font-bold text-[#17233b]">
+                No pricing module found
+              </h3>
 
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Pricing Settings"
-        description="Configure currencies, thresholds, approvals, channels and dynamic pricing rules."
-        buttonLabel="Save Configuration"
-      />
+              <p className="mt-2 text-sm text-[#7184a2]">
+                Try searching using another pricing module name.
+              </p>
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        {settings.map((setting) => (
-          <article key={setting[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start gap-4">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
-                <Settings2 size={20} />
-              </div>
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="mt-5 rounded-xl bg-[#1765ff] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0f54e8]"
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* MODULE DETAILS MODAL */}
+      {selectedModule && (
+        <PricingModuleModal
+          module={selectedModule}
+          onClose={() => setSelectedModule(null)}
+        />
+      )}
+
+      {/* CREATE PRICE LIST MODAL */}
+      {showCreatePriceList && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#071126]/60 p-4 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#e2e8f1] bg-white px-6 py-5">
               <div>
-                <h3 className="text-sm font-black text-slate-900">{setting[0]}</h3>
-                <p className="mt-2 text-xs leading-5 text-slate-500">{setting[1]}</p>
-                <button type="button" className="mt-4 text-xs font-bold text-blue-600">
-                  Configure
+                <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#1765ff]">
+                  Commercial Pricing
+                </p>
+
+                <h3 className="mt-1 text-xl font-black text-[#071126]">
+                  Create Price List
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowCreatePriceList(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-[#7184a2] hover:bg-[#f0f4fa] hover:text-[#071126]"
+                aria-label="Close create price list form"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePriceList} className="px-6 py-6">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="space-y-2 sm:col-span-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Price List Name
+                  </span>
+
+                  <input
+                    required
+                    type="text"
+                    placeholder="Example: KRVE Retail Price List"
+                    className="h-12 w-full rounded-xl border border-[#d8e1ed] px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Price List Type
+                  </span>
+
+                  <select className="h-12 w-full rounded-xl border border-[#d8e1ed] bg-white px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100">
+                    <option>Retail Price List</option>
+                    <option>Wholesale Price List</option>
+                    <option>Marketplace Price List</option>
+                    <option>Corporate Price List</option>
+                    <option>Seasonal Price List</option>
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Sales Channel
+                  </span>
+
+                  <select className="h-12 w-full rounded-xl border border-[#d8e1ed] bg-white px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100">
+                    <option>KRVE Website</option>
+                    <option>KRVE Mobile App</option>
+                    <option>Retail Store</option>
+                    <option>Marketplace</option>
+                    <option>All Channels</option>
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Currency
+                  </span>
+
+                  <select className="h-12 w-full rounded-xl border border-[#d8e1ed] bg-white px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100">
+                    <option>INR — Indian Rupee</option>
+                    <option>USD — US Dollar</option>
+                    <option>EUR — Euro</option>
+                    <option>GBP — British Pound</option>
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Default Margin
+                  </span>
+
+                  <div className="relative">
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="50"
+                      className="h-12 w-full rounded-xl border border-[#d8e1ed] px-4 pr-11 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                    />
+
+                    <Percent className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8496b3]" />
+                  </div>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Effective From
+                  </span>
+
+                  <input
+                    required
+                    type="date"
+                    className="h-12 w-full rounded-xl border border-[#d8e1ed] px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Effective Until
+                  </span>
+
+                  <input
+                    type="date"
+                    className="h-12 w-full rounded-xl border border-[#d8e1ed] px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2 sm:col-span-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Description
+                  </span>
+
+                  <textarea
+                    rows={4}
+                    placeholder="Add information about this price list..."
+                    className="w-full resize-none rounded-xl border border-[#d8e1ed] px-4 py-3 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-7 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreatePriceList(false)}
+                  className="rounded-xl border border-[#d7e0ed] bg-white px-5 py-2.5 text-sm font-semibold text-[#536784] hover:bg-[#f2f5fa]"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#1765ff] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0f54e8]"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create Price List
                 </button>
               </div>
-            </div>
-          </article>
-        ))}
-      </section>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function CreatePriceListPanel({
+function PricingModuleModal({
+  module,
   onClose,
 }: {
+  module: PricingModule;
   onClose: () => void;
 }) {
-  return (
-    <div className="fixed inset-0 z-[90] flex justify-end bg-slate-950/50 backdrop-blur-sm">
-      <button
-        type="button"
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-label="Close panel"
-      />
+  const Icon = module.icon;
 
-      <aside className="relative z-10 h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl sm:p-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-600">
-              Commercial Controls
-            </p>
-            <h2 className="mt-2 text-2xl font-black text-slate-950">
-              Create Price List
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Create a new channel, customer or scheduled price list.
-            </p>
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#071126]/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-xl overflow-hidden rounded-[24px] bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-5 border-b border-[#e2e8f1] px-6 py-5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef5ff] text-[#1765ff]">
+              <Icon className="h-6 w-6" />
+            </div>
+
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#1765ff]">
+                Pricing Module
+              </p>
+
+              <h3 className="mt-1 text-xl font-black text-[#071126]">
+                {module.title}
+              </h3>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-[#7184a2] hover:bg-[#f0f4fa] hover:text-[#071126]"
+            aria-label="Close pricing module"
           >
-            <X size={18} />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form
-          className="mt-8 space-y-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onClose();
-          }}
-        >
-          <FormField label="Price List Name" placeholder="KRVE Premium Retail" />
-          <FormField label="Channel" placeholder="Website / App / Marketplace" />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Currency" placeholder="INR" />
-            <FormField label="Customer Group" placeholder="All Customers" />
+        <div className="px-6 py-6">
+          <p className="text-sm leading-7 text-[#60759a]">
+            {module.description}
+          </p>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-[#dfe7f2] bg-[#f8faff] p-4">
+              <p className="text-xs font-semibold text-[#8496b3]">
+                Current status
+              </p>
+
+              <p className="mt-2 text-xl font-black text-[#071126]">
+                {module.metric}
+              </p>
+
+              <p className="mt-1 text-xs text-[#7184a2]">
+                {module.metricLabel}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-[#dfe7f2] bg-[#f8faff] p-4">
+              <p className="text-xs font-semibold text-[#8496b3]">
+                Available controls
+              </p>
+
+              <p className="mt-2 text-xl font-black text-[#071126]">
+                {module.features}
+              </p>
+
+              <p className="mt-1 text-xs text-[#7184a2]">
+                Operational features
+              </p>
+            </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Valid From" placeholder="1 Aug 2026" />
-            <FormField label="Valid To" placeholder="31 Dec 2026" />
+
+          <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#1765ff]" />
+
+              <div>
+                <p className="text-sm font-bold text-[#173b87]">
+                  Pricing module connected
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-[#5672a7]">
+                  This module is ready for detailed pricing records, approval
+                  workflows and backend integration.
+                </p>
+              </div>
+            </div>
           </div>
-          <FormField label="Pricing Method" placeholder="Fixed / Markup / Discount" />
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-[#e2e8f1] bg-[#f8faff] px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-[#d7e0ed] bg-white px-5 py-2.5 text-sm font-semibold text-[#536784] hover:bg-[#f2f5fa]"
+          >
+            Close
+          </button>
 
           <button
-            type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#1765ff] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0f54e8]"
           >
-            <Plus size={17} />
-            Create Price List
+            Continue
+            <ArrowRight className="h-4 w-4" />
           </button>
-        </form>
-      </aside>
-    </div>
-  );
-}
-
-function FormField({
-  label,
-  placeholder,
-}: {
-  label: string;
-  placeholder: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-bold text-slate-700">{label}</span>
-      <input
-        required
-        placeholder={placeholder}
-        className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-      />
-    </label>
-  );
-}
-
-function WorkspaceHeader({
-  title,
-  description,
-  buttonLabel,
-  onClick,
-}: {
-  title: string;
-  description: string;
-  buttonLabel: string;
-  onClick?: () => void;
-}) {
-  return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h2 className="text-xl font-black text-slate-950">{title}</h2>
-          <p className="mt-1 text-sm text-slate-500">{description}</p>
         </div>
-
-        <button
-          type="button"
-          onClick={onClick}
-          className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
-        >
-          <Plus size={17} />
-          {buttonLabel}
-        </button>
       </div>
-    </section>
-  );
-}
-
-function InfoBox({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl bg-slate-50 p-3">
-      <span className="block text-[10px] uppercase tracking-wider text-slate-400">{label}</span>
-      <strong className="mt-1 block text-xs text-slate-800">{value}</strong>
     </div>
-  );
-}
-
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex justify-between gap-3">
-      <span className="text-slate-500">{label}</span>
-      <strong className="text-right text-slate-800">{value}</strong>
-    </div>
-  );
-}
-
-function PriceStatusBadge({
-  status,
-}: {
-  status: PriceStatus;
-}) {
-  const className =
-    status === "Active"
-      ? "bg-green-50 text-green-700"
-      : status === "Scheduled"
-        ? "bg-blue-50 text-blue-700"
-        : status === "Expired"
-          ? "bg-red-50 text-red-700"
-          : "bg-slate-100 text-slate-700";
-
-  return (
-    <span className={`rounded-full px-3 py-1 text-xs font-bold ${className}`}>
-      {status}
-    </span>
-  );
-}
-
-function ApprovalBadge({
-  status,
-}: {
-  status: ApprovalStatus;
-}) {
-  const className =
-    status === "Approved"
-      ? "bg-green-50 text-green-700"
-      : status === "Rejected"
-        ? "bg-red-50 text-red-700"
-        : "bg-orange-50 text-orange-700";
-
-  return (
-    <span className={`rounded-full px-3 py-1 text-xs font-bold ${className}`}>
-      {status}
-    </span>
-  );
-}
-
-function MarginBadge({
-  health,
-  margin,
-}: {
-  health: MarginHealth;
-  margin: number;
-}) {
-  const className =
-    health === "Healthy"
-      ? "bg-green-50 text-green-700"
-      : health === "Low"
-        ? "bg-orange-50 text-orange-700"
-        : "bg-red-50 text-red-700";
-
-  return (
-    <span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>
-      {margin.toFixed(1)}%
-    </span>
   );
 }
