@@ -1,1502 +1,661 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
-  Activity,
   AlertTriangle,
   ArrowRight,
   BarChart3,
+  Box,
+  Boxes,
   CheckCircle2,
-  ChevronRight,
   ClipboardCheck,
   Clock3,
-  Download,
-  Eye,
-  FileBarChart,
-  Filter,
   History,
   IndianRupee,
-  Package,
   PackageCheck,
   PackageOpen,
-  PackageSearch,
   Plus,
   RefreshCcw,
   RotateCcw,
   Search,
-  Settings2,
-  ShieldCheck,
-  Sparkles,
+  ShieldAlert,
   Truck,
-  UserRound,
+  Undo2,
+  Users,
+  WalletCards,
   X,
 } from "lucide-react";
-import { useMemo, useState, type ComponentType } from "react";
 
-type IconType = ComponentType<{
-  size?: number;
-  className?: string;
-  strokeWidth?: number;
-}>;
-
-type ReturnTab =
-  | "dashboard"
-  | "requests"
-  | "refunds"
-  | "exchanges"
-  | "inspection"
-  | "reverse-logistics"
-  | "received"
-  | "disposition"
-  | "analytics"
-  | "reports"
-  | "settings";
-
-type ReturnStatus =
-  | "Requested"
-  | "Approved"
-  | "Pickup Scheduled"
-  | "In Transit"
-  | "Received"
-  | "Inspected"
-  | "Refunded"
-  | "Rejected";
-
-type RefundStatus =
-  | "Pending Approval"
-  | "Approved"
-  | "Processing"
-  | "Completed"
-  | "Failed";
-
-type Priority = "High" | "Medium" | "Low";
-
-type ReturnRequest = {
+type ReturnModule = {
   id: string;
-  orderId: string;
-  customer: string;
-  product: string;
-  reason: string;
-  amount: number;
-  requestedAt: string;
-  pickupCity: string;
-  courier: string;
-  status: ReturnStatus;
-  priority: Priority;
+  title: string;
+  description: string;
+  features: number;
+  metric: string;
+  metricLabel: string;
+  icon: React.ElementType;
 };
 
-type RefundRequest = {
-  id: string;
-  returnId: string;
-  customer: string;
-  mode: "Original Payment" | "Bank Transfer" | "Store Credit";
-  amount: number;
-  requestedAt: string;
-  approvedBy: string;
-  status: RefundStatus;
-};
-
-type ExchangeRequest = {
-  id: string;
-  returnId: string;
-  customer: string;
-  originalProduct: string;
-  replacementProduct: string;
-  requestedAt: string;
-  status: "Pending" | "Approved" | "Packed" | "Shipped" | "Completed";
-};
-
-const tabs: Array<{
-  id: ReturnTab;
-  label: string;
-  icon: IconType;
-}> = [
-  { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-  { id: "requests", label: "Return Requests", icon: RotateCcw },
-  { id: "refunds", label: "Refunds", icon: IndianRupee },
-  { id: "exchanges", label: "Exchanges", icon: RefreshCcw },
-  { id: "inspection", label: "Inspection", icon: PackageSearch },
-  { id: "reverse-logistics", label: "Reverse Logistics", icon: Truck },
-  { id: "received", label: "Received Returns", icon: PackageOpen },
-  { id: "disposition", label: "Disposition", icon: PackageCheck },
-  { id: "analytics", label: "Analytics", icon: Activity },
-  { id: "reports", label: "Reports", icon: FileBarChart },
-  { id: "settings", label: "Settings", icon: Settings2 },
-];
-
-const returnRequests: ReturnRequest[] = [
+const returnModules: ReturnModule[] = [
   {
-    id: "RET-2026-0842",
-    orderId: "KRVE-10482",
-    customer: "Aarav Sharma",
-    product: "KRVE Noir Blazer",
-    reason: "Size not suitable",
-    amount: 18999,
-    requestedAt: "26 Jul 2026, 12:42 AM",
-    pickupCity: "Varanasi",
-    courier: "Delhivery Reverse",
-    status: "Pickup Scheduled",
-    priority: "High",
+    id: "returns-dashboard",
+    title: "Returns Dashboard",
+    description:
+      "Monitor return volume, refund exposure, exchanges, operational queues and reverse commerce performance.",
+    features: 10,
+    metric: "14",
+    metricLabel: "Open returns",
+    icon: BarChart3,
   },
   {
-    id: "RET-2026-0841",
-    orderId: "KRVE-10476",
-    customer: "Ananya Singh",
-    product: "Signature Cotton Shirt",
-    reason: "Colour mismatch",
-    amount: 4499,
-    requestedAt: "26 Jul 2026, 12:08 AM",
-    pickupCity: "New Delhi",
-    courier: "Blue Dart Reverse",
-    status: "In Transit",
-    priority: "Medium",
+    id: "return-requests",
+    title: "Return Requests",
+    description:
+      "Review customer return requests, validate eligibility, assign priorities and approve or reject cases.",
+    features: 12,
+    metric: "14",
+    metricLabel: "Requests pending",
+    icon: Undo2,
   },
   {
-    id: "RET-2026-0840",
-    orderId: "KRVE-10468",
-    customer: "Rohan Verma",
-    product: "Obsidian Oxford Shoes",
-    reason: "Damaged packaging",
-    amount: 8999,
-    requestedAt: "25 Jul 2026, 11:45 PM",
-    pickupCity: "Mumbai",
-    courier: "Ecom Express Reverse",
-    status: "Received",
-    priority: "High",
+    id: "refund-management",
+    title: "Refund Management",
+    description:
+      "Control refund approvals, payment reversals, store credits, refund status and financial reconciliation.",
+    features: 12,
+    metric: "₹23,997",
+    metricLabel: "Refund pending",
+    icon: IndianRupee,
   },
   {
-    id: "RET-2026-0839",
-    orderId: "KRVE-10461",
-    customer: "Priya Mehta",
-    product: "Heritage Leather Belt",
-    reason: "Incorrect item",
-    amount: 2999,
-    requestedAt: "25 Jul 2026, 10:55 PM",
-    pickupCity: "Lucknow",
-    courier: "Xpressbees Reverse",
-    status: "Inspected",
-    priority: "High",
+    id: "exchange-center",
+    title: "Exchange Center",
+    description:
+      "Manage replacement products, size exchanges, price differences, inventory allocation and fulfilment.",
+    features: 11,
+    metric: "8",
+    metricLabel: "Active exchanges",
+    icon: RefreshCcw,
   },
   {
-    id: "RET-2026-0838",
-    orderId: "KRVE-10454",
-    customer: "Kabir Malhotra",
-    product: "Executive Polo Shirt",
-    reason: "Changed mind",
-    amount: 3499,
-    requestedAt: "25 Jul 2026, 09:40 PM",
-    pickupCity: "Jaipur",
-    courier: "Delhivery Reverse",
-    status: "Requested",
-    priority: "Low",
-  },
-];
-
-const refundRequests: RefundRequest[] = [
-  {
-    id: "RFD-2026-0292",
-    returnId: "RET-2026-0839",
-    customer: "Priya Mehta",
-    mode: "Original Payment",
-    amount: 2999,
-    requestedAt: "25 Jul 2026, 11:10 PM",
-    approvedBy: "Founder Approval Pending",
-    status: "Pending Approval",
+    id: "return-inspection",
+    title: "Return Inspection",
+    description:
+      "Inspect returned products, record condition, verify authenticity, capture evidence and assign disposition.",
+    features: 12,
+    metric: "9",
+    metricLabel: "Awaiting inspection",
+    icon: ClipboardCheck,
   },
   {
-    id: "RFD-2026-0291",
-    returnId: "RET-2026-0837",
-    customer: "Aditya Rao",
-    mode: "Store Credit",
-    amount: 7999,
-    requestedAt: "25 Jul 2026, 08:55 PM",
-    approvedBy: "Badal Kumar",
-    status: "Approved",
+    id: "reverse-pickup",
+    title: "Reverse Pickup",
+    description:
+      "Schedule customer pickups, assign logistics partners, track attempts, ETAs and reverse shipments.",
+    features: 10,
+    metric: "11",
+    metricLabel: "Pickups scheduled",
+    icon: Truck,
   },
   {
-    id: "RFD-2026-0290",
-    returnId: "RET-2026-0834",
-    customer: "Neha Kapoor",
-    mode: "Bank Transfer",
-    amount: 12999,
-    requestedAt: "25 Jul 2026, 07:20 PM",
-    approvedBy: "Badal Kumar",
-    status: "Processing",
+    id: "received-returns",
+    title: "Received Returns",
+    description:
+      "Record returned items received at warehouses and reconcile parcels, quantities and product condition.",
+    features: 10,
+    metric: "26",
+    metricLabel: "Items received",
+    icon: PackageOpen,
   },
   {
-    id: "RFD-2026-0289",
-    returnId: "RET-2026-0828",
-    customer: "Vikram Singh",
-    mode: "Original Payment",
-    amount: 4499,
-    requestedAt: "25 Jul 2026, 05:05 PM",
-    approvedBy: "Badal Kumar",
-    status: "Completed",
+    id: "warehouse-restocking",
+    title: "Warehouse Restocking",
+    description:
+      "Move approved returned products back to available inventory and assign warehouse locations and bins.",
+    features: 9,
+    metric: "18",
+    metricLabel: "Awaiting restock",
+    icon: Boxes,
+  },
+  {
+    id: "damaged-items",
+    title: "Damaged Items",
+    description:
+      "Manage damaged, defective and non-sellable returns with repair, liquidation, vendor claim or disposal.",
+    features: 10,
+    metric: "6",
+    metricLabel: "Damaged items",
+    icon: AlertTriangle,
+  },
+  {
+    id: "return-fraud",
+    title: "Return Fraud Detection",
+    description:
+      "Identify suspicious returns, serial returners, duplicate refunds, product swaps and policy abuse.",
+    features: 11,
+    metric: "3",
+    metricLabel: "Risk alerts",
+    icon: ShieldAlert,
+  },
+  {
+    id: "customer-history",
+    title: "Customer Return History",
+    description:
+      "Review customer-level return frequency, refund value, exchange behaviour, reasons and risk profile.",
+    features: 9,
+    metric: "42",
+    metricLabel: "Profiles reviewed",
+    icon: Users,
+  },
+  {
+    id: "returns-analytics",
+    title: "Returns Analytics",
+    description:
+      "Analyse return rates, reasons, products, categories, warehouses, recovery value and operational trends.",
+    features: 12,
+    metric: "3.2%",
+    metricLabel: "Return rate",
+    icon: BarChart3,
   },
 ];
 
-const exchangeRequests: ExchangeRequest[] = [
+const kpis = [
   {
-    id: "EXC-2026-0182",
-    returnId: "RET-2026-0842",
-    customer: "Aarav Sharma",
-    originalProduct: "KRVE Noir Blazer / M",
-    replacementProduct: "KRVE Noir Blazer / L",
-    requestedAt: "26 Jul 2026, 12:45 AM",
-    status: "Approved",
+    label: "Open Returns",
+    value: "14",
+    helper: "Require processing",
+    icon: RotateCcw,
+    iconClass: "bg-blue-50 text-blue-600",
   },
   {
-    id: "EXC-2026-0181",
-    returnId: "RET-2026-0836",
-    customer: "Meera Joshi",
-    originalProduct: "Icon Sneakers / Size 8",
-    replacementProduct: "Icon Sneakers / Size 9",
-    requestedAt: "25 Jul 2026, 08:15 PM",
-    status: "Packed",
+    label: "Refund Pending",
+    value: "₹23,997",
+    helper: "Awaiting settlement",
+    icon: WalletCards,
+    iconClass: "bg-emerald-50 text-emerald-600",
   },
   {
-    id: "EXC-2026-0180",
-    returnId: "RET-2026-0831",
-    customer: "Arjun Mehta",
-    originalProduct: "Tailored Trousers / 32",
-    replacementProduct: "Tailored Trousers / 34",
-    requestedAt: "25 Jul 2026, 06:30 PM",
-    status: "Shipped",
+    label: "Active Exchanges",
+    value: "8",
+    helper: "In fulfilment flow",
+    icon: RefreshCcw,
+    iconClass: "bg-violet-50 text-violet-600",
+  },
+  {
+    label: "Return Rate",
+    value: "3.2%",
+    helper: "Current month",
+    icon: BarChart3,
+    iconClass: "bg-orange-50 text-orange-600",
   },
 ];
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 export default function ReturnsRefundsManagement() {
-  const [activeTab, setActiveTab] = useState<ReturnTab>("dashboard");
-  const [search, setSearch] = useState("");
-  const [showCreatePanel, setShowCreatePanel] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedModule, setSelectedModule] =
+    useState<ReturnModule | null>(null);
+  const [showCreateReturn, setShowCreateReturn] = useState(false);
 
-  const filteredReturns = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const filteredModules = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
 
     if (!query) {
-      return returnRequests;
+      return returnModules;
     }
 
-    return returnRequests.filter((item) =>
-      `${item.id} ${item.orderId} ${item.customer} ${item.product} ${item.reason} ${item.pickupCity}`
-        .toLowerCase()
-        .includes(query),
-    );
-  }, [search]);
+    return returnModules.filter((module) => {
+      return (
+        module.title.toLowerCase().includes(query) ||
+        module.description.toLowerCase().includes(query) ||
+        module.metricLabel.toLowerCase().includes(query)
+      );
+    });
+  }, [searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#f4f7fb] p-4 sm:p-6 lg:p-8">
-      <ReturnsHeader
-        onCreate={() => setShowCreatePanel(true)}
-        onOpenTab={setActiveTab}
-      />
+    <div className="min-h-full bg-[#f5f7fb]">
+      <div className="mx-auto w-full max-w-[1500px] space-y-6 px-5 py-8 sm:px-6 lg:px-8">
+        {/* HERO */}
+        <section className="overflow-hidden rounded-[26px] bg-gradient-to-r from-[#1765ff] via-[#2352d5] to-[#192d68] px-7 py-8 text-white shadow-[0_18px_45px_rgba(27,56,137,0.22)] sm:px-9 lg:px-10 lg:py-9">
+          <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-center">
+            <div className="max-w-4xl">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/15 backdrop-blur">
+                  <RotateCcw className="h-6 w-6" />
+                </div>
 
-      <ReturnsTabBar activeTab={activeTab} onChange={setActiveTab} />
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-100">
+                  Reverse Commerce
+                </p>
+              </div>
 
-      {activeTab === "dashboard" && (
-        <DashboardWorkspace onOpenTab={setActiveTab} />
-      )}
+              <h1 className="text-3xl font-black tracking-[-0.04em] sm:text-4xl lg:text-[40px]">
+                Returns &amp; Refunds Management
+              </h1>
 
-      {activeTab === "requests" && (
-        <ReturnRequestsWorkspace
-          requests={filteredReturns}
-          search={search}
-          setSearch={setSearch}
-          onCreate={() => setShowCreatePanel(true)}
-        />
-      )}
-
-      {activeTab === "refunds" && <RefundsWorkspace />}
-
-      {activeTab === "exchanges" && <ExchangesWorkspace />}
-
-      {activeTab === "inspection" && <InspectionWorkspace />}
-
-      {activeTab === "reverse-logistics" && <ReverseLogisticsWorkspace />}
-
-      {activeTab === "received" && <ReceivedWorkspace />}
-
-      {activeTab === "disposition" && <DispositionWorkspace />}
-
-      {activeTab === "analytics" && <AnalyticsWorkspace />}
-
-      {activeTab === "reports" && <ReportsWorkspace />}
-
-      {activeTab === "settings" && <SettingsWorkspace />}
-
-      {showCreatePanel && (
-        <CreateReturnPanel onClose={() => setShowCreatePanel(false)} />
-      )}
-    </div>
-  );
-}
-
-function ReturnsHeader({
-  onCreate,
-  onOpenTab,
-}: {
-  onCreate: () => void;
-  onOpenTab: (tab: ReturnTab) => void;
-}) {
-  return (
-    <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-blue-700 to-blue-950 p-7 text-white shadow-xl sm:p-9">
-      <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15">
-              <RotateCcw size={25} />
-            </div>
-
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
-              Reverse Commerce
-            </p>
-          </div>
-
-          <h1 className="mt-5 text-3xl font-black sm:text-4xl">
-            Returns & Refunds Management
-          </h1>
-
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-blue-100">
-            Manage return requests, exchanges, inspections, reverse pickups,
-            refunds, received items, disposition and return analytics.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => onOpenTab("refunds")}
-            className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold transition hover:bg-white/20"
-          >
-            <IndianRupee size={17} />
-            Review Refunds
-          </button>
-
-          <button
-            type="button"
-            onClick={onCreate}
-            className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-50"
-          >
-            <Plus size={17} />
-            Create Return
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ReturnsTabBar({
-  activeTab,
-  onChange,
-}: {
-  activeTab: ReturnTab;
-  onChange: (tab: ReturnTab) => void;
-}) {
-  return (
-    <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="keos-scrollbar flex overflow-x-auto p-2">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const active = activeTab === tab.id;
-
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onChange(tab.id)}
-              className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${
-                active
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <Icon size={17} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function DashboardWorkspace({
-  onOpenTab,
-}: {
-  onOpenTab: (tab: ReturnTab) => void;
-}) {
-  const pendingRefundValue = refundRequests
-    .filter((item) => item.status !== "Completed")
-    .reduce((sum, item) => sum + item.amount, 0);
-
-  return (
-    <div className="mt-6 space-y-6">
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          title="Open Returns"
-          value="14"
-          note="Awaiting action"
-          icon={RotateCcw}
-          tone="blue"
-        />
-        <MetricCard
-          title="Refund Pending"
-          value={formatCurrency(pendingRefundValue)}
-          note="Across active requests"
-          icon={IndianRupee}
-          tone="green"
-        />
-        <MetricCard
-          title="Exchanges"
-          value="8"
-          note="Currently in progress"
-          icon={RefreshCcw}
-          tone="violet"
-        />
-        <MetricCard
-          title="Return Rate"
-          value="3.2%"
-          note="Current month"
-          icon={Activity}
-          tone="orange"
-        />
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="text-lg font-black text-slate-950">
-                Active Return Pipeline
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Current return requests and reverse logistics status
+              <p className="mt-4 max-w-4xl text-sm leading-7 text-blue-100 sm:text-[15px]">
+                Control return requests, refunds, exchanges, inspections,
+                reverse pickups, received items, restocking, fraud detection
+                and return performance across KRVE.
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onOpenTab("requests")}
-              className="flex items-center gap-2 text-sm font-bold text-blue-600"
-            >
-              View Return Requests
-              <ArrowRight size={16} />
-            </button>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {returnRequests.slice(0, 5).map((request) => (
-              <ReturnListRow key={request.id} request={request} />
-            ))}
-          </div>
-        </article>
-
-        <article className="rounded-3xl bg-[#0f172a] p-6 text-white shadow-xl">
-          <div className="flex items-center justify-between">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-600">
-              <Sparkles size={22} />
-            </div>
-
-            <span className="rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-300">
-              AI Active
-            </span>
-          </div>
-
-          <h2 className="mt-6 text-xl font-black">
-            KRVE AI Return Intelligence
-          </h2>
-
-          <p className="mt-3 text-sm leading-7 text-slate-400">
-            KRVE AI monitors return reasons, fraud patterns, refund exposure,
-            reverse logistics and product quality signals.
-          </p>
-
-          <div className="mt-6 space-y-3">
-            <InsightCard
-              title="Product quality signal"
-              detail="Two products show a higher-than-normal return rate for sizing."
-              tone="orange"
-            />
-            <InsightCard
-              title="Refund optimisation"
-              detail="Store-credit offers could retain ₹28,600 in customer value this week."
-              tone="green"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onOpenTab("analytics")}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold transition hover:bg-blue-700"
-          >
-            Open Return Intelligence
-            <ArrowRight size={16} />
-          </button>
-        </article>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-2">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black text-slate-950">
-                Refund Approval Queue
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Refunds requiring action or processing
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onOpenTab("refunds")}
-              className="text-sm font-bold text-blue-600"
-            >
-              Open Refunds
-            </button>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {refundRequests.map((refund) => (
-              <RefundListRow key={refund.id} refund={refund} />
-            ))}
-          </div>
-        </article>
-
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-black text-slate-950">
-            Quick Return Operations
-          </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Start daily reverse-commerce workflows
-          </p>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <QuickAction
-              title="Review Returns"
-              description="Review and approve customer return requests"
-              icon={ClipboardCheck}
-              onClick={() => onOpenTab("requests")}
-            />
-            <QuickAction
-              title="Approve Refund"
-              description="Authorise pending refund requests"
-              icon={IndianRupee}
-              onClick={() => onOpenTab("refunds")}
-            />
-            <QuickAction
-              title="Inspect Item"
-              description="Record condition and inspection outcome"
-              icon={PackageSearch}
-              onClick={() => onOpenTab("inspection")}
-            />
-            <QuickAction
-              title="Create Exchange"
-              description="Approve and dispatch replacement products"
-              icon={RefreshCcw}
-              onClick={() => onOpenTab("exchanges")}
-            />
-          </div>
-        </article>
-      </section>
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-lg font-black text-slate-950">
-              Exchange Pipeline
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Replacement item preparation and delivery
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onOpenTab("exchanges")}
-            className="flex items-center gap-2 text-sm font-bold text-blue-600"
-          >
-            Manage Exchanges
-            <ArrowRight size={16} />
-          </button>
-        </div>
-
-        <div className="mt-6 overflow-x-auto">
-          <table className="w-full min-w-[900px] border-collapse text-left">
-            <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
-                <th className="pb-4 font-semibold">Exchange</th>
-                <th className="pb-4 font-semibold">Customer</th>
-                <th className="pb-4 font-semibold">Original</th>
-                <th className="pb-4 font-semibold">Replacement</th>
-                <th className="pb-4 font-semibold">Requested</th>
-                <th className="pb-4 font-semibold">Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {exchangeRequests.map((exchange) => (
-                <tr key={exchange.id} className="border-b border-slate-100 text-sm">
-                  <td className="py-4 font-bold text-blue-600">{exchange.id}</td>
-                  <td className="py-4 text-slate-700">{exchange.customer}</td>
-                  <td className="py-4 text-slate-600">{exchange.originalProduct}</td>
-                  <td className="py-4 text-slate-600">{exchange.replacementProduct}</td>
-                  <td className="py-4 text-xs text-slate-500">{exchange.requestedAt}</td>
-                  <td className="py-4">
-                    <ExchangeStatusBadge status={exchange.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function MetricCard({
-  title,
-  value,
-  note,
-  icon: Icon,
-  tone,
-}: {
-  title: string;
-  value: string;
-  note: string;
-  icon: IconType;
-  tone: "blue" | "green" | "violet" | "orange";
-}) {
-  const classes =
-    tone === "green"
-      ? "bg-green-50 text-green-600"
-      : tone === "violet"
-        ? "bg-violet-50 text-violet-600"
-        : tone === "orange"
-          ? "bg-orange-50 text-orange-600"
-          : "bg-blue-50 text-blue-600";
-
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-      <div className={`grid h-11 w-11 place-items-center rounded-xl ${classes}`}>
-        <Icon size={21} />
-      </div>
-      <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
-      <h2 className="mt-2 text-3xl font-black text-slate-950">{value}</h2>
-      <p className="mt-2 text-xs text-slate-400">{note}</p>
-    </article>
-  );
-}
-
-function ReturnListRow({
-  request,
-}: {
-  request: ReturnRequest;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-100 p-4 transition hover:bg-slate-50">
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
-        <RotateCcw size={18} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
-          <strong className="truncate text-sm text-slate-900">
-            {request.orderId} · {request.customer}
-          </strong>
-          <span className="text-xs text-slate-400">{request.requestedAt}</span>
-        </div>
-
-        <p className="mt-1 truncate text-xs text-slate-500">
-          {request.product} · {request.reason} · {formatCurrency(request.amount)}
-        </p>
-      </div>
-
-      <ReturnStatusBadge status={request.status} />
-    </div>
-  );
-}
-
-function RefundListRow({
-  refund,
-}: {
-  refund: RefundRequest;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-100 p-4 transition hover:bg-slate-50">
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-green-50 text-green-600">
-        <IndianRupee size={18} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <strong className="block truncate text-sm text-slate-900">
-          {refund.id} · {refund.customer}
-        </strong>
-        <p className="mt-1 truncate text-xs text-slate-500">
-          {refund.mode} · {formatCurrency(refund.amount)}
-        </p>
-      </div>
-
-      <RefundStatusBadge status={refund.status} />
-    </div>
-  );
-}
-
-function InsightCard({
-  title,
-  detail,
-  tone,
-}: {
-  title: string;
-  detail: string;
-  tone: "green" | "orange";
-}) {
-  return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-      <strong
-        className={`text-xs ${
-          tone === "green" ? "text-green-300" : "text-orange-300"
-        }`}
-      >
-        {title}
-      </strong>
-      <p className="mt-2 text-xs leading-5 text-slate-400">{detail}</p>
-    </div>
-  );
-}
-
-function QuickAction({
-  title,
-  description,
-  icon: Icon,
-  onClick,
-}: {
-  title: string;
-  description: string;
-  icon: IconType;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50/40 hover:shadow-md"
-    >
-      <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600">
-        <Icon size={20} />
-      </div>
-
-      <strong className="mt-4 block text-sm text-slate-900">{title}</strong>
-      <span className="mt-2 block text-xs leading-5 text-slate-500">
-        {description}
-      </span>
-
-      <span className="mt-4 flex items-center gap-2 text-xs font-bold text-blue-600">
-        Open
-        <ChevronRight
-          size={14}
-          className="transition group-hover:translate-x-1"
-        />
-      </span>
-    </button>
-  );
-}
-
-function ReturnRequestsWorkspace({
-  requests,
-  search,
-  setSearch,
-  onCreate,
-}: {
-  requests: ReturnRequest[];
-  search: string;
-  setSearch: (value: string) => void;
-  onCreate: () => void;
-}) {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Return Request Register"
-        description="Review, approve, reject and monitor customer return requests."
-        buttonLabel="Create Return"
-        onClick={onCreate}
-      />
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row">
-          <div className="flex h-12 flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 focus-within:border-blue-500 focus-within:bg-white">
-            <Search size={17} className="text-slate-400" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search return, order, customer or product..."
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-            />
-            {search && (
-              <button type="button" onClick={() => setSearch("")}>
-                <X size={15} className="text-slate-400" />
+            <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-[310px] lg:grid-cols-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedModule(
+                    returnModules.find(
+                      (module) => module.id === "refund-management",
+                    ) ?? null,
+                  )
+                }
+                className="flex min-h-14 items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-5 text-sm font-semibold text-white transition hover:bg-white/15"
+              >
+                <IndianRupee className="h-5 w-5" />
+                Review Refunds
               </button>
-            )}
+
+              <button
+                type="button"
+                onClick={() => setShowCreateReturn(true)}
+                className="flex min-h-14 items-center justify-center gap-3 rounded-2xl bg-white px-5 text-sm font-semibold text-[#164cff] shadow-sm transition hover:bg-blue-50"
+              >
+                <Plus className="h-5 w-5" />
+                Create Return
+              </button>
+            </div>
           </div>
+        </section>
 
-          <button
-            type="button"
-            className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600"
-          >
-            <Filter size={17} />
-            Filters
-          </button>
+        {/* KPI CARDS */}
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {kpis.map((kpi) => {
+            const Icon = kpi.icon;
 
-          <button
-            type="button"
-            className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600"
-          >
-            <Download size={17} />
-            Export
-          </button>
-        </div>
-      </section>
+            return (
+              <article
+                key={kpi.label}
+                className="rounded-[20px] border border-[#dbe3ef] bg-white p-6 shadow-[0_2px_5px_rgba(15,23,42,0.08)]"
+              >
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-2xl ${kpi.iconClass}`}
+                >
+                  <Icon className="h-6 w-6" />
+                </div>
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1350px] border-collapse text-left">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-                <th className="px-5 py-4">Return</th>
-                <th className="px-5 py-4">Order</th>
-                <th className="px-5 py-4">Customer</th>
-                <th className="px-5 py-4">Product</th>
-                <th className="px-5 py-4">Reason</th>
-                <th className="px-5 py-4">Amount</th>
-                <th className="px-5 py-4">Pickup</th>
-                <th className="px-5 py-4">Courier</th>
-                <th className="px-5 py-4">Priority</th>
-                <th className="px-5 py-4">Status</th>
-                <th className="px-5 py-4">Action</th>
-              </tr>
-            </thead>
+                <p className="mt-5 text-sm font-medium text-[#5c7296]">
+                  {kpi.label}
+                </p>
 
-            <tbody>
-              {requests.map((request) => (
-                <tr key={request.id} className="border-b border-slate-100 text-sm">
-                  <td className="px-5 py-4 font-bold text-blue-600">{request.id}</td>
-                  <td className="px-5 py-4 font-bold text-slate-900">{request.orderId}</td>
-                  <td className="px-5 py-4 text-slate-700">{request.customer}</td>
-                  <td className="px-5 py-4 text-slate-600">{request.product}</td>
-                  <td className="px-5 py-4 text-slate-600">{request.reason}</td>
-                  <td className="px-5 py-4 font-bold text-slate-900">
-                    {formatCurrency(request.amount)}
-                  </td>
-                  <td className="px-5 py-4 text-slate-600">{request.pickupCity}</td>
-                  <td className="px-5 py-4 text-slate-600">{request.courier}</td>
-                  <td className="px-5 py-4">
-                    <PriorityBadge priority={request.priority} />
-                  </td>
-                  <td className="px-5 py-4">
-                    <ReturnStatusBadge status={request.status} />
-                  </td>
-                  <td className="px-5 py-4">
-                    <button type="button" className="flex items-center gap-2 text-xs font-bold text-blue-600">
-                      <Eye size={15} />
-                      Review
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
-}
+                <p className="mt-1 text-[30px] font-black tracking-[-0.04em] text-[#050b1a]">
+                  {kpi.value}
+                </p>
 
-function RefundsWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Refund Management"
-        description="Approve, process, monitor and reconcile customer refunds."
-        buttonLabel="Create Refund"
-      />
+                <p className="mt-2 text-xs font-medium text-[#93a3bd]">
+                  {kpi.helper}
+                </p>
+              </article>
+            );
+          })}
+        </section>
 
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Pending Approval" value="6" note="Founder or finance action" icon={Clock3} tone="orange" />
-        <MetricCard title="Processing" value="4" note="Payment gateway or bank" icon={Activity} tone="blue" />
-        <MetricCard title="Completed" value="28" note="Current month" icon={CheckCircle2} tone="green" />
-        <MetricCard title="Refund Value" value="₹1.84L" note="Current month" icon={IndianRupee} tone="violet" />
-      </section>
-
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px] border-collapse text-left">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-                <th className="px-5 py-4">Refund</th>
-                <th className="px-5 py-4">Return</th>
-                <th className="px-5 py-4">Customer</th>
-                <th className="px-5 py-4">Mode</th>
-                <th className="px-5 py-4">Amount</th>
-                <th className="px-5 py-4">Approved By</th>
-                <th className="px-5 py-4">Requested</th>
-                <th className="px-5 py-4">Status</th>
-                <th className="px-5 py-4">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {refundRequests.map((refund) => (
-                <tr key={refund.id} className="border-b border-slate-100 text-sm">
-                  <td className="px-5 py-4 font-bold text-blue-600">{refund.id}</td>
-                  <td className="px-5 py-4 text-slate-700">{refund.returnId}</td>
-                  <td className="px-5 py-4 text-slate-700">{refund.customer}</td>
-                  <td className="px-5 py-4 text-slate-600">{refund.mode}</td>
-                  <td className="px-5 py-4 font-bold text-slate-900">{formatCurrency(refund.amount)}</td>
-                  <td className="px-5 py-4 text-slate-600">{refund.approvedBy}</td>
-                  <td className="px-5 py-4 text-xs text-slate-500">{refund.requestedAt}</td>
-                  <td className="px-5 py-4"><RefundStatusBadge status={refund.status} /></td>
-                  <td className="px-5 py-4">
-                    <button type="button" className="text-xs font-bold text-blue-600">
-                      Open Refund
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function ExchangesWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Exchange Management"
-        description="Approve, prepare, ship and complete product exchanges."
-        buttonLabel="Create Exchange"
-      />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {exchangeRequests.map((exchange) => (
-          <article key={exchange.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-                <RefreshCcw size={22} />
-              </div>
-              <ExchangeStatusBadge status={exchange.status} />
-            </div>
-            <p className="mt-5 text-xs font-bold uppercase tracking-wider text-blue-600">
-              {exchange.id}
-            </p>
-            <h3 className="mt-2 text-lg font-black text-slate-950">{exchange.customer}</h3>
-            <div className="mt-5 space-y-4">
-              <InfoBox label="Original Product" value={exchange.originalProduct} />
-              <InfoBox label="Replacement Product" value={exchange.replacementProduct} />
-            </div>
-            <button type="button" className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700">
-              Open Exchange
-              <ArrowRight size={16} />
-            </button>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function InspectionWorkspace() {
-  const inspections = [
-    ["INS-2026-052", "RET-2026-0840", "Obsidian Oxford Shoes", "Minor Packaging Damage", "Restock"],
-    ["INS-2026-051", "RET-2026-0839", "Heritage Leather Belt", "Incorrect Item Confirmed", "Restock"],
-    ["INS-2026-050", "RET-2026-0835", "Signature Cotton Shirt", "Used / Wash Marks", "Reject"],
-    ["INS-2026-049", "RET-2026-0832", "Icon Sneakers", "Manufacturing Defect", "Vendor Return"],
-  ];
-
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Return Inspection"
-        description="Inspect returned items and decide restock, repair, reject or vendor return."
-        buttonLabel="Start Inspection"
-      />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {inspections.map((item) => (
-          <article key={item[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-              <PackageSearch size={22} />
-            </div>
-            <p className="mt-5 text-xs font-bold uppercase tracking-wider text-blue-600">{item[0]}</p>
-            <h3 className="mt-2 text-base font-black text-slate-900">{item[2]}</h3>
-            <p className="mt-3 text-sm text-slate-600">{item[3]}</p>
-            <span className="mt-4 inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
-              {item[4]}
-            </span>
-            <button type="button" className="mt-6 block text-xs font-bold text-blue-600">
-              Open Inspection
-            </button>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function ReverseLogisticsWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Reverse Logistics"
-        description="Manage return pickups, reverse tracking, courier handover and warehouse receipt."
-        buttonLabel="Schedule Pickup"
-      />
-
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Pickup Scheduled" value="12" note="Today" icon={Truck} tone="blue" />
-        <MetricCard title="In Reverse Transit" value="9" note="Live shipments" icon={RotateCcw} tone="violet" />
-        <MetricCard title="Delayed Pickups" value="3" note="Require action" icon={AlertTriangle} tone="orange" />
-        <MetricCard title="Pickup Success" value="94.8%" note="Current month" icon={CheckCircle2} tone="green" />
-      </section>
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-black text-slate-950">Reverse Shipment Queue</h2>
-        <div className="mt-6 space-y-3">
-          {returnRequests.slice(0, 5).map((request) => (
-            <ReturnListRow key={request.id} request={request} />
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function ReceivedWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Received Returns"
-        description="Record warehouse receipt, verify quantity and assign items for inspection."
-        buttonLabel="Receive Return"
-      />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {returnRequests
-          .filter((item) => item.status === "Received" || item.status === "Inspected")
-          .map((request) => (
-            <article key={request.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-green-50 text-green-600">
-                <PackageOpen size={22} />
-              </div>
-              <p className="mt-5 text-xs font-bold uppercase tracking-wider text-green-600">
-                {request.id}
+        {/* MODULE SECTION */}
+        <section className="rounded-[24px] border border-[#dbe3ef] bg-white px-5 py-6 shadow-[0_2px_5px_rgba(15,23,42,0.05)] sm:px-6">
+          <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.17em] text-[#1765ff]">
+                Reverse Commerce Operations
               </p>
-              <h3 className="mt-2 text-base font-black text-slate-900">{request.product}</h3>
-              <p className="mt-2 text-sm text-slate-500">{request.customer}</p>
-              <div className="mt-5">
-                <ReturnStatusBadge status={request.status} />
-              </div>
-            </article>
-          ))}
-      </section>
-    </div>
-  );
-}
 
-function DispositionWorkspace() {
-  const cards = [
-    ["Restock", "18", "Items returned to sellable inventory", "green"],
-    ["Repair", "4", "Items awaiting repair or refurbishment", "blue"],
-    ["Vendor Return", "3", "Defective items to be returned to supplier", "orange"],
-    ["Reject / Scrap", "2", "Items not suitable for resale", "red"],
-  ];
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.035em] text-[#050b1a]">
+                Returns &amp; Refunds Modules
+              </h2>
 
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Return Disposition"
-        description="Control restock, repair, vendor return and rejected-item decisions."
-        buttonLabel="Create Disposition"
-      />
-
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map((card) => (
-          <article key={card[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-              <PackageCheck size={22} />
+              <p className="mt-2 text-sm leading-6 text-[#60759a]">
+                Open a module to manage its complete returns and reverse
+                commerce workflow.
+              </p>
             </div>
-            <h3 className="mt-5 text-base font-black text-slate-900">{card[0]}</h3>
-            <p className="mt-2 text-3xl font-black text-slate-950">{card[1]}</p>
-            <p className="mt-2 text-xs leading-5 text-slate-500">{card[2]}</p>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
 
-function AnalyticsWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Returns Analytics"
-        description="Analyse return rate, reasons, refund value, product quality and customer behaviour."
-        buttonLabel="Export Analytics"
-      />
+            <div className="relative w-full lg:w-[330px]">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#91a2bc]" />
 
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Return Rate" value="3.2%" note="Current month" icon={Activity} tone="blue" />
-        <MetricCard title="Refund Value" value="₹1.84L" note="Current month" icon={IndianRupee} tone="green" />
-        <MetricCard title="Exchange Rate" value="28%" note="Of approved returns" icon={RefreshCcw} tone="violet" />
-        <MetricCard title="Avg Resolution" value="2.4 days" note="Request to closure" icon={Clock3} tone="orange" />
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-2">
-        <ChartCard
-          title="Weekly Return Volume"
-          values={[18, 24, 16, 29, 21, 32, 26]}
-          labels={["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]}
-        />
-        <ChartCard
-          title="Top Return Reasons"
-          values={[82, 68, 54, 42, 31]}
-          labels={["Size", "Damage", "Colour", "Wrong", "Other"]}
-        />
-      </section>
-    </div>
-  );
-}
-
-function ChartCard({
-  title,
-  values,
-  labels,
-}: {
-  title: string;
-  values: number[];
-  labels: string[];
-}) {
-  return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-black text-slate-950">{title}</h2>
-      <div className="mt-8 flex h-64 items-end gap-4">
-        {values.map((value, index) => (
-          <div key={`${labels[index]}-${value}`} className="flex flex-1 flex-col items-center gap-3">
-            <div className="flex h-52 w-full items-end rounded-xl bg-slate-50 p-1">
-              <div
-                className="w-full rounded-lg bg-blue-600"
-                style={{ height: `${Math.max(8, value)}%` }}
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search returns modules..."
+                className="h-12 w-full rounded-2xl border border-[#dbe3ef] bg-[#f8faff] pl-12 pr-11 text-sm font-medium text-[#17233b] outline-none transition placeholder:text-[#91a2bc] focus:border-[#1765ff] focus:bg-white focus:ring-4 focus:ring-blue-100"
               />
+
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#8495af] hover:bg-[#eaf0fa] hover:text-[#17233b]"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
-            <span className="text-xs text-slate-500">{labels[index]}</span>
           </div>
-        ))}
-      </div>
-    </article>
-  );
-}
 
-function ReportsWorkspace() {
-  const reports = [
-    ["Return Request Report", "Requests, reasons, products and outcomes"],
-    ["Refund Report", "Approvals, processing, failures and completion"],
-    ["Exchange Report", "Replacement items, status and delivery"],
-    ["Inspection Report", "Condition, defects and disposition"],
-    ["Reverse Logistics Report", "Pickup, tracking, delays and costs"],
-    ["Return Analytics Report", "Rates, trends, customer and product insights"],
-  ];
+          {filteredModules.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredModules.map((module, index) => {
+                const Icon = module.icon;
+                const isPrimary = index === 0 && searchQuery.length === 0;
 
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Returns & Refunds Reports"
-        description="Generate and export return, refund, exchange and reverse-logistics reports."
-        buttonLabel="Create Custom Report"
-      />
+                return (
+                  <article
+                    key={module.id}
+                    className={`group flex min-h-[266px] flex-col rounded-[18px] border bg-white p-5 transition duration-200 ${
+                      isPrimary
+                        ? "border-[#1765ff] shadow-[0_8px_24px_rgba(23,101,255,0.10)]"
+                        : "border-[#dbe3ef] hover:-translate-y-0.5 hover:border-[#94b7ff] hover:shadow-[0_10px_30px_rgba(23,49,99,0.08)]"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-5">
+                      <div
+                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+                          isPrimary
+                            ? "bg-[#1765ff] text-white"
+                            : "bg-[#eef5ff] text-[#1765ff]"
+                        }`}
+                      >
+                        <Icon className="h-6 w-6" />
+                      </div>
 
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {reports.map((report) => (
-          <article key={report[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-              <FileBarChart size={22} />
+                      <div className="text-right">
+                        <p className="text-lg font-black leading-none text-[#050b1a]">
+                          {module.metric}
+                        </p>
+
+                        <p className="mt-3 max-w-[120px] text-[10px] font-semibold leading-4 text-[#8da0bf]">
+                          {module.metricLabel}
+                        </p>
+                      </div>
+                    </div>
+
+                    <h3 className="mt-5 text-[17px] font-extrabold tracking-[-0.025em] text-[#050b1a]">
+                      {module.title}
+                    </h3>
+
+                    <p className="mt-3 flex-1 text-sm leading-6 text-[#617697]">
+                      {module.description}
+                    </p>
+
+                    <div className="mt-5 flex items-center justify-between gap-4">
+                      <span className="text-xs font-semibold text-[#91a2bd]">
+                        {module.features} features
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedModule(module)}
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-[#115cff] transition hover:gap-3"
+                      >
+                        Open
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-            <h3 className="mt-5 text-base font-black text-slate-900">{report[0]}</h3>
-            <p className="mt-2 text-xs leading-5 text-slate-500">{report[1]}</p>
-            <button type="button" className="mt-6 flex items-center gap-2 text-xs font-bold text-blue-600">
-              Generate Report
-              <ArrowRight size={15} />
-            </button>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
+          ) : (
+            <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[#cad6e8] bg-[#f8faff] px-5 text-center">
+              <Search className="h-10 w-10 text-[#99aac2]" />
 
-function SettingsWorkspace() {
-  const settings = [
-    ["Return Window", "Configure eligible return days by category and product."],
-    ["Return Reasons", "Manage customer-visible and internal return reasons."],
-    ["Approval Rules", "Set automatic, manager and founder approval thresholds."],
-    ["Refund Methods", "Configure original payment, bank transfer and store credit."],
-    ["Inspection Standards", "Define condition checks and disposition rules."],
-    ["Reverse Logistics", "Configure pickup couriers, SLAs and escalation rules."],
-  ];
+              <h3 className="mt-4 text-lg font-bold text-[#17233b]">
+                No module found
+              </h3>
 
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Returns & Refunds Settings"
-        description="Configure eligibility, approvals, refunds, inspections and reverse-logistics rules."
-        buttonLabel="Save Configuration"
-      />
+              <p className="mt-2 text-sm text-[#7184a2]">
+                Try searching with another module name.
+              </p>
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        {settings.map((setting) => (
-          <article key={setting[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start gap-4">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
-                <Settings2 size={20} />
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="mt-5 rounded-xl bg-[#1765ff] px-5 py-2.5 text-sm font-semibold text-white"
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* MODULE MODAL */}
+      {selectedModule && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#071126]/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-xl overflow-hidden rounded-[24px] bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-5 border-b border-[#e2e8f1] px-6 py-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef5ff] text-[#1765ff]">
+                  <selectedModule.icon className="h-6 w-6" />
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#1765ff]">
+                    Returns Module
+                  </p>
+
+                  <h3 className="mt-1 text-xl font-black text-[#071126]">
+                    {selectedModule.title}
+                  </h3>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedModule(null)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-[#7184a2] hover:bg-[#f0f4fa] hover:text-[#071126]"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="px-6 py-6">
+              <p className="text-sm leading-7 text-[#60759a]">
+                {selectedModule.description}
+              </p>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-[#dfe7f2] bg-[#f8faff] p-4">
+                  <p className="text-xs font-semibold text-[#8496b3]">
+                    Current status
+                  </p>
+
+                  <p className="mt-2 text-xl font-black text-[#071126]">
+                    {selectedModule.metric}
+                  </p>
+
+                  <p className="mt-1 text-xs text-[#7184a2]">
+                    {selectedModule.metricLabel}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-[#dfe7f2] bg-[#f8faff] p-4">
+                  <p className="text-xs font-semibold text-[#8496b3]">
+                    Available controls
+                  </p>
+
+                  <p className="mt-2 text-xl font-black text-[#071126]">
+                    {selectedModule.features}
+                  </p>
+
+                  <p className="mt-1 text-xs text-[#7184a2]">
+                    Operational features
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#1765ff]" />
+
+                  <div>
+                    <p className="text-sm font-bold text-[#173b87]">
+                      Module connected
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-[#5672a7]">
+                      The module interface is ready. Detailed records and
+                      backend actions can be connected to this workspace next.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-[#e2e8f1] bg-[#f8faff] px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setSelectedModule(null)}
+                className="rounded-xl border border-[#d7e0ed] bg-white px-5 py-2.5 text-sm font-semibold text-[#536784] hover:bg-[#f2f5fa]"
+              >
+                Close
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedModule(null)}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#1765ff] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0f54e8]"
+              >
+                Continue
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE RETURN MODAL */}
+      {showCreateReturn && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#071126]/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl overflow-hidden rounded-[24px] bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#e2e8f1] px-6 py-5">
               <div>
-                <h3 className="text-sm font-black text-slate-900">{setting[0]}</h3>
-                <p className="mt-2 text-xs leading-5 text-slate-500">{setting[1]}</p>
-                <button type="button" className="mt-4 text-xs font-bold text-blue-600">
-                  Configure
+                <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#1765ff]">
+                  New Return
+                </p>
+
+                <h3 className="mt-1 text-xl font-black text-[#071126]">
+                  Create Return Request
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowCreateReturn(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-[#7184a2] hover:bg-[#f0f4fa] hover:text-[#071126]"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                setShowCreateReturn(false);
+              }}
+              className="px-6 py-6"
+            >
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Order ID
+                  </span>
+
+                  <input
+                    required
+                    type="text"
+                    placeholder="Example: KRVE-10248"
+                    className="h-12 w-full rounded-xl border border-[#d8e1ed] px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Customer
+                  </span>
+
+                  <input
+                    required
+                    type="text"
+                    placeholder="Customer name"
+                    className="h-12 w-full rounded-xl border border-[#d8e1ed] px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Return Type
+                  </span>
+
+                  <select className="h-12 w-full rounded-xl border border-[#d8e1ed] bg-white px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100">
+                    <option>Refund</option>
+                    <option>Exchange</option>
+                    <option>Replacement</option>
+                    <option>Store Credit</option>
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Return Reason
+                  </span>
+
+                  <select className="h-12 w-full rounded-xl border border-[#d8e1ed] bg-white px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100">
+                    <option>Size or fit issue</option>
+                    <option>Damaged product</option>
+                    <option>Wrong item received</option>
+                    <option>Product quality issue</option>
+                    <option>Changed mind</option>
+                    <option>Other</option>
+                  </select>
+                </label>
+
+                <label className="space-y-2 sm:col-span-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Notes
+                  </span>
+
+                  <textarea
+                    rows={4}
+                    placeholder="Add return details..."
+                    className="w-full resize-none rounded-xl border border-[#d8e1ed] px-4 py-3 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-7 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateReturn(false)}
+                  className="rounded-xl border border-[#d7e0ed] bg-white px-5 py-2.5 text-sm font-semibold text-[#536784] hover:bg-[#f2f5fa]"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#1765ff] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0f54e8]"
+                >
+                  <PackageCheck className="h-4 w-4" />
+                  Create Return
                 </button>
               </div>
-            </div>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function CreateReturnPanel({
-  onClose,
-}: {
-  onClose: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-[90] flex justify-end bg-slate-950/50 backdrop-blur-sm">
-      <button
-        type="button"
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-label="Close panel"
-      />
-
-      <aside className="relative z-10 h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl sm:p-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-600">
-              Reverse Commerce
-            </p>
-            <h2 className="mt-2 text-2xl font-black text-slate-950">
-              Create Return Request
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Create a return request for an eligible customer order.
-            </p>
+            </form>
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200"
-          >
-            <X size={18} />
-          </button>
         </div>
-
-        <form
-          className="mt-8 space-y-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onClose();
-          }}
-        >
-          <FormField label="Order ID" placeholder="KRVE-10483" />
-          <FormField label="Customer Name" placeholder="Customer name" />
-          <FormField label="Product" placeholder="Select returned product" />
-          <FormField label="Return Reason" placeholder="Select or enter reason" />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Refund Amount" placeholder="₹18,999" />
-            <FormField label="Pickup City" placeholder="City" />
-          </div>
-          <FormField label="Resolution" placeholder="Refund / Exchange / Store Credit" />
-
-          <button
-            type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"
-          >
-            <Plus size={17} />
-            Create Return
-          </button>
-        </form>
-      </aside>
+      )}
     </div>
-  );
-}
-
-function FormField({
-  label,
-  placeholder,
-}: {
-  label: string;
-  placeholder: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-bold text-slate-700">{label}</span>
-      <input
-        required
-        placeholder={placeholder}
-        className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-      />
-    </label>
-  );
-}
-
-function WorkspaceHeader({
-  title,
-  description,
-  buttonLabel,
-  onClick,
-}: {
-  title: string;
-  description: string;
-  buttonLabel: string;
-  onClick?: () => void;
-}) {
-  return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h2 className="text-xl font-black text-slate-950">{title}</h2>
-          <p className="mt-1 text-sm text-slate-500">{description}</p>
-        </div>
-
-        <button
-          type="button"
-          onClick={onClick}
-          className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
-        >
-          <Plus size={17} />
-          {buttonLabel}
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function InfoBox({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl bg-slate-50 p-3">
-      <span className="block text-[10px] uppercase tracking-wider text-slate-400">{label}</span>
-      <strong className="mt-1 block text-xs text-slate-800">{value}</strong>
-    </div>
-  );
-}
-
-function ReturnStatusBadge({
-  status,
-}: {
-  status: ReturnStatus;
-}) {
-  const className =
-    status === "Refunded"
-      ? "bg-green-50 text-green-700"
-      : status === "Rejected"
-        ? "bg-red-50 text-red-700"
-        : status === "Received" || status === "Inspected"
-          ? "bg-violet-50 text-violet-700"
-          : status === "In Transit" || status === "Pickup Scheduled"
-            ? "bg-blue-50 text-blue-700"
-            : "bg-orange-50 text-orange-700";
-
-  return (
-    <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${className}`}>
-      {status}
-    </span>
-  );
-}
-
-function RefundStatusBadge({
-  status,
-}: {
-  status: RefundStatus;
-}) {
-  const className =
-    status === "Completed"
-      ? "bg-green-50 text-green-700"
-      : status === "Failed"
-        ? "bg-red-50 text-red-700"
-        : status === "Approved" || status === "Processing"
-          ? "bg-blue-50 text-blue-700"
-          : "bg-orange-50 text-orange-700";
-
-  return (
-    <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${className}`}>
-      {status}
-    </span>
-  );
-}
-
-function ExchangeStatusBadge({
-  status,
-}: {
-  status: ExchangeRequest["status"];
-}) {
-  const className =
-    status === "Completed"
-      ? "bg-green-50 text-green-700"
-      : status === "Shipped"
-        ? "bg-violet-50 text-violet-700"
-        : status === "Approved" || status === "Packed"
-          ? "bg-blue-50 text-blue-700"
-          : "bg-orange-50 text-orange-700";
-
-  return (
-    <span className={`rounded-full px-3 py-1 text-xs font-bold ${className}`}>
-      {status}
-    </span>
-  );
-}
-
-function PriorityBadge({
-  priority,
-}: {
-  priority: Priority;
-}) {
-  const className =
-    priority === "High"
-      ? "bg-red-50 text-red-700"
-      : priority === "Medium"
-        ? "bg-orange-50 text-orange-700"
-        : "bg-slate-100 text-slate-700";
-
-  return (
-    <span className={`rounded-full px-3 py-1 text-xs font-bold ${className}`}>
-      {priority}
-    </span>
   );
 }
