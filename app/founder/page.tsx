@@ -2120,11 +2120,7 @@ export default function FounderPage() {
     </section>
   </div>
 )}
-
-         {/* Founder profile editor */}
-         {profileEditorOpen && (
-          ...
-          )}
+      
             {/* Founder profile editor */}
       {profileEditorOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
