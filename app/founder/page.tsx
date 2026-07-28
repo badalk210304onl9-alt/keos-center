@@ -1349,11 +1349,11 @@ export default function FounderPage() {
                     </div>
 
                     <div className="max-h-[390px] overflow-y-auto">
-                      {notificationItems.map((notification) => (
-                        <button
-                          key={notification.id}
-                          type="button"
-                          className="flex w-full gap-3 border-b border-zinc-100 px-5 py-4 text-left transition last:border-0 hover:bg-zinc-50"
+                     {notificationItems.map((notification) => (
+                      <button
+                       key={notification.id}
+                       type="button"
+                       className="flex w-full gap-3 border-b border-zinc-100 px-5 py-4 text-left transition last:border-0 hover:bg-zinc-50"
                         >
                           <div
                             className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
@@ -1379,13 +1379,14 @@ export default function FounderPage() {
                     </div>
 
                     <button
-                      type="button"
-                      onClick={() => {
-                        setNotificationOpen(false);
-                        setActiveSection("notifications");
-                      }}
-                      className="flex w-full items-center justify-center gap-2 border-t border-zinc-100 px-5 py-3.5 text-xs font-semibold text-[#8b6b32] transition hover:bg-[#c7a96b]/10"
-                    >
+                     key={notification.id}
+                     type="button"
+                     onClick={() => {
+                      setSelectedNotification(notification);
+                      setNotificationOpen(false);
+                       }}
+                         className="flex w-full gap-3 border-b border-zinc-100 px-5 py-4 text-left transition last:border-0 hover:bg-zinc-50"
+                        >
                       View all notifications
                       <ArrowRight size={14} />
                     </button>
