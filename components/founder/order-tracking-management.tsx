@@ -1,1417 +1,728 @@
 "use client";
 
 import {
-  Activity,
+  useMemo,
+  useState,
+  type ElementType,
+  type FormEvent,
+} from "react";
+import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
   BellRing,
+  Box,
   CheckCircle2,
-  ChevronRight,
   Clock3,
-  Download,
-  FileBarChart,
-  Filter,
   History,
   MapPin,
   PackageCheck,
   PackageSearch,
   Plus,
   RefreshCcw,
+  Route,
   Search,
-  Settings2,
   ShieldCheck,
-  Sparkles,
+  Timer,
   Truck,
-  UserRound,
+  UserCheck,
   Warehouse,
   X,
 } from "lucide-react";
-import { useMemo, useState, type ComponentType } from "react";
 
-type IconType = ComponentType<{
-  size?: number;
-  className?: string;
-  strokeWidth?: number;
-}>;
-
-type TrackingTab =
-  | "dashboard"
-  | "live-orders"
-  | "milestones"
-  | "delays"
-  | "exceptions"
-  | "notifications"
-  | "couriers"
-  | "delivery-proof"
-  | "history"
-  | "analytics"
-  | "reports"
-  | "settings";
-
-type TrackingStatus =
-  | "Order Confirmed"
-  | "Packed"
-  | "Dispatched"
-  | "In Transit"
-  | "Out for Delivery"
-  | "Delivered"
-  | "Delayed"
-  | "Exception";
-
-type Priority = "High" | "Medium" | "Low";
-
-type TrackedOrder = {
+type TrackingModule = {
   id: string;
-  customer: string;
-  city: string;
-  courier: string;
-  trackingId: string;
-  warehouse: string;
-  promisedDate: string;
-  lastUpdate: string;
-  status: TrackingStatus;
-  priority: Priority;
-};
-
-type TrackingEvent = {
-  id: string;
-  orderId: string;
-  title: string;
-  location: string;
-  timestamp: string;
-  completed: boolean;
-};
-
-type DelayCase = {
-  id: string;
-  orderId: string;
-  customer: string;
-  reason: string;
-  delayHours: number;
-  owner: string;
-  action: string;
-  priority: Priority;
-};
-
-const tabs: Array<{
-  id: TrackingTab;
-  label: string;
-  icon: IconType;
-}> = [
-  { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-  { id: "live-orders", label: "Live Orders", icon: Truck },
-  { id: "milestones", label: "Milestones", icon: MapPin },
-  { id: "delays", label: "Delays", icon: Clock3 },
-  { id: "exceptions", label: "Exceptions", icon: AlertTriangle },
-  { id: "notifications", label: "Notifications", icon: BellRing },
-  { id: "couriers", label: "Courier Tracking", icon: PackageSearch },
-  { id: "delivery-proof", label: "Delivery Proof", icon: PackageCheck },
-  { id: "history", label: "History", icon: History },
-  { id: "analytics", label: "Analytics", icon: Activity },
-  { id: "reports", label: "Reports", icon: FileBarChart },
-  { id: "settings", label: "Settings", icon: Settings2 },
-];
-
-const trackedOrders: TrackedOrder[] = [
-  {
-    id: "KRVE-10482",
-    customer: "Aarav Sharma",
-    city: "Varanasi",
-    courier: "Delhivery",
-    trackingId: "DLV7842216",
-    warehouse: "KRVE Central Warehouse",
-    promisedDate: "27 Jul 2026",
-    lastUpdate: "26 Jul 2026, 12:42 PM",
-    status: "In Transit",
-    priority: "High",
-  },
-  {
-    id: "KRVE-10481",
-    customer: "Ananya Singh",
-    city: "New Delhi",
-    courier: "Blue Dart",
-    trackingId: "BD5582041",
-    warehouse: "Delhi Fulfilment Center",
-    promisedDate: "26 Jul 2026",
-    lastUpdate: "26 Jul 2026, 12:18 PM",
-    status: "Out for Delivery",
-    priority: "High",
-  },
-  {
-    id: "KRVE-10480",
-    customer: "Rohan Verma",
-    city: "Mumbai",
-    courier: "Ecom Express",
-    trackingId: "ECM9921840",
-    warehouse: "Mumbai Distribution Hub",
-    promisedDate: "28 Jul 2026",
-    lastUpdate: "26 Jul 2026, 11:56 AM",
-    status: "Dispatched",
-    priority: "Medium",
-  },
-  {
-    id: "KRVE-10479",
-    customer: "Priya Mehta",
-    city: "Lucknow",
-    courier: "Xpressbees",
-    trackingId: "XPB6148291",
-    warehouse: "KRVE Central Warehouse",
-    promisedDate: "26 Jul 2026",
-    lastUpdate: "26 Jul 2026, 11:25 AM",
-    status: "Delayed",
-    priority: "High",
-  },
-  {
-    id: "KRVE-10478",
-    customer: "Kabir Malhotra",
-    city: "Jaipur",
-    courier: "Delhivery",
-    trackingId: "DLV7842162",
-    warehouse: "KRVE Central Warehouse",
-    promisedDate: "26 Jul 2026",
-    lastUpdate: "26 Jul 2026, 10:48 AM",
-    status: "Delivered",
-    priority: "Low",
-  },
-];
-
-const delayCases: DelayCase[] = [
-  {
-    id: "DLY-2026-084",
-    orderId: "KRVE-10479",
-    customer: "Priya Mehta",
-    reason: "Linehaul delay",
-    delayHours: 18,
-    owner: "Shipping Operations",
-    action: "Courier escalation raised",
-    priority: "High",
-  },
-  {
-    id: "DLY-2026-083",
-    orderId: "KRVE-10466",
-    customer: "Aditya Rao",
-    reason: "Incorrect routing",
-    delayHours: 12,
-    owner: "Courier Partner",
-    action: "Rerouted to correct hub",
-    priority: "High",
-  },
-  {
-    id: "DLY-2026-082",
-    orderId: "KRVE-10455",
-    customer: "Neha Kapoor",
-    reason: "Weather disruption",
-    delayHours: 8,
-    owner: "Customer Support",
-    action: "Customer informed",
-    priority: "Medium",
-  },
-];
-
-function formatPercent(value: number) {
-  return `${value.toFixed(1)}%`;
-}
-
-export default function OrderTrackingManagement() {
-  const [activeTab, setActiveTab] = useState<TrackingTab>("dashboard");
-  const [search, setSearch] = useState("");
-  const [showTrackPanel, setShowTrackPanel] = useState(false);
-
-  const filteredOrders = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    if (!query) {
-      return trackedOrders;
-    }
-
-    return trackedOrders.filter((order) =>
-      `${order.id} ${order.customer} ${order.city} ${order.courier} ${order.trackingId} ${order.status}`
-        .toLowerCase()
-        .includes(query),
-    );
-  }, [search]);
-
-  return (
-    <div className="min-h-screen bg-[#f4f7fb] p-4 sm:p-6 lg:p-8">
-      <TrackingHeader
-        onTrack={() => setShowTrackPanel(true)}
-        onOpenTab={setActiveTab}
-      />
-
-      <TrackingTabBar activeTab={activeTab} onChange={setActiveTab} />
-
-      {activeTab === "dashboard" && (
-        <DashboardWorkspace onOpenTab={setActiveTab} />
-      )}
-
-      {activeTab === "live-orders" && (
-        <LiveOrdersWorkspace
-          orders={filteredOrders}
-          search={search}
-          setSearch={setSearch}
-        />
-      )}
-
-      {activeTab === "milestones" && <MilestonesWorkspace />}
-      {activeTab === "delays" && <DelaysWorkspace />}
-      {activeTab === "exceptions" && <ExceptionsWorkspace />}
-      {activeTab === "notifications" && <NotificationsWorkspace />}
-      {activeTab === "couriers" && <CourierTrackingWorkspace />}
-      {activeTab === "delivery-proof" && <DeliveryProofWorkspace />}
-      {activeTab === "history" && <HistoryWorkspace />}
-      {activeTab === "analytics" && <AnalyticsWorkspace />}
-      {activeTab === "reports" && <ReportsWorkspace />}
-      {activeTab === "settings" && <SettingsWorkspace />}
-
-      {showTrackPanel && (
-        <TrackOrderPanel onClose={() => setShowTrackPanel(false)} />
-      )}
-    </div>
-  );
-}
-
-function TrackingHeader({
-  onTrack,
-  onOpenTab,
-}: {
-  onTrack: () => void;
-  onOpenTab: (tab: TrackingTab) => void;
-}) {
-  return (
-    <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-blue-700 to-blue-950 p-7 text-white shadow-xl sm:p-9">
-      <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15">
-              <PackageSearch size={25} />
-            </div>
-
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
-              Customer Delivery Visibility
-            </p>
-          </div>
-
-          <h1 className="mt-5 text-3xl font-black sm:text-4xl">
-            Order Tracking Management
-          </h1>
-
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-blue-100">
-            Track every shipment milestone, delivery delay, exception,
-            customer notification, courier update and proof of delivery.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => onOpenTab("delays")}
-            className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold transition hover:bg-white/20"
-          >
-            <Clock3 size={17} />
-            View Delays
-          </button>
-
-          <button
-            type="button"
-            onClick={onTrack}
-            className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-50"
-          >
-            <Plus size={17} />
-            Track Order
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function TrackingTabBar({
-  activeTab,
-  onChange,
-}: {
-  activeTab: TrackingTab;
-  onChange: (tab: TrackingTab) => void;
-}) {
-  return (
-    <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="keos-scrollbar flex overflow-x-auto p-2">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const active = activeTab === tab.id;
-
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onChange(tab.id)}
-              className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${
-                active
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <Icon size={17} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function DashboardWorkspace({
-  onOpenTab,
-}: {
-  onOpenTab: (tab: TrackingTab) => void;
-}) {
-  return (
-    <div className="mt-6 space-y-6">
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          title="Tracked Orders"
-          value="284"
-          note="Live orders"
-          icon={PackageSearch}
-          tone="blue"
-        />
-        <MetricCard
-          title="On Schedule"
-          value="91.2%"
-          note="Within promised date"
-          icon={CheckCircle2}
-          tone="green"
-        />
-        <MetricCard
-          title="Delayed"
-          value="11"
-          note="Require intervention"
-          icon={Clock3}
-          tone="violet"
-        />
-        <MetricCard
-          title="Delivered Today"
-          value="74"
-          note="Confirmed deliveries"
-          icon={PackageCheck}
-          tone="orange"
-        />
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="text-lg font-black text-slate-950">
-                Live Delivery Pipeline
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Current orders, courier milestones and delivery status
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onOpenTab("live-orders")}
-              className="flex items-center gap-2 text-sm font-bold text-blue-600"
-            >
-              View Live Orders
-              <ArrowRight size={16} />
-            </button>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {trackedOrders.map((order) => (
-              <OrderListRow key={order.id} order={order} />
-            ))}
-          </div>
-        </article>
-
-        <article className="rounded-3xl bg-[#0f172a] p-6 text-white shadow-xl">
-          <div className="flex items-center justify-between">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-600">
-              <Sparkles size={22} />
-            </div>
-
-            <span className="rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-300">
-              AI Active
-            </span>
-          </div>
-
-          <h2 className="mt-6 text-xl font-black">
-            KRVE AI Delivery Intelligence
-          </h2>
-
-          <p className="mt-3 text-sm leading-7 text-slate-400">
-            KRVE AI predicts delivery delays, detects stalled milestones and
-            prioritises customer communication.
-          </p>
-
-          <div className="mt-6 space-y-3">
-            <InsightCard
-              title="Delay risk"
-              detail="Three shipments have a high probability of missing the promised delivery date."
-              tone="orange"
-            />
-            <InsightCard
-              title="Service opportunity"
-              detail="Proactive WhatsApp updates may reduce support contacts by 18%."
-              tone="green"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onOpenTab("analytics")}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold transition hover:bg-blue-700"
-          >
-            Open Tracking Intelligence
-            <ArrowRight size={16} />
-          </button>
-        </article>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-2">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black text-slate-950">
-                Delay Intervention Queue
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Orders requiring operational action
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onOpenTab("delays")}
-              className="text-sm font-bold text-blue-600"
-            >
-              Open Delays
-            </button>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {delayCases.map((delay) => (
-              <DelayRow key={delay.id} delay={delay} />
-            ))}
-          </div>
-        </article>
-
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-black text-slate-950">
-            Quick Tracking Operations
-          </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Start daily delivery-visibility workflows
-          </p>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <QuickAction
-              title="Track Order"
-              description="Search order or courier tracking ID"
-              icon={PackageSearch}
-              onClick={() => onOpenTab("live-orders")}
-            />
-            <QuickAction
-              title="Review Delays"
-              description="Prioritise delayed and at-risk orders"
-              icon={Clock3}
-              onClick={() => onOpenTab("delays")}
-            />
-            <QuickAction
-              title="Send Update"
-              description="Notify customers about shipment progress"
-              icon={BellRing}
-              onClick={() => onOpenTab("notifications")}
-            />
-            <QuickAction
-              title="Delivery Proof"
-              description="Review signature, photo and receiver details"
-              icon={PackageCheck}
-              onClick={() => onOpenTab("delivery-proof")}
-            />
-          </div>
-        </article>
-      </section>
-    </div>
-  );
-}
-
-function MetricCard({
-  title,
-  value,
-  note,
-  icon: Icon,
-  tone,
-}: {
-  title: string;
-  value: string;
-  note: string;
-  icon: IconType;
-  tone: "blue" | "green" | "violet" | "orange";
-}) {
-  const classes =
-    tone === "green"
-      ? "bg-green-50 text-green-600"
-      : tone === "violet"
-        ? "bg-violet-50 text-violet-600"
-        : tone === "orange"
-          ? "bg-orange-50 text-orange-600"
-          : "bg-blue-50 text-blue-600";
-
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-      <div className={`grid h-11 w-11 place-items-center rounded-xl ${classes}`}>
-        <Icon size={21} />
-      </div>
-      <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
-      <h2 className="mt-2 text-3xl font-black text-slate-950">{value}</h2>
-      <p className="mt-2 text-xs text-slate-400">{note}</p>
-    </article>
-  );
-}
-
-function OrderListRow({
-  order,
-}: {
-  order: TrackedOrder;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-100 p-4 transition hover:bg-slate-50">
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
-        <Truck size={18} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
-          <strong className="truncate text-sm text-slate-900">
-            {order.id} · {order.customer}
-          </strong>
-          <span className="text-xs text-slate-400">{order.lastUpdate}</span>
-        </div>
-
-        <p className="mt-1 truncate text-xs text-slate-500">
-          {order.courier} · {order.trackingId} · {order.city}
-        </p>
-      </div>
-
-      <TrackingStatusBadge status={order.status} />
-    </div>
-  );
-}
-
-function DelayRow({
-  delay,
-}: {
-  delay: DelayCase;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-100 p-4 transition hover:bg-slate-50">
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-orange-50 text-orange-600">
-        <AlertTriangle size={18} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <strong className="block truncate text-sm text-slate-900">
-          {delay.orderId} · {delay.customer}
-        </strong>
-        <p className="mt-1 truncate text-xs text-slate-500">
-          {delay.reason} · {delay.delayHours} hours · {delay.action}
-        </p>
-      </div>
-
-      <PriorityBadge priority={delay.priority} />
-    </div>
-  );
-}
-
-function InsightCard({
-  title,
-  detail,
-  tone,
-}: {
-  title: string;
-  detail: string;
-  tone: "green" | "orange";
-}) {
-  return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-      <strong
-        className={`text-xs ${
-          tone === "green" ? "text-green-300" : "text-orange-300"
-        }`}
-      >
-        {title}
-      </strong>
-      <p className="mt-2 text-xs leading-5 text-slate-400">{detail}</p>
-    </div>
-  );
-}
-
-function QuickAction({
-  title,
-  description,
-  icon: Icon,
-  onClick,
-}: {
   title: string;
   description: string;
-  icon: IconType;
-  onClick: () => void;
-}) {
+  features: number;
+  metric: string;
+  metricLabel: string;
+  icon: ElementType;
+};
+
+type KpiCard = {
+  label: string;
+  value: string;
+  helper: string;
+  icon: ElementType;
+  iconClass: string;
+};
+
+const trackingModules: TrackingModule[] = [
+  {
+    id: "tracking-dashboard",
+    title: "Tracking Dashboard",
+    description:
+      "Monitor active shipments, delivery performance, delays, exceptions, courier status and customer visibility.",
+    features: 10,
+    metric: "284",
+    metricLabel: "Tracked orders",
+    icon: BarChart3,
+  },
+  {
+    id: "live-orders",
+    title: "Live Order Tracking",
+    description:
+      "Track every active order from warehouse processing through dispatch, transit and final delivery.",
+    features: 12,
+    metric: "284",
+    metricLabel: "Live shipments",
+    icon: PackageSearch,
+  },
+  {
+    id: "shipment-milestones",
+    title: "Shipment Milestones",
+    description:
+      "Monitor packed, dispatched, in-transit, out-for-delivery and delivered shipment milestones.",
+    features: 11,
+    metric: "1,264",
+    metricLabel: "Milestones recorded",
+    icon: Route,
+  },
+  {
+    id: "delivery-delays",
+    title: "Delivery Delays",
+    description:
+      "Identify delayed shipments, expected delivery breaches, courier delays and unresolved delivery risks.",
+    features: 10,
+    metric: "11",
+    metricLabel: "Delayed orders",
+    icon: Clock3,
+  },
+  {
+    id: "tracking-exceptions",
+    title: "Delivery Exceptions",
+    description:
+      "Manage failed attempts, incorrect addresses, damaged parcels, lost shipments and customer unavailability.",
+    features: 12,
+    metric: "6",
+    metricLabel: "Open exceptions",
+    icon: AlertTriangle,
+  },
+  {
+    id: "customer-notifications",
+    title: "Customer Notifications",
+    description:
+      "Send automated SMS, email, WhatsApp and push updates for every important delivery milestone.",
+    features: 11,
+    metric: "2,846",
+    metricLabel: "Updates sent",
+    icon: BellRing,
+  },
+  {
+    id: "courier-tracking",
+    title: "Courier Tracking",
+    description:
+      "Monitor courier partners, tracking numbers, pickup scans, transit events and delivery performance.",
+    features: 12,
+    metric: "8",
+    metricLabel: "Courier partners",
+    icon: Truck,
+  },
+  {
+    id: "warehouse-dispatch",
+    title: "Warehouse Dispatch",
+    description:
+      "Track order handover, dispatch readiness, courier pickup, manifest status and warehouse processing.",
+    features: 10,
+    metric: "38",
+    metricLabel: "Ready for dispatch",
+    icon: Warehouse,
+  },
+  {
+    id: "delivery-eta",
+    title: "Delivery ETA Management",
+    description:
+      "Calculate estimated delivery dates using warehouse, courier, destination and shipment movement data.",
+    features: 9,
+    metric: "96.4%",
+    metricLabel: "ETA accuracy",
+    icon: Timer,
+  },
+  {
+    id: "proof-of-delivery",
+    title: "Proof of Delivery",
+    description:
+      "Store delivery signatures, OTP confirmation, customer photographs, timestamps and courier evidence.",
+    features: 10,
+    metric: "74",
+    metricLabel: "Delivered today",
+    icon: PackageCheck,
+  },
+  {
+    id: "delivery-history",
+    title: "Tracking History",
+    description:
+      "Review complete order movement, courier scans, status changes, notifications and delivery events.",
+    features: 9,
+    metric: "18,462",
+    metricLabel: "Tracking events",
+    icon: History,
+  },
+  {
+    id: "tracking-analytics",
+    title: "Tracking Analytics",
+    description:
+      "Analyse delivery speed, on-time rate, courier performance, delays, exceptions and customer experience.",
+    features: 12,
+    metric: "91.2%",
+    metricLabel: "On-time delivery",
+    icon: BarChart3,
+  },
+];
+
+const kpiCards: KpiCard[] = [
+  {
+    label: "Tracked Orders",
+    value: "284",
+    helper: "Currently in delivery flow",
+    icon: PackageSearch,
+    iconClass: "bg-blue-50 text-blue-600",
+  },
+  {
+    label: "On Schedule",
+    value: "91.2%",
+    helper: "Within promised timeline",
+    icon: CheckCircle2,
+    iconClass: "bg-emerald-50 text-emerald-600",
+  },
+  {
+    label: "Delayed",
+    value: "11",
+    helper: "Require attention",
+    icon: Clock3,
+    iconClass: "bg-violet-50 text-violet-600",
+  },
+  {
+    label: "Delivered Today",
+    value: "74",
+    helper: "Successfully completed",
+    icon: PackageCheck,
+    iconClass: "bg-orange-50 text-orange-600",
+  },
+];
+
+export default function OrderTrackingManagement() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedModule, setSelectedModule] =
+    useState<TrackingModule | null>(null);
+  const [showTrackOrder, setShowTrackOrder] = useState(false);
+
+  const filteredModules = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return trackingModules;
+    }
+
+    return trackingModules.filter((module) => {
+      return (
+        module.title.toLowerCase().includes(query) ||
+        module.description.toLowerCase().includes(query) ||
+        module.metricLabel.toLowerCase().includes(query)
+      );
+    });
+  }, [searchQuery]);
+
+  function handleTrackOrder(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setShowTrackOrder(false);
+  }
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50/40 hover:shadow-md"
-    >
-      <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600">
-        <Icon size={20} />
-      </div>
-      <strong className="mt-4 block text-sm text-slate-900">{title}</strong>
-      <span className="mt-2 block text-xs leading-5 text-slate-500">
-        {description}
-      </span>
-      <span className="mt-4 flex items-center gap-2 text-xs font-bold text-blue-600">
-        Open
-        <ChevronRight size={14} className="transition group-hover:translate-x-1" />
-      </span>
-    </button>
-  );
-}
-
-function LiveOrdersWorkspace({
-  orders,
-  search,
-  setSearch,
-}: {
-  orders: TrackedOrder[];
-  search: string;
-  setSearch: (value: string) => void;
-}) {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Live Order Tracking"
-        description="Search and monitor live customer orders and courier tracking."
-        buttonLabel="Export Orders"
-      />
-
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row">
-          <div className="flex h-12 flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 focus-within:border-blue-500 focus-within:bg-white">
-            <Search size={17} className="text-slate-400" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search order, customer, courier or tracking ID..."
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-            />
-            {search && (
-              <button type="button" onClick={() => setSearch("")}>
-                <X size={15} className="text-slate-400" />
-              </button>
-            )}
-          </div>
-
-          <button
-            type="button"
-            className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600"
-          >
-            <Filter size={17} />
-            Filters
-          </button>
-
-          <button
-            type="button"
-            className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600"
-          >
-            <Download size={17} />
-            Export
-          </button>
-        </div>
-      </section>
-
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1250px] border-collapse text-left">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-                <th className="px-5 py-4">Order</th>
-                <th className="px-5 py-4">Customer</th>
-                <th className="px-5 py-4">City</th>
-                <th className="px-5 py-4">Courier</th>
-                <th className="px-5 py-4">Tracking ID</th>
-                <th className="px-5 py-4">Warehouse</th>
-                <th className="px-5 py-4">Promised Date</th>
-                <th className="px-5 py-4">Last Update</th>
-                <th className="px-5 py-4">Priority</th>
-                <th className="px-5 py-4">Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order.id} className="border-b border-slate-100 text-sm">
-                  <td className="px-5 py-4 font-bold text-blue-600">{order.id}</td>
-                  <td className="px-5 py-4 font-bold text-slate-900">{order.customer}</td>
-                  <td className="px-5 py-4 text-slate-600">{order.city}</td>
-                  <td className="px-5 py-4 text-slate-600">{order.courier}</td>
-                  <td className="px-5 py-4 font-mono text-xs text-slate-600">{order.trackingId}</td>
-                  <td className="px-5 py-4 text-slate-600">{order.warehouse}</td>
-                  <td className="px-5 py-4 text-slate-600">{order.promisedDate}</td>
-                  <td className="px-5 py-4 text-xs text-slate-500">{order.lastUpdate}</td>
-                  <td className="px-5 py-4"><PriorityBadge priority={order.priority} /></td>
-                  <td className="px-5 py-4"><TrackingStatusBadge status={order.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function MilestonesWorkspace() {
-  const events: TrackingEvent[] = [
-    {
-      id: "EVT-1",
-      orderId: "KRVE-10482",
-      title: "Order Confirmed",
-      location: "KRVE Website",
-      timestamp: "25 Jul 2026, 09:42 PM",
-      completed: true,
-    },
-    {
-      id: "EVT-2",
-      orderId: "KRVE-10482",
-      title: "Packed",
-      location: "KRVE Central Warehouse",
-      timestamp: "25 Jul 2026, 10:58 PM",
-      completed: true,
-    },
-    {
-      id: "EVT-3",
-      orderId: "KRVE-10482",
-      title: "Dispatched",
-      location: "Varanasi Hub",
-      timestamp: "25 Jul 2026, 11:48 PM",
-      completed: true,
-    },
-    {
-      id: "EVT-4",
-      orderId: "KRVE-10482",
-      title: "In Transit",
-      location: "Lucknow Transit Hub",
-      timestamp: "26 Jul 2026, 08:30 AM",
-      completed: true,
-    },
-    {
-      id: "EVT-5",
-      orderId: "KRVE-10482",
-      title: "Out for Delivery",
-      location: "Pending",
-      timestamp: "Expected 27 Jul 2026",
-      completed: false,
-    },
-  ];
-
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Shipment Milestones"
-        description="Review order progression from confirmation to final delivery."
-        buttonLabel="Refresh Milestones"
-      />
-
-      <section className="grid gap-6 xl:grid-cols-2">
-        {trackedOrders.slice(0, 4).map((order) => (
-          <article
-            key={order.id}
-            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-blue-600">
-                  {order.id}
-                </p>
-                <h3 className="mt-2 text-lg font-black text-slate-950">
-                  {order.customer}
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  {order.courier} · {order.trackingId}
-                </p>
-              </div>
-
-              <TrackingStatusBadge status={order.status} />
-            </div>
-
-            <div className="mt-7 space-y-5">
-              {events.map((event) => (
-                <div key={`${order.id}-${event.id}`} className="flex items-start gap-4">
-                  <span
-                    className={`mt-1 h-3 w-3 shrink-0 rounded-full ${
-                      event.completed ? "bg-green-500" : "bg-slate-200"
-                    }`}
-                  />
-                  <div>
-                    <strong className="text-sm text-slate-900">{event.title}</strong>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {event.location} · {event.timestamp}
-                    </p>
-                  </div>
+    <div className="min-h-full bg-[#f5f7fb]">
+      <div className="mx-auto w-full max-w-[1500px] space-y-6 px-5 py-8 sm:px-6 lg:px-8">
+        {/* HERO */}
+        <section className="overflow-hidden rounded-[26px] bg-gradient-to-r from-[#1765ff] via-[#2352d5] to-[#192d68] px-7 py-8 text-white shadow-[0_18px_45px_rgba(27,56,137,0.22)] sm:px-9 lg:px-10 lg:py-9">
+          <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-center">
+            <div className="max-w-4xl">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/15 backdrop-blur">
+                  <PackageSearch className="h-6 w-6" />
                 </div>
-              ))}
-            </div>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
 
-function DelaysWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Delivery Delays"
-        description="Review delayed orders, owners, reasons and intervention actions."
-        buttonLabel="Create Escalation"
-      />
-
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Delayed Orders" value="11" note="Current live orders" icon={Clock3} tone="orange" />
-        <MetricCard title="High Priority" value="4" note="Founder visibility" icon={AlertTriangle} tone="violet" />
-        <MetricCard title="Customer Informed" value="8" note="Notifications sent" icon={BellRing} tone="blue" />
-        <MetricCard title="Resolved Today" value="6" note="Delay cases closed" icon={CheckCircle2} tone="green" />
-      </section>
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {delayCases.map((delay) => (
-          <article
-            key={delay.id}
-            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-          >
-            <div className="flex items-start justify-between">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-orange-50 text-orange-600">
-                <Clock3 size={22} />
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-100">
+                  Customer Delivery Visibility
+                </p>
               </div>
-              <PriorityBadge priority={delay.priority} />
+
+              <h1 className="text-3xl font-black tracking-[-0.04em] sm:text-4xl lg:text-[40px]">
+                Order Tracking Management
+              </h1>
+
+              <p className="mt-4 max-w-4xl text-sm leading-7 text-blue-100 sm:text-[15px]">
+                Track every shipment milestone, delivery delay, exception,
+                customer notification, courier update and proof of delivery
+                across KRVE.
+              </p>
             </div>
 
-            <p className="mt-5 text-xs font-bold uppercase tracking-wider text-orange-600">
-              {delay.id}
-            </p>
-            <h3 className="mt-2 text-lg font-black text-slate-950">
-              {delay.orderId}
-            </h3>
-            <p className="mt-2 text-sm text-slate-600">{delay.customer}</p>
+            <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-[310px] lg:grid-cols-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const delayModule = trackingModules.find(
+                    (module) => module.id === "delivery-delays",
+                  );
 
-            <div className="mt-5 space-y-3 text-xs">
-              <InfoRow label="Reason" value={delay.reason} />
-              <InfoRow label="Delay" value={`${delay.delayHours} hours`} />
-              <InfoRow label="Owner" value={delay.owner} />
-              <InfoRow label="Action" value={delay.action} />
+                  setSelectedModule(delayModule ?? null);
+                }}
+                className="flex min-h-14 items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-5 text-sm font-semibold text-white transition hover:bg-white/15"
+              >
+                <Clock3 className="h-5 w-5" />
+                View Delays
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowTrackOrder(true)}
+                className="flex min-h-14 items-center justify-center gap-3 rounded-2xl bg-white px-5 text-sm font-semibold text-[#164cff] shadow-sm transition hover:bg-blue-50"
+              >
+                <Plus className="h-5 w-5" />
+                Track Order
+              </button>
             </div>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function ExceptionsWorkspace() {
-  const exceptions = [
-    ["EXC-2026-051", "KRVE-10471", "Address issue", "Customer contact required", "Open"],
-    ["EXC-2026-050", "KRVE-10468", "Shipment damaged", "Replacement review", "Open"],
-    ["EXC-2026-049", "KRVE-10462", "Customer unavailable", "Reattempt scheduled", "Monitoring"],
-    ["EXC-2026-048", "KRVE-10458", "Incorrect routing", "Courier escalation", "Resolved"],
-  ];
-
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Delivery Exceptions"
-        description="Manage address, damage, routing and delivery-attempt exceptions."
-        buttonLabel="Create Exception"
-      />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {exceptions.map((item) => (
-          <article key={item[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-red-50 text-red-600">
-              <AlertTriangle size={22} />
-            </div>
-            <p className="mt-5 text-xs font-bold uppercase tracking-wider text-red-600">{item[0]}</p>
-            <h3 className="mt-2 text-base font-black text-slate-900">{item[1]}</h3>
-            <p className="mt-3 text-sm text-slate-600">{item[2]}</p>
-            <p className="mt-2 text-xs text-slate-500">{item[3]}</p>
-            <span className="mt-4 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
-              {item[4]}
-            </span>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function NotificationsWorkspace() {
-  const templates = [
-    ["Order Confirmed", "Email + WhatsApp", "Sent after order confirmation", "Active"],
-    ["Shipment Dispatched", "Email + WhatsApp", "Sent after courier handover", "Active"],
-    ["Out for Delivery", "WhatsApp + SMS", "Sent on delivery day", "Active"],
-    ["Delivery Delayed", "Email + WhatsApp", "Sent when SLA risk is detected", "Active"],
-    ["Delivered", "Email + WhatsApp", "Sent after delivery confirmation", "Active"],
-  ];
-
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Tracking Notifications"
-        description="Manage email, WhatsApp and SMS updates for shipment milestones."
-        buttonLabel="Create Notification"
-      />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-        {templates.map((item) => (
-          <article key={item[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-              <BellRing size={22} />
-            </div>
-            <h3 className="mt-5 text-base font-black text-slate-900">{item[0]}</h3>
-            <p className="mt-2 text-xs text-slate-500">{item[1]}</p>
-            <p className="mt-3 text-xs leading-5 text-slate-500">{item[2]}</p>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function CourierTrackingWorkspace() {
-  const couriers = [
-    ["Delhivery", "96.8%", "62 live", "2.8 days", "Healthy"],
-    ["Blue Dart", "98.2%", "31 live", "1.9 days", "Healthy"],
-    ["Ecom Express", "94.6%", "28 live", "3.4 days", "Monitor"],
-    ["Xpressbees", "93.8%", "21 live", "3.1 days", "Monitor"],
-  ];
-
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Courier Tracking Performance"
-        description="Monitor courier SLA, live orders, speed and service quality."
-        buttonLabel="Refresh Courier Data"
-      />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {couriers.map((item) => (
-          <article key={item[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-              <Truck size={22} />
-            </div>
-            <h3 className="mt-5 text-base font-black text-slate-900">{item[0]}</h3>
-            <div className="mt-5 space-y-3 text-xs">
-              <InfoRow label="Delivery Rate" value={item[1]} />
-              <InfoRow label="Live Orders" value={item[2]} />
-              <InfoRow label="Average Time" value={item[3]} />
-              <InfoRow label="Health" value={item[4]} />
-            </div>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function DeliveryProofWorkspace() {
-  const proofs = [
-    ["POD-10478", "KRVE-10478", "Kabir Malhotra", "Photo + OTP", "26 Jul 2026, 10:42 AM"],
-    ["POD-10474", "KRVE-10474", "Meera Joshi", "Signature", "26 Jul 2026, 09:18 AM"],
-    ["POD-10469", "KRVE-10469", "Aditya Rao", "Photo + Signature", "26 Jul 2026, 08:56 AM"],
-  ];
-
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Proof of Delivery"
-        description="Review delivery photo, OTP, signature and receiver confirmation."
-        buttonLabel="Export Proofs"
-      />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {proofs.map((item) => (
-          <article key={item[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-green-50 text-green-600">
-              <PackageCheck size={22} />
-            </div>
-            <p className="mt-5 text-xs font-bold uppercase tracking-wider text-green-600">{item[0]}</p>
-            <h3 className="mt-2 text-base font-black text-slate-900">{item[1]}</h3>
-            <p className="mt-2 text-sm text-slate-600">{item[2]}</p>
-            <div className="mt-5 space-y-3 text-xs">
-              <InfoRow label="Proof" value={item[3]} />
-              <InfoRow label="Delivered" value={item[4]} />
-            </div>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function HistoryWorkspace() {
-  const history = [
-    ["26 Jul 2026, 12:42 PM", "In transit update", "KRVE-10482", "Delhivery"],
-    ["26 Jul 2026, 12:18 PM", "Out for delivery", "KRVE-10481", "Blue Dart"],
-    ["26 Jul 2026, 11:56 AM", "Shipment dispatched", "KRVE-10480", "Ecom Express"],
-    ["26 Jul 2026, 11:25 AM", "Delay detected", "KRVE-10479", "KRVE AI"],
-  ];
-
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Tracking History"
-        description="Review shipment status, courier updates and customer notifications."
-        buttonLabel="Export History"
-      />
-
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[850px] border-collapse text-left">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-                <th className="px-5 py-4">Date</th>
-                <th className="px-5 py-4">Action</th>
-                <th className="px-5 py-4">Order</th>
-                <th className="px-5 py-4">Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((item) => (
-                <tr key={`${item[0]}-${item[1]}`} className="border-b border-slate-100 text-sm">
-                  <td className="px-5 py-4 text-xs text-slate-500">{item[0]}</td>
-                  <td className="px-5 py-4 font-bold text-slate-900">{item[1]}</td>
-                  <td className="px-5 py-4 text-slate-600">{item[2]}</td>
-                  <td className="px-5 py-4 text-slate-600">{item[3]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function AnalyticsWorkspace() {
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Order Tracking Analytics"
-        description="Analyse on-time delivery, delays, courier performance and notification effectiveness."
-        buttonLabel="Export Analytics"
-      />
-
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="On-Time Delivery" value="91.2%" note="Current month" icon={CheckCircle2} tone="green" />
-        <MetricCard title="Average Transit" value="2.8 days" note="Across couriers" icon={Truck} tone="blue" />
-        <MetricCard title="Delay Rate" value="4.6%" note="Current month" icon={Clock3} tone="orange" />
-        <MetricCard title="Notification Reach" value="97.4%" note="Successful delivery updates" icon={BellRing} tone="violet" />
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-2">
-        <ChartCard
-          title="On-Time Delivery Trend"
-          values={[82, 84, 86, 88, 90, 91, 92]}
-          labels={["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]}
-        />
-        <ChartCard
-          title="Courier Delivery Performance"
-          values={[97, 98, 95, 94]}
-          labels={["Delhivery", "BlueDart", "Ecom", "Xpress"]}
-        />
-      </section>
-    </div>
-  );
-}
-
-function ChartCard({
-  title,
-  values,
-  labels,
-}: {
-  title: string;
-  values: number[];
-  labels: string[];
-}) {
-  return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-black text-slate-950">{title}</h2>
-      <div className="mt-8 flex h-64 items-end gap-4">
-        {values.map((value, index) => (
-          <div key={`${labels[index]}-${value}`} className="flex flex-1 flex-col items-center gap-3">
-            <div className="flex h-52 w-full items-end rounded-xl bg-slate-50 p-1">
-              <div
-                className="w-full rounded-lg bg-blue-600"
-                style={{ height: `${Math.max(8, value)}%` }}
-              />
-            </div>
-            <span className="text-xs text-slate-500">{labels[index]}</span>
           </div>
-        ))}
-      </div>
-    </article>
-  );
-}
+        </section>
 
-function ReportsWorkspace() {
-  const reports = [
-    ["Live Order Tracking Report", "Order, courier, status and promised date"],
-    ["Delay Report", "Reason, duration, owner and intervention"],
-    ["Exception Report", "Address, routing, damage and attempt issues"],
-    ["Courier Performance Report", "SLA, speed and success rate"],
-    ["Notification Report", "Email, WhatsApp and SMS delivery"],
-    ["Proof of Delivery Report", "Photo, OTP, signature and receiver"],
-  ];
+        {/* KPI CARDS */}
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {kpiCards.map((kpi) => {
+            const Icon = kpi.icon;
 
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Order Tracking Reports"
-        description="Generate and export live tracking, delay, exception and courier reports."
-        buttonLabel="Create Custom Report"
-      />
+            return (
+              <article
+                key={kpi.label}
+                className="rounded-[20px] border border-[#dbe3ef] bg-white p-6 shadow-[0_2px_5px_rgba(15,23,42,0.08)]"
+              >
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-2xl ${kpi.iconClass}`}
+                >
+                  <Icon className="h-6 w-6" />
+                </div>
 
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {reports.map((report) => (
-          <article key={report[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-              <FileBarChart size={22} />
+                <p className="mt-5 text-sm font-medium text-[#5c7296]">
+                  {kpi.label}
+                </p>
+
+                <p className="mt-1 text-[30px] font-black tracking-[-0.04em] text-[#050b1a]">
+                  {kpi.value}
+                </p>
+
+                <p className="mt-2 text-xs font-medium text-[#93a3bd]">
+                  {kpi.helper}
+                </p>
+              </article>
+            );
+          })}
+        </section>
+
+        {/* MODULES */}
+        <section className="rounded-[24px] border border-[#dbe3ef] bg-white px-5 py-6 shadow-[0_2px_5px_rgba(15,23,42,0.05)] sm:px-6">
+          <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.17em] text-[#1765ff]">
+                Delivery Operations
+              </p>
+
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.035em] text-[#050b1a]">
+                Order Tracking Modules
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-[#60759a]">
+                Open a module to manage its complete shipment visibility and
+                delivery workflow.
+              </p>
             </div>
-            <h3 className="mt-5 text-base font-black text-slate-900">{report[0]}</h3>
-            <p className="mt-2 text-xs leading-5 text-slate-500">{report[1]}</p>
-            <button type="button" className="mt-6 flex items-center gap-2 text-xs font-bold text-blue-600">
-              Generate Report
-              <ArrowRight size={15} />
-            </button>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
 
-function SettingsWorkspace() {
-  const settings = [
-    ["Tracking Sources", "Configure courier APIs and shipment-status sources."],
-    ["Milestone Mapping", "Map courier events to KRVE order milestones."],
-    ["Delay Thresholds", "Set SLA risk and escalation thresholds."],
-    ["Customer Notifications", "Configure email, WhatsApp and SMS updates."],
-    ["Proof of Delivery", "Set required photo, OTP and signature rules."],
-    ["Tracking Retention", "Configure event and delivery-proof retention."],
-  ];
+            <div className="relative w-full lg:w-[330px]">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#91a2bc]" />
 
-  return (
-    <div className="mt-6 space-y-6">
-      <WorkspaceHeader
-        title="Order Tracking Settings"
-        description="Configure courier sources, milestones, delays, notifications and delivery proof."
-        buttonLabel="Save Configuration"
-      />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search tracking modules..."
+                className="h-12 w-full rounded-2xl border border-[#dbe3ef] bg-[#f8faff] pl-12 pr-11 text-sm font-medium text-[#17233b] outline-none transition placeholder:text-[#91a2bc] focus:border-[#1765ff] focus:bg-white focus:ring-4 focus:ring-blue-100"
+              />
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        {settings.map((setting) => (
-          <article key={setting[0]} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start gap-4">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
-                <Settings2 size={20} />
-              </div>
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#8495af] hover:bg-[#eaf0fa] hover:text-[#17233b]"
+                  aria-label="Clear tracking search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {filteredModules.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredModules.map((module, index) => {
+                const Icon = module.icon;
+                const isPrimary = index === 0 && searchQuery.length === 0;
+
+                return (
+                  <article
+                    key={module.id}
+                    className={`group flex min-h-[266px] flex-col rounded-[18px] border bg-white p-5 transition duration-200 ${
+                      isPrimary
+                        ? "border-[#1765ff] shadow-[0_8px_24px_rgba(23,101,255,0.10)]"
+                        : "border-[#dbe3ef] hover:-translate-y-0.5 hover:border-[#94b7ff] hover:shadow-[0_10px_30px_rgba(23,49,99,0.08)]"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-5">
+                      <div
+                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+                          isPrimary
+                            ? "bg-[#1765ff] text-white"
+                            : "bg-[#eef5ff] text-[#1765ff]"
+                        }`}
+                      >
+                        <Icon className="h-6 w-6" />
+                      </div>
+
+                      <div className="text-right">
+                        <p className="text-lg font-black leading-none text-[#050b1a]">
+                          {module.metric}
+                        </p>
+
+                        <p className="mt-3 max-w-[130px] text-[10px] font-semibold leading-4 text-[#8da0bf]">
+                          {module.metricLabel}
+                        </p>
+                      </div>
+                    </div>
+
+                    <h3 className="mt-5 text-[17px] font-extrabold tracking-[-0.025em] text-[#050b1a]">
+                      {module.title}
+                    </h3>
+
+                    <p className="mt-3 flex-1 text-sm leading-6 text-[#617697]">
+                      {module.description}
+                    </p>
+
+                    <div className="mt-5 flex items-center justify-between gap-4">
+                      <span className="text-xs font-semibold text-[#91a2bd]">
+                        {module.features} features
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedModule(module)}
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-[#115cff] transition hover:gap-3"
+                      >
+                        Open
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-[#cad6e8] bg-[#f8faff] px-5 text-center">
+              <Search className="h-10 w-10 text-[#99aac2]" />
+
+              <h3 className="mt-4 text-lg font-bold text-[#17233b]">
+                No tracking module found
+              </h3>
+
+              <p className="mt-2 text-sm text-[#7184a2]">
+                Try searching using another tracking module name.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="mt-5 rounded-xl bg-[#1765ff] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0f54e8]"
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* MODULE DETAILS MODAL */}
+      {selectedModule && (
+        <TrackingModuleModal
+          module={selectedModule}
+          onClose={() => setSelectedModule(null)}
+        />
+      )}
+
+      {/* TRACK ORDER MODAL */}
+      {showTrackOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#071126]/60 p-4 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[24px] bg-white shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#e2e8f1] bg-white px-6 py-5">
               <div>
-                <h3 className="text-sm font-black text-slate-900">{setting[0]}</h3>
-                <p className="mt-2 text-xs leading-5 text-slate-500">{setting[1]}</p>
-                <button type="button" className="mt-4 text-xs font-bold text-blue-600">
-                  Configure
+                <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#1765ff]">
+                  Delivery Visibility
+                </p>
+
+                <h3 className="mt-1 text-xl font-black text-[#071126]">
+                  Track Order
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowTrackOrder(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-[#7184a2] hover:bg-[#f0f4fa] hover:text-[#071126]"
+                aria-label="Close track order form"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleTrackOrder} className="px-6 py-6">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Order ID
+                  </span>
+
+                  <input
+                    required
+                    type="text"
+                    placeholder="Example: KRVE-10248"
+                    className="h-12 w-full rounded-xl border border-[#d8e1ed] px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Tracking Number
+                  </span>
+
+                  <input
+                    required
+                    type="text"
+                    placeholder="Courier tracking number"
+                    className="h-12 w-full rounded-xl border border-[#d8e1ed] px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Courier Partner
+                  </span>
+
+                  <select className="h-12 w-full rounded-xl border border-[#d8e1ed] bg-white px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100">
+                    <option>Delhivery</option>
+                    <option>Blue Dart</option>
+                    <option>DTDC</option>
+                    <option>Ekart Logistics</option>
+                    <option>Xpressbees</option>
+                    <option>India Post</option>
+                    <option>Other</option>
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Shipment Status
+                  </span>
+
+                  <select className="h-12 w-full rounded-xl border border-[#d8e1ed] bg-white px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100">
+                    <option>Order Confirmed</option>
+                    <option>Packed</option>
+                    <option>Ready for Dispatch</option>
+                    <option>Dispatched</option>
+                    <option>In Transit</option>
+                    <option>Out for Delivery</option>
+                    <option>Delivered</option>
+                    <option>Delivery Exception</option>
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Dispatch Date
+                  </span>
+
+                  <input
+                    type="date"
+                    className="h-12 w-full rounded-xl border border-[#d8e1ed] px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Expected Delivery
+                  </span>
+
+                  <input
+                    type="date"
+                    className="h-12 w-full rounded-xl border border-[#d8e1ed] px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2 sm:col-span-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Delivery Destination
+                  </span>
+
+                  <input
+                    type="text"
+                    placeholder="City, state or delivery location"
+                    className="h-12 w-full rounded-xl border border-[#d8e1ed] px-4 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="space-y-2 sm:col-span-2">
+                  <span className="text-sm font-semibold text-[#263752]">
+                    Tracking Notes
+                  </span>
+
+                  <textarea
+                    rows={4}
+                    placeholder="Add shipment notes or delivery instructions..."
+                    className="w-full resize-none rounded-xl border border-[#d8e1ed] px-4 py-3 text-sm outline-none focus:border-[#1765ff] focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-7 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowTrackOrder(false)}
+                  className="rounded-xl border border-[#d7e0ed] bg-white px-5 py-2.5 text-sm font-semibold text-[#536784] hover:bg-[#f2f5fa]"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#1765ff] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0f54e8]"
+                >
+                  <PackageSearch className="h-4 w-4" />
+                  Track Order
                 </button>
               </div>
-            </div>
-          </article>
-        ))}
-      </section>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function TrackOrderPanel({
+function TrackingModuleModal({
+  module,
   onClose,
 }: {
+  module: TrackingModule;
   onClose: () => void;
 }) {
-  return (
-    <div className="fixed inset-0 z-[90] flex justify-end bg-slate-950/50 backdrop-blur-sm">
-      <button
-        type="button"
-        className="absolute inset-0"
-        onClick={onClose}
-        aria-label="Close panel"
-      />
+  const Icon = module.icon;
 
-      <aside className="relative z-10 h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl sm:p-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-blue-600">
-              Customer Delivery Visibility
-            </p>
-            <h2 className="mt-2 text-2xl font-black text-slate-950">
-              Track Order
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Search by KRVE order ID or courier tracking ID.
-            </p>
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#071126]/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-xl overflow-hidden rounded-[24px] bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-5 border-b border-[#e2e8f1] px-6 py-5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef5ff] text-[#1765ff]">
+              <Icon className="h-6 w-6" />
+            </div>
+
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#1765ff]">
+                Order Tracking Module
+              </p>
+
+              <h3 className="mt-1 text-xl font-black text-[#071126]">
+                {module.title}
+              </h3>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-[#7184a2] hover:bg-[#f0f4fa] hover:text-[#071126]"
+            aria-label="Close order tracking module"
           >
-            <X size={18} />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form
-          className="mt-8 space-y-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onClose();
-          }}
-        >
-          <FormField label="Order ID" placeholder="KRVE-10482" />
-          <FormField label="Tracking ID" placeholder="DLV7842216" />
-          <FormField label="Courier" placeholder="Delhivery / Blue Dart / Ecom Express" />
+        <div className="px-6 py-6">
+          <p className="text-sm leading-7 text-[#60759a]">
+            {module.description}
+          </p>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-[#dfe7f2] bg-[#f8faff] p-4">
+              <p className="text-xs font-semibold text-[#8496b3]">
+                Current status
+              </p>
+
+              <p className="mt-2 text-xl font-black text-[#071126]">
+                {module.metric}
+              </p>
+
+              <p className="mt-1 text-xs text-[#7184a2]">
+                {module.metricLabel}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-[#dfe7f2] bg-[#f8faff] p-4">
+              <p className="text-xs font-semibold text-[#8496b3]">
+                Available controls
+              </p>
+
+              <p className="mt-2 text-xl font-black text-[#071126]">
+                {module.features}
+              </p>
+
+              <p className="mt-1 text-xs text-[#7184a2]">
+                Operational features
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#1765ff]" />
+
+              <div>
+                <p className="text-sm font-bold text-[#173b87]">
+                  Tracking module connected
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-[#5672a7]">
+                  This module is ready for detailed shipment records, courier
+                  updates, customer notifications and backend integration.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-[#e2e8f1] bg-[#f8faff] px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-[#d7e0ed] bg-white px-5 py-2.5 text-sm font-semibold text-[#536784] hover:bg-[#f2f5fa]"
+          >
+            Close
+          </button>
 
           <button
-            type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#1765ff] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0f54e8]"
           >
-            <PackageSearch size={17} />
-            Track Order
+            Continue
+            <ArrowRight className="h-4 w-4" />
           </button>
-        </form>
-      </aside>
-    </div>
-  );
-}
-
-function FormField({
-  label,
-  placeholder,
-}: {
-  label: string;
-  placeholder: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-bold text-slate-700">{label}</span>
-      <input
-        required
-        placeholder={placeholder}
-        className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-      />
-    </label>
-  );
-}
-
-function WorkspaceHeader({
-  title,
-  description,
-  buttonLabel,
-  onClick,
-}: {
-  title: string;
-  description: string;
-  buttonLabel: string;
-  onClick?: () => void;
-}) {
-  return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h2 className="text-xl font-black text-slate-950">{title}</h2>
-          <p className="mt-1 text-sm text-slate-500">{description}</p>
         </div>
-
-        <button
-          type="button"
-          onClick={onClick}
-          className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
-        >
-          <Plus size={17} />
-          {buttonLabel}
-        </button>
       </div>
-    </section>
-  );
-}
-
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex justify-between gap-3">
-      <span className="text-slate-500">{label}</span>
-      <strong className="text-right text-slate-800">{value}</strong>
     </div>
-  );
-}
-
-function TrackingStatusBadge({
-  status,
-}: {
-  status: TrackingStatus;
-}) {
-  const className =
-    status === "Delivered"
-      ? "bg-green-50 text-green-700"
-      : status === "Delayed" || status === "Exception"
-        ? "bg-red-50 text-red-700"
-        : status === "Out for Delivery"
-          ? "bg-violet-50 text-violet-700"
-          : status === "In Transit" || status === "Dispatched"
-            ? "bg-blue-50 text-blue-700"
-            : "bg-orange-50 text-orange-700";
-
-  return (
-    <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${className}`}>
-      {status}
-    </span>
-  );
-}
-
-function PriorityBadge({
-  priority,
-}: {
-  priority: Priority;
-}) {
-  const className =
-    priority === "High"
-      ? "bg-red-50 text-red-700"
-      : priority === "Medium"
-        ? "bg-orange-50 text-orange-700"
-        : "bg-slate-100 text-slate-700";
-
-  return (
-    <span className={`rounded-full px-3 py-1 text-xs font-bold ${className}`}>
-      {priority}
-    </span>
   );
 }
