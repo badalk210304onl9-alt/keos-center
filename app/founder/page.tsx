@@ -2030,7 +2030,16 @@ export default function FounderPage() {
             <SystemSettingsManagement />
           )}
         </main>
-      </div>
+        </div>
+
+         {selectedNotification && (
+          // <-- Yahan actual notification modal ka poora JSX hoga
+         )}
+
+         {/* Founder profile editor */}
+         {profileEditorOpen && (
+          ...
+          )}
             {/* Founder profile editor */}
       {profileEditorOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
