@@ -715,6 +715,9 @@ export default function FounderPage() {
   const [profileDraft, setProfileDraft] =
     useState<FounderProfile>(defaultFounderProfile);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<
+  (typeof notificationItems)[number] | null
+>(null);
 
   useEffect(() => {
     const storedSession = getStoredSession();
