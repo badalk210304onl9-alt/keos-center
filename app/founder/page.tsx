@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useKeosFounderData } from "@/hooks/use-keos-founder-data";
 
 import {
   Activity,
@@ -1795,6 +1796,33 @@ function FounderDashboard({
   const founderFirstName =
     founderName.trim().split(" ")[0] || "Founder";
 
+  const {
+    data: liveFounderData,
+    loading: liveDataLoading,
+    source: liveDataSource,
+  } = useKeosFounderData();
+
+  const liveStatisticValues = liveFounderData
+    ? [
+        liveFounderData.statistics.totalRevenue,
+        liveFounderData.statistics.totalOrders,
+        liveFounderData.statistics.totalCustomers,
+        liveFounderData.statistics.totalEmployees,
+      ]
+    : [];
+
+  const resolvedDashboardStatistics = dashboardStatistics.map(
+    (statistic, index) => ({
+      ...statistic,
+      value: liveStatisticValues[index] ?? statistic.value,
+    }),
+  );
+
+  const resolvedRecentOrders =
+    liveFounderData?.recentOrders?.length
+      ? liveFounderData.recentOrders
+      : recentOrders;
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <section className="rounded-3xl bg-gradient-to-r from-blue-600 via-blue-700 to-blue-900 p-7 text-white shadow-xl shadow-blue-900/10 sm:p-9">
@@ -1856,7 +1884,7 @@ function FounderDashboard({
       </section>
 
       <section className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {dashboardStatistics.map((statistic) => {
+        {resolvedDashboardStatistics.map((statistic) => {
           const StatisticIcon = statistic.icon;
 
           const iconClass =
@@ -2065,7 +2093,7 @@ function FounderDashboard({
               </thead>
 
               <tbody>
-                {recentOrders.map((order) => (
+                {resolvedRecentOrders.map((order) => (
                   <tr
                     key={order.id}
                     className="border-b border-slate-100 text-sm"
