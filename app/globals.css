@@ -91,3 +91,43 @@ textarea::placeholder {
 .keos-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
+/* KEOS Luxury Sidebar Scrollbar */
+
+.keos-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #9d7a3d #171714;
+}
+
+/* Chrome, Edge, Safari */
+.keos-sidebar-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.keos-sidebar-scroll::-webkit-scrollbar-track {
+  background: #171714;
+  border-radius: 999px;
+}
+
+.keos-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #d4b56e 0%,
+    #a8803f 50%,
+    #7f602e 100%
+  );
+  border: 2px solid #171714;
+  border-radius: 999px;
+}
+
+.keos-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    #e0c27b 0%,
+    #b58d49 50%,
+    #8e6a34 100%
+  );
+}
+
+.keos-sidebar-scroll::-webkit-scrollbar-corner {
+  background: #171714;
+}
