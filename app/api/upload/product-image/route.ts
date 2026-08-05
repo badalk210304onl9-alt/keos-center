@@ -1,14 +1,19 @@
 import {
-  createHash,
-} from "node:crypto";
-
-import {
   NextRequest,
   NextResponse,
 } from "next/server";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+import {
+  v2 as cloudinary,
+  type UploadApiErrorResponse,
+  type UploadApiResponse,
+} from "cloudinary";
+
+export const runtime =
+  "nodejs";
+
+export const dynamic =
+  "force-dynamic";
 
 const MAX_FILE_SIZE =
   8 * 1024 * 1024;
@@ -21,20 +26,11 @@ const ALLOWED_TYPES =
     "image/avif",
   ]);
 
-type CloudinaryResponse = {
-  secure_url?: string;
-  public_id?: string;
-  width?: number;
-  height?: number;
-  bytes?: number;
-  format?: string;
-  resource_type?: string;
-  error?: {
-    message?: string;
-  };
-};
+type UploadType =
+  | "primary"
+  | "gallery";
 
-function getEnvironmentVariable(
+function getRequiredEnvironmentVariable(
   name: string,
 ) {
   const value =
@@ -49,40 +45,31 @@ function getEnvironmentVariable(
   return value;
 }
 
-function createSignature(
-  parameters: Record<
-    string,
-    string | number
-  >,
-  apiSecret: string,
-) {
-  const signatureText =
-    Object.entries(parameters)
-      .filter(
-        ([, value]) =>
-          value !== "" &&
-          value !== undefined,
-      )
-      .sort(
-        ([firstKey], [secondKey]) =>
-          firstKey.localeCompare(
-            secondKey,
-          ),
-      )
-      .map(
-        ([key, value]) =>
-          `${key}=${value}`,
-      )
-      .join("&");
+function configureCloudinary() {
+  const cloudName =
+    getRequiredEnvironmentVariable(
+      "CLOUDINARY_CLOUD_NAME",
+    );
 
-  return createHash("sha1")
-    .update(
-      `${signatureText}${apiSecret}`,
-    )
-    .digest("hex");
+  const apiKey =
+    getRequiredEnvironmentVariable(
+      "CLOUDINARY_API_KEY",
+    );
+
+  const apiSecret =
+    getRequiredEnvironmentVariable(
+      "CLOUDINARY_API_SECRET",
+    );
+
+  cloudinary.config({
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
+    secure: true,
+  });
 }
 
-function createSafeFileName(
+function createSafePublicId(
   originalName: string,
 ) {
   const nameWithoutExtension =
@@ -111,10 +98,99 @@ function createSafeFileName(
   return `${safeName}-${crypto.randomUUID()}`;
 }
 
+function uploadBufferToCloudinary(
+  buffer: Buffer,
+  options: {
+    folder: string;
+    publicId: string;
+  },
+) {
+  return new Promise<UploadApiResponse>(
+    (
+      resolve,
+      reject,
+    ) => {
+      const uploadStream =
+        cloudinary.uploader.upload_stream(
+          {
+            resource_type:
+              "image",
+
+            folder:
+              options.folder,
+
+            public_id:
+              options.publicId,
+
+            overwrite:
+              false,
+
+            unique_filename:
+              false,
+
+            use_filename:
+              false,
+
+            invalidate:
+              false,
+          },
+          (
+            error:
+              | UploadApiErrorResponse
+              | undefined,
+            result:
+              | UploadApiResponse
+              | undefined,
+          ) => {
+            if (error) {
+              reject(
+                new Error(
+                  error.message ||
+                    "Cloudinary upload failed.",
+                ),
+              );
+
+              return;
+            }
+
+            if (
+              !result ||
+              !result.secure_url
+            ) {
+              reject(
+                new Error(
+                  "Cloudinary did not return an image URL.",
+                ),
+              );
+
+              return;
+            }
+
+            resolve(result);
+          },
+        );
+
+      uploadStream.end(
+        buffer,
+      );
+    },
+  );
+}
+
+function getUploadType(
+  value: FormDataEntryValue | null,
+): UploadType {
+  return value === "gallery"
+    ? "gallery"
+    : "primary";
+}
+
 export async function POST(
   request: NextRequest,
 ) {
   try {
+    configureCloudinary();
+
     const formData =
       await request.formData();
 
@@ -122,10 +198,10 @@ export async function POST(
       formData.get("file");
 
     const uploadType =
-      String(
+      getUploadType(
         formData.get(
           "uploadType",
-        ) || "primary",
+        ),
       );
 
     if (
@@ -134,8 +210,9 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
+
           message:
-            "Please select an image.",
+            "Please choose an image to upload.",
         },
         {
           status: 400,
@@ -151,8 +228,9 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
+
           message:
-            "Only JPG, PNG, WEBP and AVIF images are allowed.",
+            "Only JPG, PNG, WEBP and AVIF images are supported.",
         },
         {
           status: 400,
@@ -160,12 +238,11 @@ export async function POST(
       );
     }
 
-    if (
-      file.size <= 0
-    ) {
+    if (file.size <= 0) {
       return NextResponse.json(
         {
           success: false,
+
           message:
             "The selected image is empty.",
         },
@@ -182,6 +259,7 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
+
           message:
             "Image size must not exceed 8 MB.",
         },
@@ -191,26 +269,6 @@ export async function POST(
       );
     }
 
-    const cloudName =
-      getEnvironmentVariable(
-        "CLOUDINARY_CLOUD_NAME",
-      );
-
-    const apiKey =
-      getEnvironmentVariable(
-        "CLOUDINARY_API_KEY",
-      );
-
-    const apiSecret =
-      getEnvironmentVariable(
-        "CLOUDINARY_API_SECRET",
-      );
-
-    const timestamp =
-      Math.floor(
-        Date.now() / 1000,
-      );
-
     const folder =
       uploadType ===
       "gallery"
@@ -218,97 +276,26 @@ export async function POST(
         : "krve/products/primary";
 
     const publicId =
-      createSafeFileName(
+      createSafePublicId(
         file.name,
       );
 
-    const signedParameters = {
-      folder,
-      public_id: publicId,
-      timestamp,
-    };
+    const arrayBuffer =
+      await file.arrayBuffer();
 
-    const signature =
-      createSignature(
-        signedParameters,
-        apiSecret,
+    const buffer =
+      Buffer.from(
+        arrayBuffer,
       );
 
-    const cloudinaryForm =
-      new FormData();
-
-    cloudinaryForm.append(
-      "file",
-      file,
-    );
-
-    cloudinaryForm.append(
-      "api_key",
-      apiKey,
-    );
-
-    cloudinaryForm.append(
-      "timestamp",
-      String(timestamp),
-    );
-
-    cloudinaryForm.append(
-      "folder",
-      folder,
-    );
-
-    cloudinaryForm.append(
-      "public_id",
-      publicId,
-    );
-
-    cloudinaryForm.append(
-      "signature",
-      signature,
-    );
-
-    const response =
-      await fetch(
-        `https://api.cloudinary.com/v1_1/${encodeURIComponent(
-          cloudName,
-        )}/image/upload`,
+    const uploadedImage =
+      await uploadBufferToCloudinary(
+        buffer,
         {
-          method: "POST",
-          body: cloudinaryForm,
-          cache: "no-store",
+          folder,
+          publicId,
         },
       );
-
-    const result =
-      (await response.json()) as
-        CloudinaryResponse;
-
-    if (
-      !response.ok ||
-      !result.secure_url
-    ) {
-      console.error(
-        "CLOUDINARY_UPLOAD_ERROR",
-        result,
-      );
-
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            result.error
-              ?.message ||
-            "Cloudinary could not upload the image.",
-        },
-        {
-          status:
-            response.status >=
-            400
-              ? response.status
-              : 500,
-        },
-      );
-    }
 
     return NextResponse.json(
       {
@@ -316,24 +303,35 @@ export async function POST(
 
         data: {
           url:
-            result.secure_url,
+            uploadedImage.secure_url,
+
+          secureUrl:
+            uploadedImage.secure_url,
 
           publicId:
-            result.public_id,
+            uploadedImage.public_id,
 
           width:
-            result.width ?? null,
+            uploadedImage.width ??
+            null,
 
           height:
-            result.height ?? null,
+            uploadedImage.height ??
+            null,
 
           bytes:
-            result.bytes ??
+            uploadedImage.bytes ??
             file.size,
 
           format:
-            result.format ??
+            uploadedImage.format ??
             null,
+
+          resourceType:
+            uploadedImage.resource_type ??
+            "image",
+
+          folder,
         },
       },
       {
@@ -342,18 +340,19 @@ export async function POST(
     );
   } catch (error) {
     console.error(
-      "PRODUCT_IMAGE_UPLOAD_ERROR",
+      "CLOUDINARY_PRODUCT_UPLOAD_ERROR",
       error,
     );
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unable to upload the product image.";
 
     return NextResponse.json(
       {
         success: false,
-
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to upload the product image.",
+        message,
       },
       {
         status: 500,
