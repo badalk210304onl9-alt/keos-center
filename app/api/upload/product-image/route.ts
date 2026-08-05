@@ -3,17 +3,8 @@ import {
   NextResponse,
 } from "next/server";
 
-import {
-  v2 as cloudinary,
-  type UploadApiErrorResponse,
-  type UploadApiResponse,
-} from "cloudinary";
-
-export const runtime =
-  "nodejs";
-
-export const dynamic =
-  "force-dynamic";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const MAX_FILE_SIZE =
   8 * 1024 * 1024;
@@ -26,9 +17,19 @@ const ALLOWED_TYPES =
     "image/avif",
   ]);
 
-type UploadType =
-  | "primary"
-  | "gallery";
+type CloudinaryUploadResponse = {
+  secure_url?: string;
+  public_id?: string;
+  width?: number;
+  height?: number;
+  bytes?: number;
+  format?: string;
+  resource_type?: string;
+
+  error?: {
+    message?: string;
+  };
+};
 
 function getRequiredEnvironmentVariable(
   name: string,
@@ -43,30 +44,6 @@ function getRequiredEnvironmentVariable(
   }
 
   return value;
-}
-
-function configureCloudinary() {
-  const cloudName =
-    getRequiredEnvironmentVariable(
-      "CLOUDINARY_CLOUD_NAME",
-    );
-
-  const apiKey =
-    getRequiredEnvironmentVariable(
-      "CLOUDINARY_API_KEY",
-    );
-
-  const apiSecret =
-    getRequiredEnvironmentVariable(
-      "CLOUDINARY_API_SECRET",
-    );
-
-  cloudinary.config({
-    cloud_name: cloudName,
-    api_key: apiKey,
-    api_secret: apiSecret,
-    secure: true,
-  });
 }
 
 function createSafePublicId(
@@ -90,118 +67,47 @@ function createSafePublicId(
         /^-+|-+$/g,
         "",
       )
-      .slice(
-        0,
-        70,
-      ) || "product";
+      .slice(0, 65) ||
+    "krve-product";
 
   return `${safeName}-${crypto.randomUUID()}`;
 }
 
-function uploadBufferToCloudinary(
-  buffer: Buffer,
-  options: {
-    folder: string;
-    publicId: string;
-  },
+function getUploadFolder(
+  uploadType: string,
 ) {
-  return new Promise<UploadApiResponse>(
-    (
-      resolve,
-      reject,
-    ) => {
-      const uploadStream =
-        cloudinary.uploader.upload_stream(
-          {
-            resource_type:
-              "image",
-
-            folder:
-              options.folder,
-
-            public_id:
-              options.publicId,
-
-            overwrite:
-              false,
-
-            unique_filename:
-              false,
-
-            use_filename:
-              false,
-
-            invalidate:
-              false,
-          },
-          (
-            error:
-              | UploadApiErrorResponse
-              | undefined,
-            result:
-              | UploadApiResponse
-              | undefined,
-          ) => {
-            if (error) {
-              reject(
-                new Error(
-                  error.message ||
-                    "Cloudinary upload failed.",
-                ),
-              );
-
-              return;
-            }
-
-            if (
-              !result ||
-              !result.secure_url
-            ) {
-              reject(
-                new Error(
-                  "Cloudinary did not return an image URL.",
-                ),
-              );
-
-              return;
-            }
-
-            resolve(result);
-          },
-        );
-
-      uploadStream.end(
-        buffer,
-      );
-    },
-  );
-}
-
-function getUploadType(
-  value: FormDataEntryValue | null,
-): UploadType {
-  return value === "gallery"
-    ? "gallery"
-    : "primary";
+  return uploadType === "gallery"
+    ? "krve/products/gallery"
+    : "krve/products/primary";
 }
 
 export async function POST(
   request: NextRequest,
 ) {
   try {
-    configureCloudinary();
+    const cloudName =
+      getRequiredEnvironmentVariable(
+        "CLOUDINARY_CLOUD_NAME",
+      );
 
-    const formData =
+    const uploadPreset =
+      getRequiredEnvironmentVariable(
+        "CLOUDINARY_UPLOAD_PRESET",
+      );
+
+    const incomingFormData =
       await request.formData();
 
     const file =
-      formData.get("file");
+      incomingFormData.get(
+        "file",
+      );
 
     const uploadType =
-      getUploadType(
-        formData.get(
+      String(
+        incomingFormData.get(
           "uploadType",
-        ),
+        ) || "primary",
       );
 
     if (
@@ -210,7 +116,6 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-
           message:
             "Please choose an image to upload.",
         },
@@ -242,7 +147,6 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-
           message:
             "The selected image is empty.",
         },
@@ -270,32 +174,80 @@ export async function POST(
     }
 
     const folder =
-      uploadType ===
-      "gallery"
-        ? "krve/products/gallery"
-        : "krve/products/primary";
+      getUploadFolder(
+        uploadType,
+      );
 
     const publicId =
       createSafePublicId(
         file.name,
       );
 
-    const arrayBuffer =
-      await file.arrayBuffer();
+    const cloudinaryFormData =
+      new FormData();
 
-    const buffer =
-      Buffer.from(
-        arrayBuffer,
-      );
+    cloudinaryFormData.append(
+      "file",
+      file,
+    );
 
-    const uploadedImage =
-      await uploadBufferToCloudinary(
-        buffer,
+    cloudinaryFormData.append(
+      "upload_preset",
+      uploadPreset,
+    );
+
+    cloudinaryFormData.append(
+      "folder",
+      folder,
+    );
+
+    cloudinaryFormData.append(
+      "public_id",
+      publicId,
+    );
+
+    const cloudinaryResponse =
+      await fetch(
+        `https://api.cloudinary.com/v1_1/${encodeURIComponent(
+          cloudName,
+        )}/image/upload`,
         {
-          folder,
-          publicId,
+          method: "POST",
+          body: cloudinaryFormData,
+          cache: "no-store",
         },
       );
+
+    const result =
+      (await cloudinaryResponse.json()) as
+        CloudinaryUploadResponse;
+
+    if (
+      !cloudinaryResponse.ok ||
+      !result.secure_url
+    ) {
+      console.error(
+        "CLOUDINARY_UNSIGNED_UPLOAD_ERROR",
+        result,
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+
+          message:
+            result.error?.message ||
+            "Cloudinary could not upload the image.",
+        },
+        {
+          status:
+            cloudinaryResponse.status >=
+            400
+              ? cloudinaryResponse.status
+              : 500,
+        },
+      );
+    }
 
     return NextResponse.json(
       {
@@ -303,32 +255,29 @@ export async function POST(
 
         data: {
           url:
-            uploadedImage.secure_url,
+            result.secure_url,
 
           secureUrl:
-            uploadedImage.secure_url,
+            result.secure_url,
 
           publicId:
-            uploadedImage.public_id,
+            result.public_id,
 
           width:
-            uploadedImage.width ??
-            null,
+            result.width ?? null,
 
           height:
-            uploadedImage.height ??
-            null,
+            result.height ?? null,
 
           bytes:
-            uploadedImage.bytes ??
+            result.bytes ??
             file.size,
 
           format:
-            uploadedImage.format ??
-            null,
+            result.format ?? null,
 
           resourceType:
-            uploadedImage.resource_type ??
+            result.resource_type ??
             "image",
 
           folder,
@@ -340,19 +289,18 @@ export async function POST(
     );
   } catch (error) {
     console.error(
-      "CLOUDINARY_PRODUCT_UPLOAD_ERROR",
+      "PRODUCT_IMAGE_UPLOAD_ERROR",
       error,
     );
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Unable to upload the product image.";
 
     return NextResponse.json(
       {
         success: false,
-        message,
+
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to upload the product image.",
       },
       {
         status: 500,
