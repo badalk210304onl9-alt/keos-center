@@ -388,6 +388,27 @@ export default function OrdersManagement() {
     URL.revokeObjectURL(url);
   }
 
+  if (activeModule && activeModule !== "all-orders") {
+    const currentModule = modules.find((module) => module.id === activeModule);
+
+    if (currentModule) {
+      return (
+        <OrderModuleWorkspace
+          module={currentModule}
+          orders={orders}
+          loading={loading}
+          source={source}
+          error={error}
+          metrics={metrics}
+          onBack={() => setActiveModule(null)}
+          onRefresh={() => void loadOrders()}
+          onExport={exportOrders}
+          onOpenAllOrders={() => setActiveModule("all-orders")}
+        />
+      );
+    }
+  }
+
   if (activeModule === "all-orders") {
     return (
       <>
@@ -912,6 +933,507 @@ function PriceRow({
       <span className={bold ? "text-lg font-black text-slate-950" : "text-sm font-bold text-slate-800"}>
         {value}
       </span>
+    </div>
+  );
+}
+
+
+function OrderModuleWorkspace({
+  module,
+  orders,
+  loading,
+  source,
+  error,
+  metrics,
+  onBack,
+  onRefresh,
+  onExport,
+  onOpenAllOrders,
+}: {
+  module: (typeof modules)[number];
+  orders: StoreOrder[];
+  loading: boolean;
+  source: "store-api" | "demo";
+  error: string;
+  metrics: {
+    totalRevenue: number;
+    openOrders: number;
+    paymentIssues: number;
+    readyToShip: number;
+  };
+  onBack: () => void;
+  onRefresh: () => void;
+  onExport: () => void;
+  onOpenAllOrders: () => void;
+}) {
+  const Icon = module.icon;
+
+  const moduleConfig: Record<
+    string,
+    {
+      eyebrow: string;
+      title: string;
+      description: string;
+      primaryLabel: string;
+      cards: Array<{ label: string; value: string; note: string }>;
+      workflows: Array<{ title: string; description: string }>;
+    }
+  > = {
+    "order-processing": {
+      eyebrow: "Order Operations",
+      title: "Order Processing",
+      description:
+        "Verify incoming orders, confirm payment and inventory, then move orders into fulfilment.",
+      primaryLabel: "Open Processing Queue",
+      cards: [
+        {
+          label: "Open Orders",
+          value: String(metrics.openOrders),
+          note: "Awaiting action",
+        },
+        {
+          label: "Confirmed",
+          value: String(
+            orders.filter((order) => order.orderStatus === "Confirmed").length
+          ),
+          note: "Ready for processing",
+        },
+        {
+          label: "Processing",
+          value: String(
+            orders.filter((order) => order.orderStatus === "Processing").length
+          ),
+          note: "Currently active",
+        },
+        {
+          label: "Payment Issues",
+          value: String(metrics.paymentIssues),
+          note: "Require review",
+        },
+      ],
+      workflows: [
+        {
+          title: "Order Verification",
+          description:
+            "Validate customer information, payment status and order details.",
+        },
+        {
+          title: "Inventory Allocation",
+          description:
+            "Confirm stock availability and reserve products for the order.",
+        },
+        {
+          title: "Order Confirmation",
+          description:
+            "Approve eligible orders and notify the customer automatically.",
+        },
+        {
+          title: "Exception Handling",
+          description:
+            "Review failed payments, invalid addresses and stock conflicts.",
+        },
+      ],
+    },
+    payments: {
+      eyebrow: "Payment Operations",
+      title: "Payments",
+      description:
+        "Track payment status, methods, failed transactions, refunds and cash-on-delivery orders.",
+      primaryLabel: "Open Payment Records",
+      cards: [
+        {
+          label: "Paid Revenue",
+          value: money(metrics.totalRevenue),
+          note: "Successfully paid",
+        },
+        {
+          label: "Paid Orders",
+          value: String(
+            orders.filter((order) => order.paymentStatus === "Paid").length
+          ),
+          note: "Payment completed",
+        },
+        {
+          label: "Pending Payments",
+          value: String(
+            orders.filter((order) => order.paymentStatus === "Pending").length
+          ),
+          note: "Awaiting payment",
+        },
+        {
+          label: "Failed Payments",
+          value: String(
+            orders.filter((order) => order.paymentStatus === "Failed").length
+          ),
+          note: "Require attention",
+        },
+      ],
+      workflows: [
+        {
+          title: "Payment Directory",
+          description:
+            "View payment status, method, order value and customer details.",
+        },
+        {
+          title: "Payment Verification",
+          description:
+            "Verify gateway transactions before confirming fulfilment.",
+        },
+        {
+          title: "Refund Processing",
+          description:
+            "Review approved refunds and update order payment status.",
+        },
+        {
+          title: "Reconciliation",
+          description:
+            "Compare website payments with gateway settlement records.",
+        },
+      ],
+    },
+    fulfilment: {
+      eyebrow: "Warehouse Operations",
+      title: "Fulfilment",
+      description:
+        "Allocate stock, create pick lists, pack products and prepare orders for courier handover.",
+      primaryLabel: "Open Fulfilment Queue",
+      cards: [
+        {
+          label: "Awaiting Fulfilment",
+          value: String(metrics.readyToShip),
+          note: "Confirmed to packed",
+        },
+        {
+          label: "Confirmed",
+          value: String(
+            orders.filter((order) => order.orderStatus === "Confirmed").length
+          ),
+          note: "Ready to allocate",
+        },
+        {
+          label: "Processing",
+          value: String(
+            orders.filter((order) => order.orderStatus === "Processing").length
+          ),
+          note: "Picking in progress",
+        },
+        {
+          label: "Packed",
+          value: String(
+            orders.filter((order) => order.orderStatus === "Packed").length
+          ),
+          note: "Ready for dispatch",
+        },
+      ],
+      workflows: [
+        {
+          title: "Stock Allocation",
+          description:
+            "Reserve available inventory against confirmed customer orders.",
+        },
+        {
+          title: "Picking",
+          description:
+            "Generate pick lists and confirm collected product quantities.",
+        },
+        {
+          title: "Packing",
+          description:
+            "Verify products, pack orders and record package details.",
+        },
+        {
+          title: "Dispatch Handover",
+          description:
+            "Move completed packages into the shipping workflow.",
+        },
+      ],
+    },
+    shipping: {
+      eyebrow: "Delivery Operations",
+      title: "Shipping",
+      description:
+        "Assign couriers, create shipments, add tracking numbers and monitor dispatch.",
+      primaryLabel: "Open Shipping Queue",
+      cards: [
+        {
+          label: "Ready to Ship",
+          value: String(metrics.readyToShip),
+          note: "Confirmed to packed",
+        },
+        {
+          label: "Shipped",
+          value: String(
+            orders.filter((order) => order.orderStatus === "Shipped").length
+          ),
+          note: "In transit",
+        },
+        {
+          label: "Out for Delivery",
+          value: String(
+            orders.filter(
+              (order) => order.orderStatus === "Out for Delivery"
+            ).length
+          ),
+          note: "Final-mile delivery",
+        },
+        {
+          label: "Delivered",
+          value: String(
+            orders.filter((order) => order.orderStatus === "Delivered").length
+          ),
+          note: "Completed orders",
+        },
+      ],
+      workflows: [
+        {
+          title: "Courier Assignment",
+          description:
+            "Choose a courier based on destination, service and cost.",
+        },
+        {
+          title: "Shipment Creation",
+          description:
+            "Create package records and generate shipment identifiers.",
+        },
+        {
+          title: "Tracking Management",
+          description:
+            "Store tracking numbers and monitor shipment movement.",
+        },
+        {
+          title: "Delivery Exceptions",
+          description:
+            "Handle delays, failed attempts and returned shipments.",
+        },
+      ],
+    },
+  };
+
+  const config = moduleConfig[module.id];
+
+  if (!config) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-5 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700"
+        >
+          <ArrowLeft size={17} />
+          Back to Orders
+        </button>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-8">
+          <h1 className="text-2xl font-black text-slate-950">{module.title}</h1>
+          <p className="mt-3 text-sm text-slate-500">{module.description}</p>
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8">
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-5 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+      >
+        <ArrowLeft size={17} />
+        Back to Orders
+      </button>
+
+      <section className="rounded-3xl bg-gradient-to-r from-[#2563eb] via-[#1d4ed8] to-[#1e3a8a] p-7 text-white shadow-xl sm:p-9">
+        <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-3">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10">
+                <Icon size={23} />
+              </div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-100">
+                {config.eyebrow}
+              </p>
+            </div>
+
+            <h1 className="mt-6 text-3xl font-black sm:text-4xl">
+              {config.title}
+            </h1>
+            <p className="mt-3 text-sm leading-7 text-blue-100">
+              {config.description}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row xl:flex-col">
+            <button
+              type="button"
+              onClick={onOpenAllOrders}
+              className="flex min-w-[205px] items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3.5 text-sm font-bold transition hover:bg-white/20"
+            >
+              <PackageOpen size={18} />
+              {config.primaryLabel}
+            </button>
+
+            <button
+              type="button"
+              onClick={onExport}
+              className="flex min-w-[205px] items-center justify-center gap-2 rounded-xl bg-white px-5 py-3.5 text-sm font-bold text-blue-700 transition hover:bg-blue-50"
+            >
+              <Download size={18} />
+              Export Orders
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <span
+          className={`rounded-full border px-3 py-1.5 text-xs font-bold ${
+            source === "store-api"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "border-amber-200 bg-amber-50 text-amber-700"
+          }`}
+        >
+          {source === "store-api" ? "Live website data" : "Demo data mode"}
+        </span>
+
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700"
+        >
+          <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+          Refresh
+        </button>
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          {error}
+        </div>
+      )}
+
+      <section className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        {config.cards.map((card, index) => (
+          <article
+            key={card.label}
+            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+          >
+            <div
+              className={`grid h-11 w-11 place-items-center rounded-xl ${
+                index === 0
+                  ? "bg-blue-50 text-blue-600"
+                  : index === 1
+                    ? "bg-emerald-50 text-emerald-600"
+                    : index === 2
+                      ? "bg-orange-50 text-orange-600"
+                      : "bg-violet-50 text-violet-600"
+              }`}
+            >
+              <Icon size={20} />
+            </div>
+            <p className="mt-5 text-sm font-semibold text-slate-500">
+              {card.label}
+            </p>
+            <p className="mt-1 text-3xl font-black text-slate-950">
+              {card.value}
+            </p>
+            <p className="mt-3 text-xs text-slate-400">{card.note}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">
+            Operational Workspace
+          </p>
+          <h2 className="mt-2 text-2xl font-black text-slate-950">
+            {config.title} Workflows
+          </h2>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {config.workflows.map((workflow, index) => (
+              <div
+                key={workflow.title}
+                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-sm font-black text-white">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-950">
+                      {workflow.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      {workflow.description}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={onOpenAllOrders}
+                      className="mt-4 flex items-center gap-2 text-xs font-black text-blue-600"
+                    >
+                      Open Orders
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="rounded-3xl bg-[#0f172a] p-6 text-white shadow-xl">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600">
+            <Icon size={22} />
+          </div>
+          <h2 className="mt-6 text-xl font-black">KRVE Operations Insight</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-400">
+            {metrics.openOrders} open orders, {metrics.paymentIssues} payment
+            issues and {metrics.readyToShip} orders require fulfilment or
+            shipping attention.
+          </p>
+
+          <div className="mt-6 space-y-3">
+            <WorkspaceInsight label="Total orders" value={String(orders.length)} />
+            <WorkspaceInsight
+              label="Paid revenue"
+              value={money(metrics.totalRevenue)}
+            />
+            <WorkspaceInsight
+              label="Open orders"
+              value={String(metrics.openOrders)}
+            />
+            <WorkspaceInsight
+              label="Ready to ship"
+              value={String(metrics.readyToShip)}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={onOpenAllOrders}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold transition hover:bg-blue-700"
+          >
+            Open Complete Order Directory
+            <ArrowRight size={16} />
+          </button>
+        </article>
+      </section>
+    </div>
+  );
+}
+
+function WorkspaceInsight({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+      <span className="text-sm text-slate-400">{label}</span>
+      <span className="text-sm font-black text-white">{value}</span>
     </div>
   );
 }
