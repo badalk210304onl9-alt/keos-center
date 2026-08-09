@@ -1,4 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
 
 type UpdateOrderStatusBody = {
   status?: string;
@@ -8,15 +11,16 @@ type UpdateOrderStatusBody = {
   location?: string;
 };
 
-const ALLOWED_STATUSES = new Set([
-  "confirmed",
-  "processing",
-  "packed",
-  "shipped",
-  "out_for_delivery",
-  "delivered",
-  "cancelled",
-]);
+const ALLOWED_STATUSES =
+  new Set([
+    "confirmed",
+    "processing",
+    "packed",
+    "shipped",
+    "out_for_delivery",
+    "delivered",
+    "cancelled",
+  ]);
 
 export async function PATCH(
   request: NextRequest,
@@ -27,13 +31,17 @@ export async function PATCH(
   },
 ) {
   try {
-    const { id } = await context.params;
+    const {
+      id,
+    } =
+      await context.params;
 
     if (!id) {
       return NextResponse.json(
         {
           success: false,
-          message: "Order ID is required.",
+          message:
+            "Order ID is required.",
         },
         {
           status: 400,
@@ -44,16 +52,27 @@ export async function PATCH(
     const body =
       (await request.json()) as UpdateOrderStatusBody;
 
-    const status = String(body.status || "")
-      .trim()
-      .toLowerCase()
-      .replaceAll(" ", "_");
+    const status =
+      String(
+        body.status || "",
+      )
+        .trim()
+        .toLowerCase()
+        .replaceAll(
+          " ",
+          "_",
+        );
 
-    if (!ALLOWED_STATUSES.has(status)) {
+    if (
+      !ALLOWED_STATUSES.has(
+        status,
+      )
+    ) {
       return NextResponse.json(
         {
           success: false,
-          message: "Invalid order status.",
+          message:
+            "Invalid order status.",
         },
         {
           status: 400,
@@ -61,25 +80,35 @@ export async function PATCH(
       );
     }
 
-    const courier = String(body.courier || "").trim();
+    const courier =
+      String(
+        body.courier || "",
+      ).trim();
 
-    const trackingNumber = String(
-      body.trackingNumber || "",
-    ).trim();
+    const trackingNumber =
+      String(
+        body.trackingNumber ||
+          "",
+      ).trim();
 
-    const trackingUrl = String(
-      body.trackingUrl || "",
-    ).trim();
+    const trackingUrl =
+      String(
+        body.trackingUrl || "",
+      ).trim();
 
-    const location = String(
-      body.location || "",
-    ).trim();
+    const location =
+      String(
+        body.location || "",
+      ).trim();
 
     /*
-     * Shipment information is compulsory when an
-     * order is marked as shipped.
+     * Courier + tracking number
+     * compulsory before marking
+     * an order as shipped.
      */
-    if (status === "shipped") {
+    if (
+      status === "shipped"
+    ) {
       if (!courier) {
         return NextResponse.json(
           {
@@ -93,7 +122,9 @@ export async function PATCH(
         );
       }
 
-      if (!trackingNumber) {
+      if (
+        !trackingNumber
+      ) {
         return NextResponse.json(
           {
             success: false,
@@ -108,25 +139,35 @@ export async function PATCH(
     }
 
     /*
-     * IMPORTANT:
-     * The KEOS secret remains on the server.
-     * It is never sent to the browser.
+     * Central API base URL
      */
-    const centralApiUrl = (
-      process.env.KRVE_CENTRAL_API_URL ||
-      "https://krve-central-api.badalk210304-onl9.workers.dev"
-    ).replace(/\/+$/, "");
+    const centralApiUrl =
+      (
+        process.env
+          .KRVE_CENTRAL_API_URL ||
+        process.env
+          .KRVE_API_URL ||
+        "https://krve-central-api.badalk210304-onl9.workers.dev"
+      ).replace(
+        /\/+$/,
+        "",
+      );
 
+    /*
+     * IMPORTANT:
+     * This must match Cloudflare's
+     * KEOS_API_SECRET exactly.
+     */
     const keosSecret =
-      process.env.KRVE_KEOS_SECRET ||
-      process.env.KEOS_API_SECRET;
+      process.env
+        .KEOS_API_SECRET;
 
     if (!keosSecret) {
       return NextResponse.json(
         {
           success: false,
           message:
-            "KRVE KEOS API secret is not configured in Vercel.",
+            "KEOS_API_SECRET is missing in Vercel Environment Variables.",
         },
         {
           status: 500,
@@ -134,68 +175,127 @@ export async function PATCH(
       );
     }
 
-    const centralResponse = await fetch(
-      `${centralApiUrl}/keos/orders/${encodeURIComponent(id)}/status`,
-      {
-        method: "PATCH",
+    /*
+     * Send status update
+     * securely to KRVE Central API.
+     *
+     * IMPORTANT FIX:
+     * Header must be:
+     *
+     * X-KEOS-API-Key
+     *
+     * NOT:
+     * X-KEOS-Secret
+     */
+    const centralResponse =
+      await fetch(
+        `${centralApiUrl}/keos/orders/${encodeURIComponent(
+          id,
+        )}/status`,
+        {
+          method:
+            "PATCH",
 
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
+          headers: {
+            Accept:
+              "application/json",
 
-          /*
-           * Keep the authentication credential
-           * server-side only.
-           */
-          "X-KEOS-Secret": keosSecret,
+            "Content-Type":
+              "application/json",
+
+            "X-KEOS-API-Key":
+              keosSecret,
+          },
+
+          body:
+            JSON.stringify({
+              status,
+
+              courier:
+                courier ||
+                undefined,
+
+              trackingNumber:
+                trackingNumber ||
+                undefined,
+
+              trackingUrl:
+                trackingUrl ||
+                undefined,
+
+              location:
+                location ||
+                undefined,
+
+              createdBy:
+                "KEOS",
+            }),
+
+          cache:
+            "no-store",
         },
+      );
 
-        body: JSON.stringify({
-          status,
-
-          courier:
-            courier || undefined,
-
-          trackingNumber:
-            trackingNumber || undefined,
-
-          trackingUrl:
-            trackingUrl || undefined,
-
-          location:
-            location || undefined,
-
-          createdBy: "KEOS",
-        }),
-
-        cache: "no-store",
-      },
-    );
-
-    let centralData: unknown = null;
+    let centralData:
+      unknown =
+      null;
 
     try {
-      centralData = await centralResponse.json();
+      centralData =
+        await centralResponse.json();
     } catch {
-      centralData = null;
+      centralData =
+        null;
     }
 
-    if (!centralResponse.ok) {
-      const apiMessage =
+    if (
+      !centralResponse.ok
+    ) {
+      let apiMessage =
+        `KRVE Central API returned ${centralResponse.status}.`;
+
+      if (
         centralData &&
-        typeof centralData === "object" &&
-        "message" in centralData &&
-        typeof centralData.message === "string"
-          ? centralData.message
-          : `Central API returned ${centralResponse.status}.`;
+        typeof centralData ===
+          "object" &&
+        "message" in
+          centralData &&
+        typeof (
+          centralData as {
+            message?: unknown;
+          }
+        ).message ===
+          "string"
+      ) {
+        apiMessage =
+          (
+            centralData as {
+              message: string;
+            }
+          ).message;
+      }
+
+      console.error(
+        "KRVE_CENTRAL_STATUS_UPDATE_FAILED",
+        {
+          status:
+            centralResponse.status,
+          response:
+            centralData,
+          orderId:
+            id,
+        },
+      );
 
       return NextResponse.json(
         {
           success: false,
-          message: apiMessage,
+          message:
+            apiMessage,
         },
         {
-          status: centralResponse.status,
+          status:
+            centralResponse.status,
         },
       );
     }
@@ -203,11 +303,21 @@ export async function PATCH(
     return NextResponse.json(
       {
         success: true,
-        message: "Order status updated successfully.",
-        data: centralData,
+
+        message:
+          "Order status updated successfully.",
+
+        orderId:
+          id,
+
+        status,
+
+        data:
+          centralData,
       },
       {
         status: 200,
+
         headers: {
           "Cache-Control":
             "no-store, no-cache, must-revalidate",
@@ -223,8 +333,10 @@ export async function PATCH(
     return NextResponse.json(
       {
         success: false,
+
         message:
-          error instanceof Error
+          error instanceof
+          Error
             ? error.message
             : "Order status could not be updated.",
       },
