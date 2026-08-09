@@ -1,6 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
 export interface FounderDashboardData {
   statistics: {
@@ -20,91 +24,377 @@ export interface FounderDashboardData {
   }[];
 }
 
-const demoData: FounderDashboardData = {
-  statistics: {
-    totalRevenue: "₹12.84L",
-    totalOrders: "1,486",
-    totalCustomers: "4,294",
-    totalEmployees: "128",
-  },
+type DashboardApiResponse = {
+  success?: boolean;
 
-  recentOrders: [
-    {
-      id: "KRVE-10482",
-      customer: "Aarav Sharma",
-      product: "KRVE Noir Blazer",
-      amount: "₹18,999",
-      status: "Paid",
-      date: "28 Jul 2026",
-    },
-    {
-      id: "KRVE-10481",
-      customer: "Ananya Singh",
-      product: "KRVE Icon Sneakers",
-      amount: "₹8,499",
-      status: "Processing",
-      date: "28 Jul 2026",
-    },
-    {
-      id: "KRVE-10480",
-      customer: "Rohan Verma",
-      product: "Obsidian Double-Breasted Suit",
-      amount: "₹12,999",
-      status: "Shipped",
-      date: "27 Jul 2026",
-    },
-    {
-      id: "KRVE-10479",
-      customer: "Priya Mehta",
-      product: "Signature Evening Dress",
-      amount: "₹6,799",
-      status: "Pending",
-      date: "27 Jul 2026",
-    },
-  ],
+  message?: string;
+
+  summary?: {
+    totalRevenue?: number;
+    totalOrders?: number;
+    totalCustomers?: number;
+    activeProducts?: number;
+    openOrders?: number;
+    deliveredOrders?: number;
+  };
+
+  recentOrders?: Array<{
+    id: string;
+    orderNumber: string;
+
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+
+    status: string;
+    paymentStatus: string;
+
+    total: number;
+    currency: string;
+
+    createdAt: string;
+  }>;
+
+  generatedAt?: string;
 };
 
+const emptyData: FounderDashboardData = {
+  statistics: {
+    totalRevenue: "₹0",
+    totalOrders: "0",
+    totalCustomers: "0",
+    totalEmployees: "—",
+  },
+
+  recentOrders: [],
+};
+
+function formatMoney(
+  value: number,
+  currency = "INR",
+) {
+  try {
+    return new Intl.NumberFormat(
+      "en-IN",
+      {
+        style: "currency",
+        currency:
+          currency || "INR",
+
+        maximumFractionDigits: 0,
+      },
+    ).format(
+      Number(value || 0),
+    );
+  } catch {
+    return `₹${Number(
+      value || 0,
+    ).toLocaleString("en-IN")}`;
+  }
+}
+
+function formatNumber(
+  value: number,
+) {
+  return Number(
+    value || 0,
+  ).toLocaleString(
+    "en-IN",
+  );
+}
+
+function formatDate(
+  value: string,
+) {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    },
+  ).format(date);
+}
+
+function formatStatus(
+  status: string,
+  paymentStatus: string,
+) {
+  const orderStatus =
+    status
+      ?.trim()
+      .toLowerCase();
+
+  const payment =
+    paymentStatus
+      ?.trim()
+      .toLowerCase();
+
+  if (
+    orderStatus ===
+      "delivered"
+  ) {
+    return "Delivered";
+  }
+
+  if (
+    orderStatus ===
+      "shipped"
+  ) {
+    return "Shipped";
+  }
+
+  if (
+    orderStatus ===
+      "processing"
+  ) {
+    return "Processing";
+  }
+
+  if (
+    orderStatus ===
+      "packed"
+  ) {
+    return "Packed";
+  }
+
+  if (
+    orderStatus ===
+      "cancelled" ||
+    orderStatus ===
+      "canceled"
+  ) {
+    return "Cancelled";
+  }
+
+  if (
+    orderStatus ===
+      "returned"
+  ) {
+    return "Returned";
+  }
+
+  if (
+    payment === "paid"
+  ) {
+    return "Paid";
+  }
+
+  if (
+    payment === "failed"
+  ) {
+    return "Payment Failed";
+  }
+
+  return "Pending";
+}
+
 export function useKeosFounderData() {
-  const [data, setData] = useState<FounderDashboardData>(demoData);
-  const [loading, setLoading] = useState(true);
-  const [source, setSource] = useState<"demo" | "api">("demo");
+  const [
+    data,
+    setData,
+  ] =
+    useState<FounderDashboardData>(
+      emptyData,
+    );
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
 
-    try {
-      const response = await fetch("/api/founder/dashboard", {
-        method: "GET",
-        cache: "no-store",
-        headers: {
-          Accept: "application/json",
-        },
-      });
+  const [
+    source,
+    setSource,
+  ] =
+    useState<
+      "demo" | "api"
+    >("demo");
 
-      if (!response.ok) {
-        throw new Error(`Dashboard API returned ${response.status}`);
-      }
+  const [
+    error,
+    setError,
+  ] =
+    useState("");
 
-      const result: {
-        success?: boolean;
-        data?: FounderDashboardData;
-      } = await response.json();
+  const refresh =
+    useCallback(
+      async () => {
+        setLoading(true);
+        setError("");
 
-      if (!result.success || !result.data) {
-        throw new Error("Invalid dashboard API response");
-      }
+        try {
+          const response =
+            await fetch(
+              "/api/founder/dashboard",
+              {
+                method:
+                  "GET",
 
-      setData(result.data);
-      setSource("api");
-    } catch (error) {
-      console.error("Failed to load Founder dashboard data:", error);
+                cache:
+                  "no-store",
 
-      setData(demoData);
-      setSource("demo");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+                headers: {
+                  Accept:
+                    "application/json",
+                },
+              },
+            );
+
+          const result =
+            (await response.json()) as DashboardApiResponse;
+
+          if (
+            !response.ok ||
+            !result.success
+          ) {
+            throw new Error(
+              result.message ||
+                `Dashboard API returned ${response.status}.`,
+            );
+          }
+
+          const summary =
+            result.summary ??
+            {};
+
+          const recentOrders =
+            Array.isArray(
+              result.recentOrders,
+            )
+              ? result.recentOrders.map(
+                  (order) => ({
+                    id:
+                      order.orderNumber ||
+                      order.id,
+
+                    customer:
+                      order.customerName ||
+                      order.customerEmail ||
+                      "Guest Customer",
+
+                    product:
+                      "KRVE Website Order",
+
+                    amount:
+                      formatMoney(
+                        Number(
+                          order.total ??
+                            0,
+                        ),
+                        order.currency ||
+                          "INR",
+                      ),
+
+                    status:
+                      formatStatus(
+                        order.status,
+                        order.paymentStatus,
+                      ),
+
+                    date:
+                      formatDate(
+                        order.createdAt,
+                      ),
+                  }),
+                )
+              : [];
+
+          setData({
+            statistics: {
+              totalRevenue:
+                formatMoney(
+                  Number(
+                    summary.totalRevenue ??
+                      0,
+                  ),
+                  "INR",
+                ),
+
+              totalOrders:
+                formatNumber(
+                  Number(
+                    summary.totalOrders ??
+                      0,
+                  ),
+                ),
+
+              totalCustomers:
+                formatNumber(
+                  Number(
+                    summary.totalCustomers ??
+                      0,
+                  ),
+                ),
+
+              /*
+                Employees are not yet coming
+                from Central API, therefore
+                we do not show fake data.
+              */
+              totalEmployees:
+                "—",
+            },
+
+            recentOrders,
+          });
+
+          setSource(
+            "api",
+          );
+        } catch (
+          loadError
+        ) {
+          console.error(
+            "KEOS_FOUNDER_DASHBOARD_LOAD_ERROR",
+            loadError,
+          );
+
+          /*
+            IMPORTANT:
+            No fake revenue,
+            fake orders or
+            fake customers.
+          */
+
+          setData(
+            emptyData,
+          );
+
+          setSource(
+            "demo",
+          );
+
+          setError(
+            loadError instanceof
+              Error
+              ? loadError.message
+              : "Unable to load live Founder Dashboard data.",
+          );
+        } finally {
+          setLoading(
+            false,
+          );
+        }
+      },
+      [],
+    );
 
   useEffect(() => {
     void refresh();
@@ -114,6 +404,7 @@ export function useKeosFounderData() {
     data,
     loading,
     source,
+    error,
     refresh,
   };
 }
