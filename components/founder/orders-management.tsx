@@ -93,6 +93,14 @@ type StoreOrder = {
 
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
+
+  courier?: string | null;
+  trackingNumber?: string | null;
+  trackingUrl?: string | null;
+  trackingLocation?: string | null;
+  shippedAt?: string | null;
+  outForDeliveryAt?: string | null;
+  deliveredAt?: string | null;
 };
 
 type RawApiOrder = {
@@ -135,6 +143,15 @@ type RawApiOrder = {
 
   createdAt: string;
   updatedAt: string;
+
+  courier?: string | null;
+  trackingNumber?: string | null;
+  trackingUrl?: string | null;
+  trackingLocation?: string | null;
+  location?: string | null;
+  shippedAt?: string | null;
+  outForDeliveryAt?: string | null;
+  deliveredAt?: string | null;
 };
 
 type OrdersApiResponse = {
@@ -493,6 +510,35 @@ function mapOrder(
       normalizeOrderStatus(
         order.status,
       ),
+
+    courier:
+      order.courier ??
+      null,
+
+    trackingNumber:
+      order.trackingNumber ??
+      null,
+
+    trackingUrl:
+      order.trackingUrl ??
+      null,
+
+    trackingLocation:
+      order.trackingLocation ??
+      order.location ??
+      null,
+
+    shippedAt:
+      order.shippedAt ??
+      null,
+
+    outForDeliveryAt:
+      order.outForDeliveryAt ??
+      null,
+
+    deliveredAt:
+      order.deliveredAt ??
+      null,
   };
 }
 
@@ -562,6 +608,35 @@ export default function OrdersManagement() {
     useState<Date | null>(
       null,
     );
+
+  const [
+    shipmentForm,
+    setShipmentForm,
+  ] =
+    useState({
+      courier: "",
+      trackingNumber: "",
+      trackingUrl: "",
+      location: "",
+    });
+
+  const [
+    updatingStatus,
+    setUpdatingStatus,
+  ] =
+    useState(false);
+
+  const [
+    statusMessage,
+    setStatusMessage,
+  ] =
+    useState("");
+
+  const [
+    statusError,
+    setStatusError,
+  ] =
+    useState("");
 
   const loadOrders =
     useCallback(
@@ -645,6 +720,198 @@ export default function OrdersManagement() {
   useEffect(() => {
     void loadOrders();
   }, [loadOrders]);
+
+  useEffect(() => {
+    if (!selectedOrder) {
+      setShipmentForm({
+        courier: "",
+        trackingNumber: "",
+        trackingUrl: "",
+        location: "",
+      });
+
+      setStatusMessage("");
+      setStatusError("");
+      return;
+    }
+
+    setShipmentForm({
+      courier:
+        selectedOrder.courier ||
+        "",
+      trackingNumber:
+        selectedOrder.trackingNumber ||
+        "",
+      trackingUrl:
+        selectedOrder.trackingUrl ||
+        "",
+      location:
+        selectedOrder.trackingLocation ||
+        "",
+    });
+
+    setStatusMessage("");
+    setStatusError("");
+  }, [selectedOrder]);
+
+  const updateOrderStatus =
+    useCallback(
+      async (
+        status:
+          | "confirmed"
+          | "processing"
+          | "packed"
+          | "shipped"
+          | "out_for_delivery"
+          | "delivered"
+          | "cancelled",
+      ) => {
+        if (!selectedOrder) {
+          return;
+        }
+
+        setUpdatingStatus(true);
+        setStatusMessage("");
+        setStatusError("");
+
+        try {
+          if (
+            status === "shipped" &&
+            !shipmentForm.courier.trim()
+          ) {
+            throw new Error(
+              "Courier name is required before marking this order as shipped.",
+            );
+          }
+
+          if (
+            status === "shipped" &&
+            !shipmentForm.trackingNumber.trim()
+          ) {
+            throw new Error(
+              "Tracking number is required before marking this order as shipped.",
+            );
+          }
+
+          const response =
+            await fetch(
+              `/api/orders/${encodeURIComponent(
+                selectedOrder.id,
+              )}/status`,
+              {
+                method: "PATCH",
+
+                headers: {
+                  "Content-Type":
+                    "application/json",
+                  Accept:
+                    "application/json",
+                },
+
+                body:
+                  JSON.stringify({
+                    status,
+
+                    courier:
+                      shipmentForm.courier.trim(),
+
+                    trackingNumber:
+                      shipmentForm.trackingNumber.trim(),
+
+                    trackingUrl:
+                      shipmentForm.trackingUrl.trim(),
+
+                    location:
+                      shipmentForm.location.trim(),
+                  }),
+
+                cache:
+                  "no-store",
+              },
+            );
+
+          const result =
+            (await response.json()) as {
+              success?: boolean;
+              message?: string;
+            };
+
+          if (
+            !response.ok ||
+            !result.success
+          ) {
+            throw new Error(
+              result.message ||
+              `Status API returned ${response.status}.`,
+            );
+          }
+
+          const nextStatus =
+            normalizeOrderStatus(
+              status,
+            );
+
+          setSelectedOrder(
+            (current) =>
+              current
+                ? {
+                    ...current,
+
+                    orderStatus:
+                      nextStatus,
+
+                    updatedAt:
+                      new Date().toISOString(),
+
+                    courier:
+                      shipmentForm.courier.trim() ||
+                      current.courier ||
+                      null,
+
+                    trackingNumber:
+                      shipmentForm.trackingNumber.trim() ||
+                      current.trackingNumber ||
+                      null,
+
+                    trackingUrl:
+                      shipmentForm.trackingUrl.trim() ||
+                      current.trackingUrl ||
+                      null,
+
+                    trackingLocation:
+                      shipmentForm.location.trim() ||
+                      current.trackingLocation ||
+                      null,
+                  }
+                : current,
+          );
+
+          setStatusMessage(
+            `Order updated to ${nextStatus}. Customer tracking will reflect this status.`,
+          );
+
+          await loadOrders();
+        } catch (updateError) {
+          console.error(
+            "KEOS_ORDER_STATUS_UPDATE_ERROR",
+            updateError,
+          );
+
+          setStatusError(
+            updateError instanceof Error
+              ? updateError.message
+              : "Order status could not be updated.",
+          );
+        } finally {
+          setUpdatingStatus(false);
+        }
+      },
+      [
+        loadOrders,
+        selectedOrder,
+        shipmentForm,
+      ],
+    );
 
   const metrics =
     useMemo(() => {
@@ -1692,6 +1959,329 @@ export default function OrdersManagement() {
                     ) : null}
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Fulfilment Control
+                    </p>
+
+                    <h3 className="mt-1 text-lg font-semibold text-slate-950">
+                      Update customer order journey
+                    </h3>
+
+                    <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                      Every status change is sent to KRVE Central API and becomes the source for the customer&apos;s order-tracking page.
+                    </p>
+                  </div>
+
+                  <span
+                    className={`inline-flex w-fit rounded-full border px-3 py-1.5 text-xs font-semibold ${orderClass(
+                      selectedOrder.orderStatus,
+                    )}`}
+                  >
+                    {selectedOrder.orderStatus}
+                  </span>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <button
+                    type="button"
+                    disabled={
+                      updatingStatus ||
+                      selectedOrder.orderStatus ===
+                        "Processing" ||
+                      selectedOrder.orderStatus ===
+                        "Packed" ||
+                      selectedOrder.orderStatus ===
+                        "Shipped" ||
+                      selectedOrder.orderStatus ===
+                        "Out for Delivery" ||
+                      selectedOrder.orderStatus ===
+                        "Delivered"
+                    }
+                    onClick={() =>
+                      void updateOrderStatus(
+                        "processing",
+                      )
+                    }
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <PackageOpen size={16} />
+                    Mark Processing
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={
+                      updatingStatus ||
+                      selectedOrder.orderStatus ===
+                        "Packed" ||
+                      selectedOrder.orderStatus ===
+                        "Shipped" ||
+                      selectedOrder.orderStatus ===
+                        "Out for Delivery" ||
+                      selectedOrder.orderStatus ===
+                        "Delivered"
+                    }
+                    onClick={() =>
+                      void updateOrderStatus(
+                        "packed",
+                      )
+                    }
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <PackageCheck size={16} />
+                    Mark Packed
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={
+                      updatingStatus ||
+                      selectedOrder.orderStatus ===
+                        "Out for Delivery" ||
+                      selectedOrder.orderStatus ===
+                        "Delivered"
+                    }
+                    onClick={() =>
+                      void updateOrderStatus(
+                        "out_for_delivery",
+                      )
+                    }
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <Truck size={16} />
+                    Out for Delivery
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={
+                      updatingStatus ||
+                      selectedOrder.orderStatus ===
+                        "Delivered"
+                    }
+                    onClick={() =>
+                      void updateOrderStatus(
+                        "delivered",
+                      )
+                    }
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <CheckCircle2 size={16} />
+                    Mark Delivered
+                  </button>
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-xl bg-blue-100 p-2.5 text-blue-700">
+                      <Truck size={19} />
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-slate-950">
+                        Shipment Details
+                      </h4>
+
+                      <p className="mt-1 text-sm leading-6 text-slate-500">
+                        Courier and tracking number are required when you mark an order as shipped.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <label className="block">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Courier
+                      </span>
+
+                      <input
+                        type="text"
+                        value={
+                          shipmentForm.courier
+                        }
+                        onChange={(event) =>
+                          setShipmentForm(
+                            (current) => ({
+                              ...current,
+                              courier:
+                                event.target.value,
+                            }),
+                          )
+                        }
+                        placeholder="e.g. Delhivery"
+                        className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Tracking Number
+                      </span>
+
+                      <input
+                        type="text"
+                        value={
+                          shipmentForm.trackingNumber
+                        }
+                        onChange={(event) =>
+                          setShipmentForm(
+                            (current) => ({
+                              ...current,
+                              trackingNumber:
+                                event.target.value,
+                            }),
+                          )
+                        }
+                        placeholder="Courier tracking ID"
+                        className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Tracking URL
+                      </span>
+
+                      <input
+                        type="url"
+                        value={
+                          shipmentForm.trackingUrl
+                        }
+                        onChange={(event) =>
+                          setShipmentForm(
+                            (current) => ({
+                              ...current,
+                              trackingUrl:
+                                event.target.value,
+                            }),
+                          )
+                        }
+                        placeholder="https://courier.com/track/..."
+                        className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Current Location
+                      </span>
+
+                      <input
+                        type="text"
+                        value={
+                          shipmentForm.location
+                        }
+                        onChange={(event) =>
+                          setShipmentForm(
+                            (current) => ({
+                              ...current,
+                              location:
+                                event.target.value,
+                            }),
+                          )
+                        }
+                        placeholder="e.g. Varanasi Hub"
+                        className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400"
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={
+                      updatingStatus
+                    }
+                    onClick={() =>
+                      void updateOrderStatus(
+                        "shipped",
+                      )
+                    }
+                    className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-55 sm:w-auto"
+                  >
+                    <Truck size={16} />
+
+                    {updatingStatus
+                      ? "Updating..."
+                      : "Mark as Shipped"}
+                  </button>
+
+                  {selectedOrder.trackingNumber ? (
+                    <div className="mt-4 grid gap-2 rounded-xl border border-blue-100 bg-white p-3 text-sm text-slate-600 md:grid-cols-2">
+                      <div>
+                        <span className="text-xs font-medium text-slate-400">
+                          Current Courier
+                        </span>
+                        <div className="mt-1 font-medium text-slate-900">
+                          {selectedOrder.courier || "—"}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-xs font-medium text-slate-400">
+                          Tracking ID
+                        </span>
+                        <div className="mt-1 font-medium text-slate-900">
+                          {selectedOrder.trackingNumber}
+                        </div>
+                      </div>
+
+                      {selectedOrder.trackingLocation ? (
+                        <div>
+                          <span className="text-xs font-medium text-slate-400">
+                            Location
+                          </span>
+                          <div className="mt-1 font-medium text-slate-900">
+                            {selectedOrder.trackingLocation}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {selectedOrder.trackingUrl ? (
+                        <div>
+                          <span className="text-xs font-medium text-slate-400">
+                            Tracking Link
+                          </span>
+
+                          <a
+                            href={
+                              selectedOrder.trackingUrl
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1 block break-all font-medium text-blue-700 hover:underline"
+                          >
+                            Open courier tracking
+                          </a>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+
+                {statusError ? (
+                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    <AlertCircle
+                      size={17}
+                      className="mt-0.5 shrink-0"
+                    />
+                    {statusError}
+                  </div>
+                ) : null}
+
+                {statusMessage ? (
+                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+                    <CheckCircle2
+                      size={17}
+                      className="mt-0.5 shrink-0"
+                    />
+                    {statusMessage}
+                  </div>
+                ) : null}
               </div>
 
               <div className="rounded-2xl border border-slate-200 p-5">
