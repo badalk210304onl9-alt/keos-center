@@ -2172,6 +2172,9 @@ function ProductFormModal({
                   galleryText={
                     form.galleryText
                   }
+                  coloursText={
+                    form.coloursText
+                  }
                   onPrimaryChange={(
                     imageUrl,
                   ) =>
