@@ -1,6 +1,6 @@
 "use client";
 
-import ProductImageUpload from "@/components/founder/product-image-upload";
+import ProductGalleryUpload from "@/components/founder/product-gallery-upload";
 
 import {
   useCallback,
@@ -2162,15 +2162,17 @@ function ProductFormModal({
 
               <FormSection
                 title="Product images"
-                description="Upload the main product image directly from your computer."
+                description="Upload up to 3 customer-facing product views."
                 icon={ImageIcon}
               >
-                <ProductImageUpload
-                  value={
+                <ProductGalleryUpload
+                  primaryImage={
                     form.imageUrl
                   }
-                  uploadType="primary"
-                  onChange={(
+                  galleryText={
+                    form.galleryText
+                  }
+                  onPrimaryChange={(
                     imageUrl,
                   ) =>
                     onChange(
@@ -2178,26 +2180,15 @@ function ProductFormModal({
                       imageUrl,
                     )
                   }
+                  onGalleryChange={(
+                    galleryText,
+                  ) =>
+                    onChange(
+                      "galleryText",
+                      galleryText,
+                    )
+                  }
                 />
-
-                <div className="mt-5">
-                  <TextAreaField
-                    label="Additional Gallery URLs"
-                    value={
-                      form.galleryText
-                    }
-                    placeholder="Additional image URLs separated by commas."
-                    rows={4}
-                    onChange={(
-                      value,
-                    ) =>
-                      onChange(
-                        "galleryText",
-                        value,
-                      )
-                    }
-                  />
-                </div>
               </FormSection>
             </div>
 
