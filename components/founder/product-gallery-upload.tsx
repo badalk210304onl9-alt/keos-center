@@ -3,7 +3,6 @@
 import {
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
 
 import ProductImageUpload from "@/components/founder/product-image-upload";
@@ -12,88 +11,134 @@ type ProductGalleryUploadProps = {
   primaryImage: string;
   galleryText: string;
   coloursText?: string;
-  onPrimaryChange: (url: string) => void;
-  onGalleryChange: (value: string) => void;
+
+  onPrimaryChange: (
+    url: string,
+  ) => void;
+
+  onGalleryChange: (
+    value: string,
+  ) => void;
 };
 
-type GalleryView = 1 | 2 | 3;
-
-type TaggedGalleryItem = {
+type ColourImageEntry = {
   raw: string;
   url: string;
   colour: string | null;
-  view: GalleryView | null;
 };
 
-const META_PREFIX = "krve-gallery";
+const META_PREFIX =
+  "krve-colour";
 
-function splitCommaValues(value: string) {
+function splitCommaValues(
+  value: string,
+) {
   return value
     .split(",")
-    .map((item) => item.trim())
+    .map((item) =>
+      item.trim(),
+    )
     .filter(Boolean);
 }
 
-function stripMetadata(value: string) {
-  const marker = `#${META_PREFIX}=`;
-  const index = value.indexOf(marker);
-
-  return index < 0 ? value : value.slice(0, index);
+function normalizeColour(
+  value: string,
+) {
+  return value
+    .trim()
+    .replace(
+      /\s+/g,
+      " ",
+    );
 }
 
-function parseTaggedItem(raw: string): TaggedGalleryItem {
-  const marker = `#${META_PREFIX}=`;
-  const index = raw.indexOf(marker);
+function stripMetadata(
+  value: string,
+) {
+  const marker =
+    `#${META_PREFIX}=`;
+
+  const index =
+    value.indexOf(
+      marker,
+    );
+
+  return index < 0
+    ? value
+    : value.slice(
+        0,
+        index,
+      );
+}
+
+function parseColourImage(
+  raw: string,
+): ColourImageEntry {
+  const marker =
+    `#${META_PREFIX}=`;
+
+  const index =
+    raw.indexOf(
+      marker,
+    );
 
   if (index < 0) {
     return {
       raw,
       url: raw,
       colour: null,
-      view: null,
     };
   }
 
-  const url = raw.slice(0, index);
-  const metadata = raw.slice(index + marker.length);
-  const params = new URLSearchParams(metadata);
+  const url =
+    raw.slice(
+      0,
+      index,
+    );
 
-  const colour = params.get("colour");
-  const viewNumber = Number(params.get("view"));
+  const metadata =
+    raw.slice(
+      index +
+        marker.length,
+    );
 
-  const view: GalleryView | null =
-    viewNumber === 1 || viewNumber === 2 || viewNumber === 3
-      ? (viewNumber as GalleryView)
-      : null;
+  const params =
+    new URLSearchParams(
+      metadata,
+    );
 
   return {
     raw,
     url,
-    colour,
-    view,
+    colour:
+      params.get(
+        "colour",
+      ),
   };
 }
 
-function tagImage(
+function tagColourImage(
   url: string,
   colour: string,
-  view: GalleryView,
 ) {
-  const cleanUrl = stripMetadata(url.trim());
+  const cleanUrl =
+    stripMetadata(
+      url.trim(),
+    );
 
   if (!cleanUrl) {
     return "";
   }
 
-  const params = new URLSearchParams();
-  params.set("colour", colour);
-  params.set("view", String(view));
+  const params =
+    new URLSearchParams();
+
+  params.set(
+    "colour",
+    colour,
+  );
 
   return `${cleanUrl}#${META_PREFIX}=${params.toString()}`;
-}
-
-function normalizeColour(value: string) {
-  return value.trim().replace(/\s+/g, " ");
 }
 
 export default function ProductGalleryUpload({
@@ -103,363 +148,342 @@ export default function ProductGalleryUpload({
   onPrimaryChange,
   onGalleryChange,
 }: ProductGalleryUploadProps) {
-  const colours = useMemo(() => {
-    const parsed = splitCommaValues(coloursText)
-      .map(normalizeColour)
-      .filter(Boolean);
+  const colours =
+    useMemo(() => {
+      const parsed =
+        splitCommaValues(
+          coloursText,
+        )
+          .map(
+            normalizeColour,
+          )
+          .filter(Boolean);
 
-    return parsed.length > 0
-      ? Array.from(new Set(parsed))
-      : ["Default"];
-  }, [coloursText]);
+      return parsed.length >
+        0
+        ? Array.from(
+            new Set(
+              parsed,
+            ),
+          )
+        : ["Default"];
+    }, [coloursText]);
 
-  const [selectedColour, setSelectedColour] = useState(
-    colours[0] || "Default",
-  );
+  const firstColour =
+    colours[0] ||
+    "Default";
 
-  const effectiveColour = colours.includes(selectedColour)
-    ? selectedColour
-    : colours[0] || "Default";
+  const [
+    selectedColour,
+    setSelectedColour,
+  ] =
+    useState(
+      firstColour,
+    );
 
-  const firstColour = colours[0] || "Default";
+  const effectiveColour =
+    colours.includes(
+      selectedColour,
+    )
+      ? selectedColour
+      : firstColour;
 
-  const parsedGallery = useMemo(
-    () => splitCommaValues(galleryText).map(parseTaggedItem),
-    [galleryText],
-  );
+  const parsedGallery =
+    useMemo(
+      () =>
+        splitCommaValues(
+          galleryText,
+        ).map(
+          parseColourImage,
+        ),
+      [galleryText],
+    );
 
-  function findTaggedView(
+  function findColourImage(
     colour: string,
-    view: GalleryView,
   ) {
+    if (
+      colour ===
+      firstColour
+    ) {
+      return primaryImage;
+    }
+
     return (
       parsedGallery.find(
         (item) =>
-          item.colour === colour &&
-          item.view === view,
+          item.colour ===
+          colour,
       )?.url || ""
     );
   }
 
-  const legacyImages = parsedGallery
-    .filter((item) => !item.colour || !item.view)
-    .map((item) => item.url)
-    .filter((url) => url && url !== primaryImage)
-    .slice(0, 2);
-
-  const isFirstColour = effectiveColour === firstColour;
-
-  const photo1 = isFirstColour
-    ? primaryImage
-    : findTaggedView(effectiveColour, 1);
-
-  const photo2 =
-    findTaggedView(effectiveColour, 2) ||
-    (isFirstColour ? legacyImages[0] || "" : "");
-
-  const photo3 =
-    findTaggedView(effectiveColour, 3) ||
-    (isFirstColour ? legacyImages[1] || "" : "");
-
-  function saveTaggedView(
+  function saveColourImage(
     colour: string,
-    view: GalleryView,
     url: string,
   ) {
-    const current = splitCommaValues(galleryText).map(
-      parseTaggedItem,
-    );
+    /*
+     * First colour remains the product's
+     * primary image so existing website cards,
+     * catalogue and APIs continue to work.
+     */
+    if (
+      colour ===
+      firstColour
+    ) {
+      onPrimaryChange(
+        stripMetadata(
+          url,
+        ),
+      );
 
-    const next = current
-      .filter((item) => {
-        if (
-          item.colour === colour &&
-          item.view === view
-        ) {
-          return false;
-        }
-
-        if (
-          colour === firstColour &&
-          !item.colour &&
-          !item.view &&
-          stripMetadata(item.url) === stripMetadata(url)
-        ) {
-          return false;
-        }
-
-        return true;
-      })
-      .map((item) => item.raw);
-
-    if (url.trim()) {
-      next.push(tagImage(url, colour, view));
-    }
-
-    onGalleryChange(next.join(", "));
-  }
-
-  function handlePhoto1Change(url: string) {
-    if (isFirstColour) {
-      onPrimaryChange(stripMetadata(url));
       return;
     }
 
-    saveTaggedView(effectiveColour, 1, url);
+    const current =
+      splitCommaValues(
+        galleryText,
+      ).map(
+        parseColourImage,
+      );
+
+    const next =
+      current
+        .filter(
+          (item) =>
+            item.colour !==
+            colour,
+        )
+        .map(
+          (item) =>
+            item.raw,
+        );
+
+    if (url.trim()) {
+      next.push(
+        tagColourImage(
+          url,
+          colour,
+        ),
+      );
+    }
+
+    onGalleryChange(
+      next.join(
+        ", ",
+      ),
+    );
   }
 
-  function handlePhoto2Change(url: string) {
-    saveTaggedView(effectiveColour, 2, url);
-  }
+  const selectedImage =
+    findColourImage(
+      effectiveColour,
+    );
 
-  function handlePhoto3Change(url: string) {
-    saveTaggedView(effectiveColour, 3, url);
-  }
-
-  function uploadedCountFor(colour: string) {
-    const count = [
-      colour === firstColour
-        ? primaryImage
-        : findTaggedView(colour, 1),
-      findTaggedView(colour, 2),
-      findTaggedView(colour, 3),
-    ].filter(Boolean).length;
-
-    return count;
-  }
-
-  const uploadedCount = [photo1, photo2, photo3].filter(
-    Boolean,
-  ).length;
+  const uploadedColours =
+    colours.filter(
+      (colour) =>
+        Boolean(
+          findColourImage(
+            colour,
+          ),
+        ),
+    ).length;
 
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
         <p className="text-sm font-black text-slate-950">
-          Colour-wise Product Gallery
+          Colour Variant Images
         </p>
 
         <p className="mt-1 text-xs leading-5 text-slate-600">
-          Select a colour and upload Front, Side and Back
-          photos for that exact colour. Customers will see
-          those images when they select the same colour on
-          the KRVE website.
+          Upload only one
+          customer-facing image
+          for each colour. The
+          image can be a collage
+          showing Front, Back and
+          Side views together.
         </p>
-      </div>
-
-      <div>
-        <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-          Select Colour
-        </p>
-
-        <div className="flex flex-wrap gap-2">
-          {colours.map((colour) => {
-            const count = uploadedCountFor(colour);
-
-            return (
-              <button
-                key={colour}
-                type="button"
-                onClick={() => setSelectedColour(colour)}
-                className={`rounded-xl border px-4 py-2.5 text-xs font-black transition ${
-                  effectiveColour === colour
-                    ? "border-blue-600 bg-blue-600 text-white shadow-sm"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50"
-                }`}
-              >
-                {colour}
-
-                <span
-                  className={`ml-2 rounded-full px-2 py-0.5 text-[9px] ${
-                    effectiveColour === colour
-                      ? "bg-white/20 text-white"
-                      : count === 3
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {count}/3
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">
+              Product Colours
+            </p>
+
+            <h3 className="mt-1 text-lg font-black text-slate-950">
+              One image per colour
+            </h3>
+
+            <p className="mt-1 text-xs text-slate-500">
+              {uploadedColours}
+              {" / "}
+              {colours.length}
+              {" "}
+              colours have images.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {colours.map(
+              (colour) => {
+                const image =
+                  findColourImage(
+                    colour,
+                  );
+
+                const active =
+                  effectiveColour ===
+                  colour;
+
+                return (
+                  <button
+                    key={
+                      colour
+                    }
+                    type="button"
+                    onClick={() =>
+                      setSelectedColour(
+                        colour,
+                      )
+                    }
+                    className={`rounded-xl border px-4 py-2.5 text-xs font-black transition ${
+                      active
+                        ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50"
+                    }`}
+                  >
+                    {colour}
+
+                    <span
+                      className={`ml-2 rounded-full px-2 py-0.5 text-[9px] ${
+                        active
+                          ? "bg-white/20 text-white"
+                          : image
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {image
+                        ? "✓"
+                        : "EMPTY"}
+                    </span>
+                  </button>
+                );
+              },
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">
               Selected Colour
             </p>
 
-            <h3 className="mt-1 text-lg font-black text-slate-950">
+            <h3 className="mt-1 text-xl font-black text-slate-950">
               {effectiveColour}
             </h3>
           </div>
 
           <span
             className={`w-fit rounded-full px-3 py-1.5 text-xs font-black ${
-              uploadedCount === 3
+              selectedImage
                 ? "bg-emerald-100 text-emerald-700"
                 : "bg-amber-100 text-amber-700"
             }`}
           >
-            {uploadedCount}/3 photos uploaded
+            {selectedImage
+              ? "IMAGE READY"
+              : "IMAGE REQUIRED"}
           </span>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <GalleryUploader
-          number="1"
-          title="Front / Main"
-          description={
-            isFirstColour
-              ? "Main website image for this product."
-              : `Front image for ${effectiveColour}.`
+        <ProductImageUpload
+          label={`${effectiveColour} — Product Image`}
+          description="Upload one collage image showing Front, Back and Side views for this colour."
+          value={
+            selectedImage
           }
-        >
-          <ProductImageUpload
-            label="Photo 1 — Front / Main"
-            description="Clear front product view."
-            value={photo1}
-            uploadType={isFirstColour ? "primary" : "gallery"}
-            onChange={handlePhoto1Change}
-          />
-        </GalleryUploader>
-
-        <GalleryUploader
-          number="2"
-          title="Side / Detail"
-          description={`Side or detail view for ${effectiveColour}.`}
-        >
-          <ProductImageUpload
-            label="Photo 2 — Side / Detail"
-            description="Show the side, fabric or print detail."
-            value={photo2}
-            uploadType="gallery"
-            onChange={handlePhoto2Change}
-          />
-        </GalleryUploader>
-
-        <GalleryUploader
-          number="3"
-          title="Back / Alternate"
-          description={`Back or alternate view for ${effectiveColour}.`}
-        >
-          <ProductImageUpload
-            label="Photo 3 — Back / Alternate"
-            description="Show the back or another useful angle."
-            value={photo3}
-            uploadType="gallery"
-            onChange={handlePhoto3Change}
-          />
-        </GalleryUploader>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <GalleryStatus
-          number="01"
-          label="Front / Main"
-          uploaded={Boolean(photo1)}
-        />
-
-        <GalleryStatus
-          number="02"
-          label="Side / Detail"
-          uploaded={Boolean(photo2)}
-        />
-
-        <GalleryStatus
-          number="03"
-          label="Back / Alternate"
-          uploaded={Boolean(photo3)}
+          uploadType={
+            effectiveColour ===
+            firstColour
+              ? "primary"
+              : "gallery"
+          }
+          onChange={(
+            url,
+          ) =>
+            saveColourImage(
+              effectiveColour,
+              url,
+            )
+          }
         />
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-        <p className="text-xs leading-5 text-slate-600">
-          Add colours in the product&apos;s{" "}
-          <strong>Colours</strong> field first. Each colour will
-          automatically get its own 3-photo gallery here.
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {colours.map(
+          (colour) => {
+            const image =
+              findColourImage(
+                colour,
+              );
+
+            return (
+              <div
+                key={
+                  colour
+                }
+                className={`rounded-xl border p-3 ${
+                  image
+                    ? "border-emerald-200 bg-emerald-50"
+                    : "border-slate-200 bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+                      Colour Variant
+                    </p>
+
+                    <p className="mt-1 text-xs font-bold text-slate-800">
+                      {colour}
+                    </p>
+                  </div>
+
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[9px] font-black ${
+                      image
+                        ? "bg-emerald-600 text-white"
+                        : "bg-slate-200 text-slate-500"
+                    }`}
+                  >
+                    {image
+                      ? "UPLOADED"
+                      : "EMPTY"}
+                  </span>
+                </div>
+              </div>
+            );
+          },
+        )}
+      </div>
+
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <p className="text-xs leading-5 text-amber-800">
+          Recommended image:
+          one collage per colour
+          with a large Front view
+          and smaller Back +
+          Side views, like your
+          sample image.
         </p>
-      </div>
-    </div>
-  );
-}
-
-function GalleryUploader({
-  number,
-  title,
-  description,
-  children,
-}: {
-  number: string;
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <div className="mb-4 flex items-start gap-3">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-blue-600 text-xs font-black text-white">
-          {number}
-        </span>
-
-        <div>
-          <p className="text-sm font-black text-slate-950">
-            {title}
-          </p>
-
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            {description}
-          </p>
-        </div>
-      </div>
-
-      {children}
-    </div>
-  );
-}
-
-function GalleryStatus({
-  number,
-  label,
-  uploaded,
-}: {
-  number: string;
-  label: string;
-  uploaded: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-xl border p-3 ${
-        uploaded
-          ? "border-emerald-200 bg-emerald-50"
-          : "border-slate-200 bg-slate-50"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
-            Photo {number}
-          </p>
-
-          <p className="mt-1 text-xs font-bold text-slate-800">
-            {label}
-          </p>
-        </div>
-
-        <span
-          className={`rounded-full px-2.5 py-1 text-[9px] font-black ${
-            uploaded
-              ? "bg-emerald-600 text-white"
-              : "bg-slate-200 text-slate-500"
-          }`}
-        >
-          {uploaded ? "UPLOADED" : "EMPTY"}
-        </span>
       </div>
     </div>
   );
