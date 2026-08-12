@@ -1799,7 +1799,7 @@ export default function SeasonalCampaignsManagement() {
                       )
                     }
                     placeholder="https://..."
-                    className="form-input pl-11"
+                    className="form-input form-input-icon"
                   />
                 </div>
               </Field>
@@ -1878,7 +1878,7 @@ export default function SeasonalCampaignsManagement() {
                             .value,
                         )
                       }
-                      className="form-input pl-11"
+                      className="form-input form-input-icon"
                     />
                   </div>
                 </Field>
@@ -1935,7 +1935,7 @@ export default function SeasonalCampaignsManagement() {
                       )
                     }
                     placeholder="Search KRVE products..."
-                    className="form-input pl-11"
+                    className="form-input form-input-icon"
                   />
                 </div>
 
@@ -2290,6 +2290,20 @@ export default function SeasonalCampaignsManagement() {
           font-weight: 600;
           outline: none;
           transition: 150ms ease;
+        }
+
+        .form-input-icon {
+          padding-left: 3rem !important;
+        }
+
+        .form-input[type="datetime-local"],
+        .form-input[type="number"] {
+          line-height: 1.25rem;
+        }
+
+        .form-input::placeholder {
+          color: rgb(148 163 184);
+          opacity: 1;
         }
 
         .form-input:focus {
