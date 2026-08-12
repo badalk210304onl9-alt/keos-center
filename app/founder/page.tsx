@@ -16,6 +16,7 @@ import {
   Boxes,
   Building2,
   CalendarDays,
+  CalendarClock,
   Camera,
   ChevronDown,
   CircleDollarSign,
@@ -60,6 +61,7 @@ import ShippingManagement from "@/components/founder/shipping-management";
 import ReturnsRefundsManagement from "@/components/founder/returns-refunds-management";
 import PricingManagement from "@/components/founder/pricing-management";
 import DiscountsPromotionsManagement from "@/components/founder/discounts-promotions-management";
+import SeasonalCampaignsManagement from "@/components/founder/seasonal-campaigns-management";
 import SalesChannelsManagement from "@/components/founder/sales-channels-management";
 import AbandonedCartsManagement from "@/components/founder/abandoned-carts-management";
 import CheckoutManagement from "@/components/founder/checkout-management";
@@ -254,6 +256,13 @@ const navigationGroups: NavigationGroup[] = [
         description:
           "Coupons, offers, bundles, campaigns and promotional rules",
         icon: BadgePercent,
+      },
+      {
+        id: "seasonal-campaigns",
+        name: "Seasonal Campaigns",
+        description:
+          "Raksha Bandhan, Diwali and other time-limited sale campaigns",
+        icon: CalendarClock,
       },
       {
         id: "sales-channels",
@@ -1927,6 +1936,9 @@ export default function FounderPage() {
 
       case "discounts-promotions":
         return <DiscountsPromotionsManagement />;
+
+      case "seasonal-campaigns":
+        return <SeasonalCampaignsManagement />;
 
       case "sales-channels":
         return <SalesChannelsManagement />;
