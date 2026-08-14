@@ -4018,7 +4018,6 @@ export default function FounderPage() {
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
                     />
                   </label>
-                                    </label>
                 </div>
               </section>
 
