@@ -1,9 +1,24 @@
 "use client";
 
-import type { ChangeEvent, ComponentType } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useKeosFounderData } from "@/hooks/use-keos-founder-data";
+import type {
+  ChangeEvent,
+  ComponentType,
+} from "react";
+
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  useRouter,
+} from "next/navigation";
+
+import {
+  useKeosFounderData,
+} from "@/hooks/use-keos-founder-data";
 
 import {
   Activity,
@@ -24,6 +39,7 @@ import {
   CreditCard,
   Edit3,
   FileChartColumn,
+  GraduationCap,
   Headphones,
   LayoutDashboard,
   Link2,
@@ -53,53 +69,103 @@ import {
 } from "lucide-react";
 
 import BusinessAnalytics from "@/components/founder/business-analytics";
+
 import OrdersManagement from "@/components/founder/orders-management";
+
 import ProductsManagement from "@/components/founder/products-management";
+
 import InventoryManagement from "@/components/founder/inventory-management";
+
 import WarehouseManagement from "@/components/founder/warehouse-management";
+
 import ShippingManagement from "@/components/founder/shipping-management";
+
 import ReturnsRefundsManagement from "@/components/founder/returns-refunds-management";
+
 import PricingManagement from "@/components/founder/pricing-management";
+
 import DiscountsPromotionsManagement from "@/components/founder/discounts-promotions-management";
+
 import SeasonalCampaignsManagement from "@/components/founder/seasonal-campaigns-management";
+
 import SalesChannelsManagement from "@/components/founder/sales-channels-management";
+
 import AbandonedCartsManagement from "@/components/founder/abandoned-carts-management";
+
 import CheckoutManagement from "@/components/founder/checkout-management";
+
 import OrderTrackingManagement from "@/components/founder/order-tracking-management";
+
 import CommerceReportsManagement from "@/components/founder/commerce-reports-management";
+
 import CustomersManagement from "@/components/founder/customers-management";
+
 import FinanceManagement from "@/components/founder/finance-management";
+
 import HumanResourcesManagement from "@/components/founder/human-resources-management";
+
 import MarketingManagement from "@/components/founder/marketing-management";
+
 import CustomerSupportManagement from "@/components/founder/customer-support-management";
+
 import ProcurementManagement from "@/components/founder/procurement-management";
+
 import CRMManagement from "@/components/founder/crm-management";
+
 import VendorManagement from "@/components/founder/vendor-management";
+
 import ProjectsTasksManagement from "@/components/founder/projects-tasks-management";
+
+import LiveProjectsManagement from "@/components/founder/live-projects-management";
+
 import DocumentsManagement from "@/components/founder/documents-management";
+
 import LegalComplianceManagement from "@/components/founder/legal-compliance-management";
+
 import RiskManagement from "@/components/founder/risk-management";
+
 import FacilitiesAssetsManagement from "@/components/founder/facilities-assets-management";
+
 import KrveAICenterManagement from "@/components/founder/krve-ai-center-management";
+
 import AIAssistantManagement from "@/components/founder/ai-assistant-management";
+
 import AIAutomationManagement from "@/components/founder/ai-automation-management";
+
 import ForecastingManagement from "@/components/founder/forecasting-management";
+
 import AnomalyDetectionManagement from "@/components/founder/anomaly-detection-management";
+
 import AIRecommendationsManagement from "@/components/founder/ai-recommendations-management";
+
 import EnterpriseReportsManagement from "@/components/founder/enterprise-reports-management";
+
 import ExecutiveReportsManagement from "@/components/founder/executive-reports-management";
+
 import DepartmentReportsManagement from "@/components/founder/department-reports-management";
+
 import AuditReportsManagement from "@/components/founder/audit-reports-management";
+
 import AdministrationManagement from "@/components/founder/administration-management";
+
 import UsersRolesManagement from "@/components/founder/users-roles-management";
+
 import DepartmentsManagement from "@/components/founder/departments-management";
+
 import PermissionsManagement from "@/components/founder/permissions-management";
+
 import IntegrationsManagement from "@/components/founder/integrations-management";
+
 import SecurityCenterManagement from "@/components/founder/security-center-management";
+
 import AuditLogsManagement from "@/components/founder/audit-logs-management";
+
 import DataManagement from "@/components/founder/data-management";
+
 import NotificationsManagement from "@/components/founder/notifications-management";
+
 import SystemSettingsManagement from "@/components/founder/system-settings-management";
+
 import TasksApprovals from "@/components/founder/tasks-approvals";
 
 import {
@@ -108,566 +174,1118 @@ import {
   type KeosSession,
 } from "@/lib/access-control";
 
-type IconType = ComponentType<{
-  size?: number;
-  className?: string;
-  strokeWidth?: number;
-}>;
+type IconType =
+  ComponentType<{
+    size?: number;
+    className?: string;
+    strokeWidth?: number;
+  }>;
 
 type NavigationItem = {
   id: string;
+
   name: string;
+
   description: string;
+
   icon: IconType;
+
   badge?: string;
 };
 
 type NavigationGroup = {
   title: string;
+
   items: NavigationItem[];
 };
 
 type FounderProfile = {
   name: string;
+
   userId: string;
+
   email: string;
+
   phone: string;
+
   designation: string;
+
   department: string;
+
   location: string;
+
   joiningDate: string;
+
   bio: string;
+
   avatar: string;
 };
 
 type DashboardStatistic = {
   title: string;
+
   value: string;
+
   change: string;
+
   description: string;
+
   icon: IconType;
-  tone: "blue" | "red" | "green" | "orange";
+
+  tone:
+    | "blue"
+    | "red"
+    | "green"
+    | "orange";
 };
 
 type FounderNotification = {
   id: number;
+
   title: string;
+
   message: string;
+
   time: string;
+
   unread: boolean;
+
   relatedSection: string;
 };
 
 type FounderRecentOrder = {
   id: string;
+
   customer: string;
+
   product: string;
+
   amount: string;
+
   status: string;
+
   date: string;
 };
 
-const navigationGroups: NavigationGroup[] = [
+const navigationGroups:
+  NavigationGroup[] = [
   {
-    title: "Command Center",
+    title:
+      "Command Center",
+
     items: [
       {
-        id: "dashboard",
-        name: "Founder Dashboard",
+        id:
+          "dashboard",
+
+        name:
+          "Founder Dashboard",
+
         description:
           "Complete enterprise overview and Founder-level operational control",
-        icon: LayoutDashboard,
+
+        icon:
+          LayoutDashboard,
       },
+
       {
-        id: "analytics",
-        name: "Business Analytics",
+        id:
+          "analytics",
+
+        name:
+          "Business Analytics",
+
         description:
           "Enterprise analytics, performance metrics and business intelligence",
-        icon: BarChart3,
+
+        icon:
+          BarChart3,
       },
+
       {
-        id: "approvals",
-        name: "Tasks & Approvals",
+        id:
+          "approvals",
+
+        name:
+          "Tasks & Approvals",
+
         description:
           "Review departmental requests, tasks and Founder approvals",
-        icon: ClipboardCheck,
-        badge: "08",
+
+        icon:
+          ClipboardCheck,
+
+        badge:
+          "08",
       },
     ],
   },
 
   {
-    title: "Commerce",
+    title:
+      "Commerce",
+
     items: [
       {
-        id: "orders",
-        name: "Orders",
+        id:
+          "orders",
+
+        name:
+          "Orders",
+
         description:
           "Customer orders, payments, fulfilment, cancellations and order lifecycle",
-        icon: ShoppingBag,
-        badge: "19",
+
+        icon:
+          ShoppingBag,
+
+        badge:
+          "19",
       },
+
       {
-        id: "products",
-        name: "Products",
+        id:
+          "products",
+
+        name:
+          "Products",
+
         description:
           "Product catalogue, variants, collections, categories and publishing",
-        icon: Package,
+
+        icon:
+          Package,
       },
+
       {
-        id: "inventory",
-        name: "Inventory",
+        id:
+          "inventory",
+
+        name:
+          "Inventory",
+
         description:
           "Stock levels, movements, replenishment and inventory controls",
-        icon: Boxes,
+
+        icon:
+          Boxes,
       },
+
       {
-        id: "warehouse",
-        name: "Warehouse",
+        id:
+          "warehouse",
+
+        name:
+          "Warehouse",
+
         description:
           "Warehouse locations, receiving, picking, packing and transfers",
-        icon: Warehouse,
+
+        icon:
+          Warehouse,
       },
+
       {
-        id: "shipping",
-        name: "Shipping",
+        id:
+          "shipping",
+
+        name:
+          "Shipping",
+
         description:
           "Courier partners, shipments, tracking, labels and delivery operations",
-        icon: Truck,
+
+        icon:
+          Truck,
       },
+
       {
-        id: "returns-refunds",
-        name: "Returns & Refunds",
+        id:
+          "returns-refunds",
+
+        name:
+          "Returns & Refunds",
+
         description:
           "Return requests, exchanges, inspections, refunds and reverse logistics",
-        icon: RotateCcw,
-        badge: "04",
+
+        icon:
+          RotateCcw,
+
+        badge:
+          "04",
       },
+
       {
-        id: "pricing",
-        name: "Pricing",
+        id:
+          "pricing",
+
+        name:
+          "Pricing",
+
         description:
           "Price lists, margins, cost controls, dynamic pricing and price history",
-        icon: Tags,
+
+        icon:
+          Tags,
       },
+
       {
-        id: "discounts-promotions",
-        name: "Discounts & Promotions",
+        id:
+          "discounts-promotions",
+
+        name:
+          "Discounts & Promotions",
+
         description:
           "Coupons, offers, bundles, campaigns and promotional rules",
-        icon: BadgePercent,
+
+        icon:
+          BadgePercent,
       },
+
       {
-        id: "seasonal-campaigns",
-        name: "Seasonal Campaigns",
+        id:
+          "seasonal-campaigns",
+
+        name:
+          "Seasonal Campaigns",
+
         description:
           "Raksha Bandhan, Diwali and other time-limited sale campaigns",
-        icon: CalendarClock,
+
+        icon:
+          CalendarClock,
       },
+
       {
-        id: "sales-channels",
-        name: "Sales Channels",
+        id:
+          "sales-channels",
+
+        name:
+          "Sales Channels",
+
         description:
           "Website, mobile app, marketplaces, stores and channel integrations",
-        icon: Link2,
+
+        icon:
+          Link2,
       },
+
       {
-        id: "abandoned-carts",
-        name: "Abandoned Carts",
+        id:
+          "abandoned-carts",
+
+        name:
+          "Abandoned Carts",
+
         description:
           "Recover incomplete carts, automate follow-ups and monitor recovery value",
-        icon: ShoppingCart,
+
+        icon:
+          ShoppingCart,
       },
+
       {
-        id: "checkout",
-        name: "Checkout Management",
+        id:
+          "checkout",
+
+        name:
+          "Checkout Management",
+
         description:
           "Checkout configuration, payment methods, addresses and conversion controls",
-        icon: CreditCard,
+
+        icon:
+          CreditCard,
       },
+
       {
-        id: "order-tracking",
-        name: "Order Tracking",
+        id:
+          "order-tracking",
+
+        name:
+          "Order Tracking",
+
         description:
           "Track live fulfilment, courier movement and customer delivery status",
-        icon: MapPin,
+
+        icon:
+          MapPin,
       },
+
       {
-        id: "commerce-reports",
-        name: "Commerce Reports",
+        id:
+          "commerce-reports",
+
+        name:
+          "Commerce Reports",
+
         description:
           "Sales, product, customer, inventory and fulfilment reports",
-        icon: FileChartColumn,
+
+        icon:
+          FileChartColumn,
       },
     ],
   },
 
   {
-    title: "Enterprise",
+    title:
+      "Enterprise",
+
     items: [
       {
-        id: "customers",
-        name: "Customers",
+        id:
+          "customers",
+
+        name:
+          "Customers",
+
         description:
           "Customer profiles, loyalty, segmentation and lifetime value",
-        icon: Users,
+
+        icon:
+          Users,
       },
+
       {
-        id: "finance",
-        name: "Finance",
+        id:
+          "finance",
+
+        name:
+          "Finance",
+
         description:
           "Revenue, accounting, GST, invoices, expenses and financial reporting",
-        icon: ReceiptIndianRupee,
+
+        icon:
+          ReceiptIndianRupee,
       },
+
       {
-        id: "hr",
-        name: "Human Resources",
+        id:
+          "hr",
+
+        name:
+          "Human Resources",
+
         description:
           "Employees, attendance, payroll, recruitment and HR operations",
-        icon: Building2,
+
+        icon:
+          Building2,
       },
+
       {
-        id: "marketing",
-        name: "Marketing",
+        id:
+          "marketing",
+
+        name:
+          "Marketing",
+
         description:
           "Campaigns, email, social media and performance marketing",
-        icon: Megaphone,
+
+        icon:
+          Megaphone,
       },
+
       {
-        id: "support",
-        name: "Customer Support",
+        id:
+          "support",
+
+        name:
+          "Customer Support",
+
         description:
           "Support tickets, chat, complaints and customer satisfaction",
-        icon: Headphones,
+
+        icon:
+          Headphones,
       },
+
       {
-        id: "procurement",
-        name: "Procurement",
+        id:
+          "procurement",
+
+        name:
+          "Procurement",
+
         description:
           "Purchase orders, vendors and sourcing operations",
-        icon: ShoppingCart,
+
+        icon:
+          ShoppingCart,
       },
+
       {
-        id: "crm",
-        name: "CRM",
+        id:
+          "crm",
+
+        name:
+          "CRM",
+
         description:
           "Customer relationship management and sales pipeline",
-        icon: Users,
+
+        icon:
+          Users,
       },
+
       {
-        id: "vendors",
-        name: "Vendor Management",
+        id:
+          "vendors",
+
+        name:
+          "Vendor Management",
+
         description:
           "Vendor onboarding, contracts and supplier performance",
-        icon: Truck,
+
+        icon:
+          Truck,
       },
+
       {
-        id: "projects",
-        name: "Projects & Tasks",
+        id:
+          "projects",
+
+        name:
+          "Projects & Tasks",
+
         description:
           "Internal projects, milestones and departmental tasks",
-        icon: CalendarDays,
+
+        icon:
+          CalendarDays,
       },
+
       {
-        id: "documents",
-        name: "Documents",
+        id:
+          "live-projects",
+
+        name:
+          "Live Projects",
+
+        description:
+          "Applications, students, project allocation, weekly tasks, performance, sales and certificates",
+
+        icon:
+          GraduationCap,
+      },
+
+      {
+        id:
+          "documents",
+
+        name:
+          "Documents",
+
         description:
           "Enterprise document management and digital records",
-        icon: FileChartColumn,
+
+        icon:
+          FileChartColumn,
       },
+
       {
-        id: "legal",
-        name: "Legal & Compliance",
+        id:
+          "legal",
+
+        name:
+          "Legal & Compliance",
+
         description:
           "Policies, legal documents, audits and compliance tracking",
-        icon: ShieldCheck,
+
+        icon:
+          ShieldCheck,
       },
+
       {
-        id: "risk",
-        name: "Risk Management",
+        id:
+          "risk",
+
+        name:
+          "Risk Management",
+
         description:
           "Business risk monitoring and mitigation planning",
-        icon: AlertTriangle,
+
+        icon:
+          AlertTriangle,
       },
+
       {
-        id: "assets",
-        name: "Facilities & Assets",
+        id:
+          "assets",
+
+        name:
+          "Facilities & Assets",
+
         description:
           "Office assets, infrastructure and maintenance",
-        icon: Building2,
+
+        icon:
+          Building2,
       },
     ],
   },
+    {
+    title:
+      "KRVE AI",
 
-  {
-    title: "KRVE AI",
     items: [
       {
-        id: "krve-ai",
-        name: "KRVE AI Center",
+        id:
+          "krve-ai",
+
+        name:
+          "KRVE AI Center",
+
         description:
           "Central AI operating system and enterprise intelligence",
-        icon: Sparkles,
+
+        icon:
+          Sparkles,
       },
+
       {
-        id: "ai-assistant",
-        name: "AI Assistant",
+        id:
+          "ai-assistant",
+
+        name:
+          "AI Assistant",
+
         description:
           "Enterprise AI assistant for Founder and departments",
-        icon: Sparkles,
+
+        icon:
+          Sparkles,
       },
+
       {
-        id: "automation",
-        name: "Automation",
+        id:
+          "automation",
+
+        name:
+          "Automation",
+
         description:
           "Workflow automation and intelligent business processes",
-        icon: Activity,
+
+        icon:
+          Activity,
       },
+
       {
-        id: "forecasting",
-        name: "Forecasting",
+        id:
+          "forecasting",
+
+        name:
+          "Forecasting",
+
         description:
           "Demand forecasting, revenue prediction and AI planning",
-        icon: TrendingUp,
+
+        icon:
+          TrendingUp,
       },
+
       {
-        id: "anomaly",
-        name: "Anomaly Detection",
+        id:
+          "anomaly",
+
+        name:
+          "Anomaly Detection",
+
         description:
           "Detect unusual activities and business anomalies",
-        icon: AlertTriangle,
+
+        icon:
+          AlertTriangle,
       },
+
       {
-        id: "recommendations",
-        name: "AI Recommendations",
+        id:
+          "recommendations",
+
+        name:
+          "AI Recommendations",
+
         description:
           "AI-generated business insights and recommendations",
-        icon: ArrowUpRight,
+
+        icon:
+          ArrowUpRight,
       },
     ],
   },
 
   {
-    title: "Reports",
+    title:
+      "Reports",
+
     items: [
       {
-        id: "enterprise-reports",
-        name: "Enterprise Reports",
+        id:
+          "enterprise-reports",
+
+        name:
+          "Enterprise Reports",
+
         description:
           "Complete enterprise reporting dashboard",
-        icon: FileChartColumn,
+
+        icon:
+          FileChartColumn,
       },
+
       {
-        id: "executive-reports",
-        name: "Executive Reports",
+        id:
+          "executive-reports",
+
+        name:
+          "Executive Reports",
+
         description:
           "Founder and executive level reports",
-        icon: BarChart3,
+
+        icon:
+          BarChart3,
       },
+
       {
-        id: "department-reports",
-        name: "Department Reports",
+        id:
+          "department-reports",
+
+        name:
+          "Department Reports",
+
         description:
           "Department-wise reports and KPIs",
-        icon: ClipboardCheck,
+
+        icon:
+          ClipboardCheck,
       },
+
       {
-        id: "audit-reports",
-        name: "Audit Reports",
+        id:
+          "audit-reports",
+
+        name:
+          "Audit Reports",
+
         description:
           "Audit history and compliance reports",
-        icon: ShieldCheck,
+
+        icon:
+          ShieldCheck,
       },
     ],
   },
 
   {
-    title: "Administration",
+    title:
+      "Administration",
+
     items: [
       {
-        id: "administration",
-        name: "Administration",
+        id:
+          "administration",
+
+        name:
+          "Administration",
+
         description:
           "Central administration and enterprise configuration",
-        icon: Settings,
+
+        icon:
+          Settings,
       },
+
       {
-        id: "users-roles",
-        name: "Users & Roles",
+        id:
+          "users-roles",
+
+        name:
+          "Users & Roles",
+
         description:
           "Create users, assign roles and manage employee access",
-        icon: Users,
+
+        icon:
+          Users,
       },
+
       {
-        id: "departments",
-        name: "Departments",
+        id:
+          "departments",
+
+        name:
+          "Departments",
+
         description:
           "Manage departments, reporting structures and department heads",
-        icon: Building2,
+
+        icon:
+          Building2,
       },
+
       {
-        id: "permissions",
-        name: "Permissions",
+        id:
+          "permissions",
+
+        name:
+          "Permissions",
+
         description:
           "Configure role-based access and module-level permissions",
-        icon: ShieldCheck,
+
+        icon:
+          ShieldCheck,
       },
+
       {
-        id: "integrations",
-        name: "Integrations",
+        id:
+          "integrations",
+
+        name:
+          "Integrations",
+
         description:
           "Connect website, applications, payment systems and business tools",
-        icon: Link2,
+
+        icon:
+          Link2,
       },
+
       {
-        id: "security-center",
-        name: "Security Center",
+        id:
+          "security-center",
+
+        name:
+          "Security Center",
+
         description:
           "Monitor access, threats, sessions and enterprise security",
-        icon: ShieldCheck,
+
+        icon:
+          ShieldCheck,
       },
+
       {
-        id: "audit-logs",
-        name: "Audit Logs",
+        id:
+          "audit-logs",
+
+        name:
+          "Audit Logs",
+
         description:
           "Review system actions, login activity and administrative changes",
-        icon: ClipboardCheck,
+
+        icon:
+          ClipboardCheck,
       },
+
       {
-        id: "data-management",
-        name: "Data Management",
+        id:
+          "data-management",
+
+        name:
+          "Data Management",
+
         description:
           "Enterprise data controls, import, export, backup and retention",
-        icon: Boxes,
+
+        icon:
+          Boxes,
       },
+
       {
-        id: "notifications",
-        name: "Notifications",
+        id:
+          "notifications",
+
+        name:
+          "Notifications",
+
         description:
           "Configure enterprise alerts, notifications and communication rules",
-        icon: Bell,
+
+        icon:
+          Bell,
       },
+
       {
-        id: "system-settings",
-        name: "System Settings",
+        id:
+          "system-settings",
+
+        name:
+          "System Settings",
+
         description:
           "Configure KEOS preferences and enterprise system settings",
-        icon: Settings,
+
+        icon:
+          Settings,
       },
     ],
   },
 ];
-const defaultFounderProfile: FounderProfile = {
-  name: "Badal Kumar",
-  userId: "KRVE-FOUNDER-001",
-  email: "founder@krvefashionstudio.in",
-  phone: "+91 98765 43210",
-  designation: "Founder & Chief Executive Officer",
-  department: "Founder Office",
-  location: "Varanasi, Uttar Pradesh, India",
-  joiningDate: "01 July 2026",
-  bio: "Founder of KRVE and executive administrator of the KRVE Enterprise Operating System.",
-  avatar: "",
+
+const defaultFounderProfile:
+  FounderProfile = {
+  name:
+    "Badal Kumar",
+
+  userId:
+    "KRVE-FOUNDER-001",
+
+  email:
+    "founder@krvefashionstudio.in",
+
+  phone:
+    "+91 98765 43210",
+
+  designation:
+    "Founder & Chief Executive Officer",
+
+  department:
+    "Founder Office",
+
+  location:
+    "Varanasi, Uttar Pradesh, India",
+
+  joiningDate:
+    "01 July 2026",
+
+  bio:
+    "Founder of KRVE and executive administrator of the KRVE Enterprise Operating System.",
+
+  avatar:
+    "",
 };
 
-const baseDashboardStatistics: DashboardStatistic[] = [
+const baseDashboardStatistics:
+  DashboardStatistic[] = [
   {
-    title: "Total Revenue",
-    value: "₹0",
-    change: "LIVE",
-    description: "Revenue from paid KRVE website orders",
-    icon: CircleDollarSign,
-    tone: "blue",
+    title:
+      "Total Revenue",
+
+    value:
+      "₹0",
+
+    change:
+      "LIVE",
+
+    description:
+      "Revenue from paid KRVE website orders",
+
+    icon:
+      CircleDollarSign,
+
+    tone:
+      "blue",
   },
+
   {
-    title: "Total Orders",
-    value: "0",
-    change: "LIVE",
-    description: "Orders received from KRVE sales channels",
-    icon: ShoppingBag,
-    tone: "red",
+    title:
+      "Total Orders",
+
+    value:
+      "0",
+
+    change:
+      "LIVE",
+
+    description:
+      "Orders received from KRVE sales channels",
+
+    icon:
+      ShoppingBag,
+
+    tone:
+      "red",
   },
+
   {
-    title: "Total Customers",
-    value: "0",
-    change: "LIVE",
-    description: "Customers recorded in KRVE Central API",
-    icon: Users,
-    tone: "green",
+    title:
+      "Total Customers",
+
+    value:
+      "0",
+
+    change:
+      "LIVE",
+
+    description:
+      "Customers recorded in KRVE Central API",
+
+    icon:
+      Users,
+
+    tone:
+      "green",
   },
+
   {
-    title: "Total Employees",
-    value: "—",
-    change: "KEOS",
-    description: "Employee data will come from HR Management",
-    icon: Building2,
-    tone: "orange",
+    title:
+      "Total Employees",
+
+    value:
+      "—",
+
+    change:
+      "KEOS",
+
+    description:
+      "Employee data will come from HR Management",
+
+    icon:
+      Building2,
+
+    tone:
+      "orange",
   },
 ];
 
-const notificationItems: FounderNotification[] = [
+const notificationItems:
+  FounderNotification[] = [
   {
-    id: 1,
-    title: "Founder approval required",
-    message: "Finance submitted a vendor payment request of ₹2,40,000.",
-    time: "8 minutes ago",
-    unread: true,
-    relatedSection: "approvals",
+    id:
+      1,
+
+    title:
+      "Founder approval required",
+
+    message:
+      "Finance submitted a vendor payment request of ₹2,40,000.",
+
+    time:
+      "8 minutes ago",
+
+    unread:
+      true,
+
+    relatedSection:
+      "approvals",
   },
+
   {
-    id: 2,
-    title: "Inventory warning",
-    message: "Four products have reached their minimum stock level.",
-    time: "24 minutes ago",
-    unread: true,
-    relatedSection: "inventory",
+    id:
+      2,
+
+    title:
+      "Inventory warning",
+
+    message:
+      "Four products have reached their minimum stock level.",
+
+    time:
+      "24 minutes ago",
+
+    unread:
+      true,
+
+    relatedSection:
+      "inventory",
   },
+
   {
-    id: 3,
-    title: "New employee onboarding",
-    message: "HR created credentials for three new employees.",
-    time: "1 hour ago",
-    unread: false,
-    relatedSection: "hr",
+    id:
+      3,
+
+    title:
+      "New employee onboarding",
+
+    message:
+      "HR created credentials for three new employees.",
+
+    time:
+      "1 hour ago",
+
+    unread:
+      false,
+
+    relatedSection:
+      "hr",
   },
 ];
 
-function getInitials(name: string) {
+function getInitials(
+  name: string,
+) {
   return name
     .split(" ")
     .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word.charAt(0).toUpperCase())
+    .slice(
+      0,
+      2,
+    )
+    .map(
+      (
+        word,
+      ) =>
+        word
+          .charAt(0)
+          .toUpperCase(),
+    )
     .join("");
 }
 
-function getStatusClasses(status: string) {
-  const normalizedStatus = status.toLowerCase();
+function getStatusClasses(
+  status: string,
+) {
+  const normalizedStatus =
+    status.toLowerCase();
 
   if (
-    normalizedStatus.includes("delivered") ||
-    normalizedStatus.includes("paid")
+    normalizedStatus.includes(
+      "delivered",
+    ) ||
+    normalizedStatus.includes(
+      "paid",
+    )
   ) {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
 
-  if (normalizedStatus.includes("shipped")) {
+  if (
+    normalizedStatus.includes(
+      "shipped",
+    )
+  ) {
     return "border-blue-200 bg-blue-50 text-blue-700";
   }
 
   if (
-    normalizedStatus.includes("processing") ||
-    normalizedStatus.includes("confirmed") ||
-    normalizedStatus.includes("packed")
+    normalizedStatus.includes(
+      "processing",
+    ) ||
+    normalizedStatus.includes(
+      "confirmed",
+    ) ||
+    normalizedStatus.includes(
+      "packed",
+    )
   ) {
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
 
   if (
-    normalizedStatus.includes("cancelled") ||
-    normalizedStatus.includes("failed") ||
-    normalizedStatus.includes("refunded") ||
-    normalizedStatus.includes("returned")
+    normalizedStatus.includes(
+      "cancelled",
+    ) ||
+    normalizedStatus.includes(
+      "failed",
+    ) ||
+    normalizedStatus.includes(
+      "refunded",
+    ) ||
+    normalizedStatus.includes(
+      "returned",
+    )
   ) {
     return "border-red-200 bg-red-50 text-red-700";
   }
@@ -676,83 +1294,132 @@ function getStatusClasses(status: string) {
 }
 
 function getStatisticToneClasses(
-  tone: DashboardStatistic["tone"],
+  tone:
+    DashboardStatistic["tone"],
 ) {
   const toneClasses = {
     blue: {
-      icon: "bg-blue-50 text-blue-700",
-      change: "text-blue-700",
+      icon:
+        "bg-blue-50 text-blue-700",
+
+      change:
+        "text-blue-700",
     },
 
     red: {
-      icon: "bg-rose-50 text-rose-700",
-      change: "text-rose-700",
+      icon:
+        "bg-rose-50 text-rose-700",
+
+      change:
+        "text-rose-700",
     },
 
     green: {
-      icon: "bg-emerald-50 text-emerald-700",
-      change: "text-emerald-700",
+      icon:
+        "bg-emerald-50 text-emerald-700",
+
+      change:
+        "text-emerald-700",
     },
 
     orange: {
-      icon: "bg-amber-50 text-amber-700",
-      change: "text-amber-700",
+      icon:
+        "bg-amber-50 text-amber-700",
+
+      change:
+        "text-amber-700",
     },
   };
 
-  return toneClasses[tone];
+  return toneClasses[
+    tone
+  ];
 }
 
-function isSupportedImage(file: File) {
+function isSupportedImage(
+  file: File,
+) {
   return [
     "image/jpeg",
     "image/png",
     "image/webp",
-  ].includes(file.type);
+  ].includes(
+    file.type,
+  );
 }
 
-function readImageFile(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
+function readImageFile(
+  file: File,
+) {
+  return new Promise<string>(
+    (
+      resolve,
+      reject,
+    ) => {
+      const reader =
+        new FileReader();
 
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        resolve(reader.result);
-        return;
-      }
+      reader.onload =
+        () => {
+          if (
+            typeof reader.result ===
+            "string"
+          ) {
+            resolve(
+              reader.result,
+            );
 
-      reject(
-        new Error("Invalid image data"),
+            return;
+          }
+
+          reject(
+            new Error(
+              "Invalid image data",
+            ),
+          );
+        };
+
+      reader.onerror =
+        () => {
+          reject(
+            new Error(
+              "Photo could not be loaded",
+            ),
+          );
+        };
+
+      reader.readAsDataURL(
+        file,
       );
-    };
-
-    reader.onerror = () => {
-      reject(
-        new Error(
-          "Photo could not be loaded",
-        ),
-      );
-    };
-
-    reader.readAsDataURL(file);
-  });
+    },
+  );
 }
 
 export default function FounderPage() {
-  const router = useRouter();
-
-  const profileImageInputRef =
+  const router =
+    useRouter();
+    const profileImageInputRef =
     useRef<HTMLInputElement | null>(
       null,
     );
 
   const {
-    data: liveFounderData,
-    loading: liveDataLoading,
-    source: liveDataSource,
-    error: liveDataError,
-    refresh: refreshFounderData,
-  } = useKeosFounderData();
+    data:
+      liveFounderData,
+
+    loading:
+      liveDataLoading,
+
+    source:
+      liveDataSource,
+
+    error:
+      liveDataError,
+
+    refresh:
+      refreshFounderData,
+  } =
+    useKeosFounderData();
 
   const [
     session,
@@ -766,31 +1433,41 @@ export default function FounderPage() {
     activeSection,
     setActiveSection,
   ] =
-    useState("dashboard");
+    useState(
+      "dashboard",
+    );
 
   const [
     sidebarOpen,
     setSidebarOpen,
   ] =
-    useState(true);
+    useState(
+      true,
+    );
 
   const [
     mobileSidebarOpen,
     setMobileSidebarOpen,
   ] =
-    useState(false);
+    useState(
+      false,
+    );
 
   const [
     searchQuery,
     setSearchQuery,
   ] =
-    useState("");
+    useState(
+      "",
+    );
 
   const [
     notificationOpen,
     setNotificationOpen,
   ] =
-    useState(false);
+    useState(
+      false,
+    );
 
   const [
     selectedNotification,
@@ -804,13 +1481,17 @@ export default function FounderPage() {
     profileOpen,
     setProfileOpen,
   ] =
-    useState(false);
+    useState(
+      false,
+    );
 
   const [
     profileEditorOpen,
     setProfileEditorOpen,
   ] =
-    useState(false);
+    useState(
+      false,
+    );
 
   const [
     founderProfile,
@@ -832,177 +1513,232 @@ export default function FounderPage() {
     profileSaved,
     setProfileSaved,
   ] =
-    useState(false);
+    useState(
+      false,
+    );
 
   const [
     profileImageError,
     setProfileImageError,
   ] =
-    useState("");
+    useState(
+      "",
+    );
 
   const [
     profileImageLoading,
     setProfileImageLoading,
   ] =
-    useState(false);
-
-  useEffect(() => {
-    const storedSession =
-      getStoredSession();
-
-    if (!storedSession) {
-      router.replace("/");
-      return;
-    }
-
-    setSession(
-      storedSession,
+    useState(
+      false,
     );
-  }, [router]);
 
-  useEffect(() => {
-    const storedProfile =
-      window.localStorage.getItem(
-        "keos-founder-profile",
-      );
+  useEffect(
+    () => {
+      const storedSession =
+        getStoredSession();
 
-    if (!storedProfile) {
-      return;
-    }
-
-    try {
-      const parsedProfile =
-        JSON.parse(
-          storedProfile,
-        ) as Partial<FounderProfile>;
-
-      const safeProfile: FounderProfile = {
-        ...defaultFounderProfile,
-        ...parsedProfile,
-      };
-
-      setFounderProfile(
-        safeProfile,
-      );
-
-      setProfileDraft(
-        safeProfile,
-      );
-    } catch {
-      window.localStorage.removeItem(
-        "keos-founder-profile",
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    function closeMenusOnEscape(
-      event: KeyboardEvent,
-    ) {
       if (
-        event.key !==
-        "Escape"
+        !storedSession
+      ) {
+        router.replace(
+          "/",
+        );
+
+        return;
+      }
+
+      setSession(
+        storedSession,
+      );
+    },
+    [
+      router,
+    ],
+  );
+
+  useEffect(
+    () => {
+      const storedProfile =
+        window.localStorage.getItem(
+          "keos-founder-profile",
+        );
+
+      if (
+        !storedProfile
       ) {
         return;
       }
 
-      setNotificationOpen(
-        false,
-      );
+      try {
+        const parsedProfile =
+          JSON.parse(
+            storedProfile,
+          ) as Partial<FounderProfile>;
 
-      setSelectedNotification(
-        null,
-      );
+        const safeProfile:
+          FounderProfile = {
+          ...defaultFounderProfile,
 
-      setProfileOpen(
-        false,
-      );
+          ...parsedProfile,
+        };
 
-      setProfileEditorOpen(
-        false,
-      );
+        setFounderProfile(
+          safeProfile,
+        );
 
-      setMobileSidebarOpen(
-        false,
-      );
-    }
+        setProfileDraft(
+          safeProfile,
+        );
+      } catch {
+        window.localStorage.removeItem(
+          "keos-founder-profile",
+        );
+      }
+    },
+    [],
+  );
 
-    window.addEventListener(
-      "keydown",
-      closeMenusOnEscape,
-    );
+  useEffect(
+    () => {
+      function closeMenusOnEscape(
+        event:
+          KeyboardEvent,
+      ) {
+        if (
+          event.key !==
+          "Escape"
+        ) {
+          return;
+        }
 
-    return () => {
-      window.removeEventListener(
+        setNotificationOpen(
+          false,
+        );
+
+        setSelectedNotification(
+          null,
+        );
+
+        setProfileOpen(
+          false,
+        );
+
+        setProfileEditorOpen(
+          false,
+        );
+
+        setMobileSidebarOpen(
+          false,
+        );
+      }
+
+      window.addEventListener(
         "keydown",
         closeMenusOnEscape,
       );
-    };
-  }, []);
+
+      return () => {
+        window.removeEventListener(
+          "keydown",
+          closeMenusOnEscape,
+        );
+      };
+    },
+    [],
+  );
 
   const activeNavigationItem =
-    useMemo(() => {
-      return navigationGroups
-        .flatMap(
-          (group) =>
-            group.items,
-        )
-        .find(
-          (item) =>
-            item.id ===
-            activeSection,
-        );
-    }, [activeSection]);
+    useMemo(
+      () => {
+        return navigationGroups
+          .flatMap(
+            (
+              group,
+            ) =>
+              group.items,
+          )
+          .find(
+            (
+              item,
+            ) =>
+              item.id ===
+              activeSection,
+          );
+      },
+      [
+        activeSection,
+      ],
+    );
 
   const filteredNavigationGroups =
-    useMemo(() => {
-      const normalizedQuery =
-        searchQuery
-          .trim()
-          .toLowerCase();
+    useMemo(
+      () => {
+        const normalizedQuery =
+          searchQuery
+            .trim()
+            .toLowerCase();
 
-      if (
-        !normalizedQuery
-      ) {
-        return navigationGroups;
-      }
+        if (
+          !normalizedQuery
+        ) {
+          return navigationGroups;
+        }
 
-      return navigationGroups
-        .map((group) => ({
-          ...group,
+        return navigationGroups
+          .map(
+            (
+              group,
+            ) => ({
+              ...group,
 
-          items:
-            group.items.filter(
-              (item) => {
-                return (
-                  item.name
-                    .toLowerCase()
-                    .includes(
-                      normalizedQuery,
-                    ) ||
-                  item.description
-                    .toLowerCase()
-                    .includes(
-                      normalizedQuery,
-                    )
-                );
-              },
-            ),
-        }))
-        .filter(
-          (group) =>
-            group.items.length >
-            0,
-        );
-    }, [searchQuery]);
+              items:
+                group.items.filter(
+                  (
+                    item,
+                  ) => {
+                    return (
+                      item.name
+                        .toLowerCase()
+                        .includes(
+                          normalizedQuery,
+                        ) ||
+                      item.description
+                        .toLowerCase()
+                        .includes(
+                          normalizedQuery,
+                        )
+                    );
+                  },
+                ),
+            }),
+          )
+          .filter(
+            (
+              group,
+            ) =>
+              group.items
+                .length >
+              0,
+          );
+      },
+      [
+        searchQuery,
+      ],
+    );
 
   const unreadNotificationCount =
-    useMemo(() => {
-      return notificationItems.filter(
-        (notification) =>
-          notification.unread,
-      ).length;
-    }, []);
+    useMemo(
+      () => {
+        return notificationItems.filter(
+          (
+            notification,
+          ) =>
+            notification.unread,
+        ).length;
+      },
+      [],
+    );
 
   /*
     ============================================
@@ -1021,70 +1757,90 @@ export default function FounderPage() {
   const resolvedDashboardStatistics =
     useMemo<
       DashboardStatistic[]
-    >(() => {
-      const statistics =
-        liveFounderData?.statistics;
+    >(
+      () => {
+        const statistics =
+          liveFounderData
+            ?.statistics;
 
-      return [
-        {
-          ...baseDashboardStatistics[0],
+        return [
+          {
+            ...baseDashboardStatistics[
+              0
+            ],
 
-          value:
-            statistics
-              ?.totalRevenue ??
-            "₹0",
-        },
+            value:
+              statistics
+                ?.totalRevenue ??
+              "₹0",
+          },
 
-        {
-          ...baseDashboardStatistics[1],
+          {
+            ...baseDashboardStatistics[
+              1
+            ],
 
-          value:
-            statistics
-              ?.totalOrders ??
-            "0",
-        },
+            value:
+              statistics
+                ?.totalOrders ??
+              "0",
+          },
 
-        {
-          ...baseDashboardStatistics[2],
+          {
+            ...baseDashboardStatistics[
+              2
+            ],
 
-          value:
-            statistics
-              ?.totalCustomers ??
-            "0",
-        },
+            value:
+              statistics
+                ?.totalCustomers ??
+              "0",
+          },
 
-        {
-          ...baseDashboardStatistics[3],
+          {
+            ...baseDashboardStatistics[
+              3
+            ],
 
-          value:
-            statistics
-              ?.totalEmployees ??
-            "—",
-        },
-      ];
-    }, [liveFounderData]);
+            value:
+              statistics
+                ?.totalEmployees ??
+              "—",
+          },
+        ];
+      },
+      [
+        liveFounderData,
+      ],
+    );
 
   /*
     ============================================
     LIVE RECENT ORDERS
     ============================================
 
-    No Rahul / Aarav / Ananya demo orders.
+    No demo orders.
   */
 
   const resolvedRecentOrders =
     useMemo<
       FounderRecentOrder[]
-    >(() => {
-      return (
-        liveFounderData
-          ?.recentOrders ??
-        []
-      );
-    }, [liveFounderData]);
+    >(
+      () => {
+        return (
+          liveFounderData
+            ?.recentOrders ??
+          []
+        );
+      },
+      [
+        liveFounderData,
+      ],
+    );
 
   function handleNavigation(
-    sectionId: string,
+    sectionId:
+      string,
   ) {
     setActiveSection(
       sectionId,
@@ -1110,7 +1866,9 @@ export default function FounderPage() {
   function handleLogout() {
     clearStoredSession();
 
-    router.replace("/");
+    router.replace(
+      "/",
+    );
   }
 
   function handleProfileEdit() {
@@ -1140,8 +1898,11 @@ export default function FounderPage() {
   }
 
   function handleProfileFieldChange(
-    field: keyof FounderProfile,
-    value: string,
+    field:
+      keyof FounderProfile,
+
+    value:
+      string,
   ) {
     setProfileDraft(
       (
@@ -1168,7 +1929,8 @@ export default function FounderPage() {
   }
 
   async function handleProfileImageChange(
-    event: ChangeEvent<HTMLInputElement>,
+    event:
+      ChangeEvent<HTMLInputElement>,
   ) {
     const file =
       event.target.files?.[0];
@@ -1255,7 +2017,8 @@ export default function FounderPage() {
       ) => ({
         ...currentProfile,
 
-        avatar: "",
+        avatar:
+          "",
       }),
     );
 
@@ -1276,7 +2039,8 @@ export default function FounderPage() {
   }
 
   function handleProfileSave() {
-    const cleanedProfile: FounderProfile = {
+    const cleanedProfile:
+      FounderProfile = {
       ...profileDraft,
 
       name:
@@ -1367,7 +2131,8 @@ export default function FounderPage() {
   }
 
   function handleNotificationClick(
-    notification: FounderNotification,
+    notification:
+      FounderNotification,
   ) {
     setSelectedNotification(
       notification,
@@ -1386,14 +2151,16 @@ export default function FounderPage() {
     }
 
     handleNavigation(
-      selectedNotification.relatedSection,
+      selectedNotification
+        .relatedSection,
     );
 
     setSelectedNotification(
       null,
     );
   }
-    function renderDashboard() {
+
+  function renderDashboard() {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -1411,8 +2178,7 @@ export default function FounderPage() {
               oversight for the KRVE enterprise ecosystem.
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
             <div
               className={`inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-medium ${
                 liveDataError
@@ -1441,14 +2207,18 @@ export default function FounderPage() {
 
             <button
               type="button"
-              onClick={() => void refreshFounderData()}
+              onClick={() =>
+                void refreshFounderData()
+              }
               disabled={liveDataLoading}
               className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Activity
                 size={16}
                 className={
-                  liveDataLoading ? "animate-pulse" : ""
+                  liveDataLoading
+                    ? "animate-pulse"
+                    : ""
                 }
               />
 
@@ -1477,50 +2247,70 @@ export default function FounderPage() {
         ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {resolvedDashboardStatistics.map((statistic) => {
-            const Icon = statistic.icon;
+          {resolvedDashboardStatistics.map(
+            (
+              statistic,
+            ) => {
+              const Icon =
+                statistic.icon;
 
-            const toneClasses =
-              getStatisticToneClasses(statistic.tone);
+              const toneClasses =
+                getStatisticToneClasses(
+                  statistic.tone,
+                );
 
-            return (
-              <div
-                key={statistic.title}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${toneClasses.icon}`}
-                  >
-                    <Icon size={21} />
+              return (
+                <div
+                  key={
+                    statistic.title
+                  }
+                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div
+                      className={`flex h-11 w-11 items-center justify-center rounded-xl ${toneClasses.icon}`}
+                    >
+                      <Icon
+                        size={
+                          21
+                        }
+                      />
+                    </div>
+
+                    <span
+                      className={`text-xs font-semibold uppercase tracking-[0.14em] ${toneClasses.change}`}
+                    >
+                      {
+                        statistic.change
+                      }
+                    </span>
                   </div>
 
-                  <span
-                    className={`text-xs font-semibold uppercase tracking-[0.14em] ${toneClasses.change}`}
-                  >
-                    {statistic.change}
-                  </span>
+                  <div className="mt-5">
+                    <div className="text-2xl font-semibold tracking-tight text-slate-950">
+                      {liveDataLoading &&
+                      statistic.title !==
+                        "Total Employees"
+                        ? "..."
+                        : statistic.value}
+                    </div>
+
+                    <div className="mt-1 text-sm font-medium text-slate-700">
+                      {
+                        statistic.title
+                      }
+                    </div>
+
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      {
+                        statistic.description
+                      }
+                    </p>
+                  </div>
                 </div>
-
-                <div className="mt-5">
-                  <div className="text-2xl font-semibold tracking-tight text-slate-950">
-                    {liveDataLoading &&
-                    statistic.title !== "Total Employees"
-                      ? "..."
-                      : statistic.value}
-                  </div>
-
-                  <div className="mt-1 text-sm font-medium text-slate-700">
-                    {statistic.title}
-                  </div>
-
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
-                    {statistic.description}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+              );
+            },
+          )}
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.7fr)]">
@@ -1538,11 +2328,19 @@ export default function FounderPage() {
 
               <button
                 type="button"
-                onClick={() => handleNavigation("orders")}
+                onClick={() =>
+                  handleNavigation(
+                    "orders",
+                  )
+                }
                 className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-slate-950"
               >
                 View All Orders
-                <ArrowRight size={16} />
+                <ArrowRight
+                  size={
+                    16
+                  }
+                />
               </button>
             </div>
 
@@ -1550,18 +2348,23 @@ export default function FounderPage() {
               <div className="flex min-h-[320px] items-center justify-center">
                 <div className="flex items-center gap-3 text-sm text-slate-500">
                   <Activity
-                    size={18}
+                    size={
+                      18
+                    }
                     className="animate-pulse"
                   />
 
                   Loading live orders...
                 </div>
               </div>
-            ) : resolvedRecentOrders.length === 0 ? (
+            ) : resolvedRecentOrders.length ===
+              0 ? (
               <div className="flex min-h-[320px] items-center justify-center p-8">
                 <div className="max-w-sm text-center">
                   <ShoppingBag
-                    size={40}
+                    size={
+                      40
+                    }
                     className="mx-auto text-slate-300"
                   />
 
@@ -1576,11 +2379,19 @@ export default function FounderPage() {
 
                   <button
                     type="button"
-                    onClick={() => handleNavigation("orders")}
+                    onClick={() =>
+                      handleNavigation(
+                        "orders",
+                      )
+                    }
                     className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
                   >
                     Open Orders
-                    <ArrowRight size={16} />
+                    <ArrowRight
+                      size={
+                        16
+                      }
+                    />
                   </button>
                 </div>
               </div>
@@ -1612,44 +2423,60 @@ export default function FounderPage() {
                   </thead>
 
                   <tbody>
-                    {resolvedRecentOrders.map((order) => (
-                      <tr
-                        key={`${order.id}-${order.date}`}
-                        className="border-b border-slate-100 last:border-b-0"
-                      >
-                        <td className="px-5 py-4">
-                          <div className="font-semibold text-slate-950">
-                            {order.id}
-                          </div>
+                    {resolvedRecentOrders.map(
+                      (
+                        order,
+                      ) => (
+                        <tr
+                          key={`${order.id}-${order.date}`}
+                          className="border-b border-slate-100 last:border-b-0"
+                        >
+                          <td className="px-5 py-4">
+                            <div className="font-semibold text-slate-950">
+                              {
+                                order.id
+                              }
+                            </div>
 
-                          <div className="mt-1 text-xs text-slate-400">
-                            {order.product}
-                          </div>
-                        </td>
+                            <div className="mt-1 text-xs text-slate-400">
+                              {
+                                order.product
+                              }
+                            </div>
+                          </td>
 
-                        <td className="px-5 py-4 text-sm font-medium text-slate-700">
-                          {order.customer}
-                        </td>
+                          <td className="px-5 py-4 text-sm font-medium text-slate-700">
+                            {
+                              order.customer
+                            }
+                          </td>
 
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusClasses(
-                              order.status,
-                            )}`}
-                          >
-                            {order.status}
-                          </span>
-                        </td>
+                          <td className="px-5 py-4">
+                            <span
+                              className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusClasses(
+                                order.status,
+                              )}`}
+                            >
+                              {
+                                order.status
+                              }
+                            </span>
+                          </td>
 
-                        <td className="px-5 py-4 text-right text-sm font-semibold text-slate-950">
-                          {order.amount}
-                        </td>
+                          <td className="px-5 py-4 text-right text-sm font-semibold text-slate-950">
+                            {
+                              order.amount
+                            }
+                          </td>
 
-                        <td className="px-5 py-4 text-right text-sm text-slate-500">
-                          {order.date}
-                        </td>
-                      </tr>
-                    ))}
+                          <td className="px-5 py-4 text-right text-sm text-slate-500">
+                            {
+                              order.date
+                            }
+                          </td>
+                        </tr>
+                      ),
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1671,10 +2498,16 @@ export default function FounderPage() {
 
                 <button
                   type="button"
-                  onClick={handleProfileEdit}
+                  onClick={
+                    handleProfileEdit
+                  }
                   className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-950"
                 >
-                  <Edit3 size={16} />
+                  <Edit3
+                    size={
+                      16
+                    }
+                  />
                 </button>
               </div>
 
@@ -1683,22 +2516,32 @@ export default function FounderPage() {
                   {founderProfile.avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={founderProfile.avatar}
-                      alt={founderProfile.name}
+                      src={
+                        founderProfile.avatar
+                      }
+                      alt={
+                        founderProfile.name
+                      }
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    getInitials(founderProfile.name)
+                    getInitials(
+                      founderProfile.name,
+                    )
                   )}
                 </div>
 
                 <div className="min-w-0">
                   <div className="truncate font-semibold text-slate-950">
-                    {founderProfile.name}
+                    {
+                      founderProfile.name
+                    }
                   </div>
 
                   <div className="mt-1 truncate text-sm text-slate-500">
-                    {founderProfile.designation}
+                    {
+                      founderProfile.designation
+                    }
                   </div>
                 </div>
               </div>
@@ -1706,43 +2549,58 @@ export default function FounderPage() {
               <div className="mt-5 space-y-3 border-t border-slate-100 pt-5 text-sm">
                 <div className="flex items-center gap-3 text-slate-600">
                   <Mail
-                    size={16}
+                    size={
+                      16
+                    }
                     className="shrink-0 text-slate-400"
                   />
 
                   <span className="truncate">
-                    {founderProfile.email}
+                    {
+                      founderProfile.email
+                    }
                   </span>
                 </div>
 
                 <div className="flex items-center gap-3 text-slate-600">
                   <Phone
-                    size={16}
+                    size={
+                      16
+                    }
                     className="shrink-0 text-slate-400"
                   />
 
                   <span>
-                    {founderProfile.phone}
+                    {
+                      founderProfile.phone
+                    }
                   </span>
                 </div>
 
                 <div className="flex items-center gap-3 text-slate-600">
                   <MapPin
-                    size={16}
+                    size={
+                      16
+                    }
                     className="shrink-0 text-slate-400"
                   />
 
                   <span>
-                    {founderProfile.location}
+                    {
+                      founderProfile.location
+                    }
                   </span>
                 </div>
               </div>
             </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-950 p-5 text-white shadow-sm">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-950 p-5 text-white shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-                  <Sparkles size={19} />
+                  <Sparkles
+                    size={
+                      19
+                    }
+                  />
                 </div>
 
                 <div>
@@ -1763,24 +2621,39 @@ export default function FounderPage() {
 
               <button
                 type="button"
-                onClick={() => handleNavigation("krve-ai")}
+                onClick={() =>
+                  handleNavigation(
+                    "krve-ai",
+                  )
+                }
                 className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-white"
               >
                 Open KRVE AI
-                <ArrowRight size={16} />
+
+                <ArrowRight
+                  size={
+                    16
+                  }
+                />
               </button>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <button
             type="button"
-            onClick={() => handleNavigation("orders")}
+            onClick={() =>
+              handleNavigation(
+                "orders",
+              )
+            }
             className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
           >
             <ShoppingBag
-              size={22}
+              size={
+                22
+              }
               className="text-slate-700"
             />
 
@@ -1793,18 +2666,26 @@ export default function FounderPage() {
             </p>
 
             <ArrowRight
-              size={17}
+              size={
+                17
+              }
               className="mt-4 text-slate-400 transition group-hover:translate-x-1"
             />
           </button>
 
           <button
             type="button"
-            onClick={() => handleNavigation("products")}
+            onClick={() =>
+              handleNavigation(
+                "products",
+              )
+            }
             className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
           >
             <Package
-              size={22}
+              size={
+                22
+              }
               className="text-slate-700"
             />
 
@@ -1817,18 +2698,26 @@ export default function FounderPage() {
             </p>
 
             <ArrowRight
-              size={17}
+              size={
+                17
+              }
               className="mt-4 text-slate-400 transition group-hover:translate-x-1"
             />
           </button>
 
           <button
             type="button"
-            onClick={() => handleNavigation("finance")}
+            onClick={() =>
+              handleNavigation(
+                "finance",
+              )
+            }
             className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
           >
             <CircleDollarSign
-              size={22}
+              size={
+                22
+              }
               className="text-slate-700"
             />
 
@@ -1841,18 +2730,26 @@ export default function FounderPage() {
             </p>
 
             <ArrowRight
-              size={17}
+              size={
+                17
+              }
               className="mt-4 text-slate-400 transition group-hover:translate-x-1"
             />
           </button>
 
           <button
             type="button"
-            onClick={() => handleNavigation("hr")}
+            onClick={() =>
+              handleNavigation(
+                "hr",
+              )
+            }
             className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
           >
             <Building2
-              size={22}
+              size={
+                22
+              }
               className="text-slate-700"
             />
 
@@ -1865,8 +2762,42 @@ export default function FounderPage() {
             </p>
 
             <ArrowRight
-              size={17}
+              size={
+                17
+              }
               className="mt-4 text-slate-400 transition group-hover:translate-x-1"
+            />
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              handleNavigation(
+                "live-projects",
+              )
+            }
+            className="group rounded-2xl border border-blue-200 bg-blue-50/60 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
+          >
+            <GraduationCap
+              size={
+                22
+              }
+              className="text-blue-700"
+            />
+
+            <h3 className="mt-4 font-semibold text-slate-950">
+              Live Projects
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Applications, students, tasks, performance, sales and certificates.
+            </p>
+
+            <ArrowRight
+              size={
+                17
+              }
+              className="mt-4 text-blue-500 transition group-hover:translate-x-1"
             />
           </button>
         </div>
@@ -1875,7 +2806,9 @@ export default function FounderPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <ShieldCheck
-                size={19}
+                size={
+                  19
+                }
                 className="text-emerald-600"
               />
 
@@ -1892,7 +2825,8 @@ export default function FounderPage() {
 
             <span className="text-xs font-medium uppercase tracking-[0.13em] text-slate-400">
               Source:{" "}
-              {liveDataSource === "api"
+              {liveDataSource ===
+              "api"
                 ? "Live API"
                 : "Awaiting API"}
             </span>
@@ -1903,162 +2837,270 @@ export default function FounderPage() {
   }
 
   function renderActiveSection() {
-    switch (activeSection) {
+    switch (
+      activeSection
+    ) {
       case "dashboard":
         return renderDashboard();
 
       case "analytics":
-        return <BusinessAnalytics />;
+        return (
+          <BusinessAnalytics />
+        );
 
       case "approvals":
-        return <TasksApprovals />;
+        return (
+          <TasksApprovals />
+        );
 
       case "orders":
-        return <OrdersManagement />;
+        return (
+          <OrdersManagement />
+        );
 
       case "products":
-        return <ProductsManagement />;
+        return (
+          <ProductsManagement />
+        );
 
       case "inventory":
-        return <InventoryManagement />;
+        return (
+          <InventoryManagement />
+        );
 
       case "warehouse":
-        return <WarehouseManagement />;
+        return (
+          <WarehouseManagement />
+        );
 
       case "shipping":
-        return <ShippingManagement />;
+        return (
+          <ShippingManagement />
+        );
 
       case "returns-refunds":
-        return <ReturnsRefundsManagement />;
+        return (
+          <ReturnsRefundsManagement />
+        );
 
       case "pricing":
-        return <PricingManagement />;
+        return (
+          <PricingManagement />
+        );
 
       case "discounts-promotions":
-        return <DiscountsPromotionsManagement />;
+        return (
+          <DiscountsPromotionsManagement />
+        );
 
       case "seasonal-campaigns":
-        return <SeasonalCampaignsManagement />;
+        return (
+          <SeasonalCampaignsManagement />
+        );
 
       case "sales-channels":
-        return <SalesChannelsManagement />;
+        return (
+          <SalesChannelsManagement />
+        );
 
       case "abandoned-carts":
-        return <AbandonedCartsManagement />;
+        return (
+          <AbandonedCartsManagement />
+        );
 
       case "checkout":
-        return <CheckoutManagement />;
+        return (
+          <CheckoutManagement />
+        );
 
       case "order-tracking":
-        return <OrderTrackingManagement />;
+        return (
+          <OrderTrackingManagement />
+        );
 
       case "commerce-reports":
-        return <CommerceReportsManagement />;
+        return (
+          <CommerceReportsManagement />
+        );
 
       case "customers":
-        return <CustomersManagement />;
+        return (
+          <CustomersManagement />
+        );
 
       case "finance":
-        return <FinanceManagement />;
+        return (
+          <FinanceManagement />
+        );
 
       case "hr":
-        return <HumanResourcesManagement />;
+        return (
+          <HumanResourcesManagement />
+        );
 
       case "marketing":
-        return <MarketingManagement />;
+        return (
+          <MarketingManagement />
+        );
 
       case "support":
-        return <CustomerSupportManagement />;
+        return (
+          <CustomerSupportManagement />
+        );
 
       case "procurement":
-        return <ProcurementManagement />;
+        return (
+          <ProcurementManagement />
+        );
 
       case "crm":
-        return <CRMManagement />;
+        return (
+          <CRMManagement />
+        );
 
       case "vendors":
-        return <VendorManagement />;
+        return (
+          <VendorManagement />
+        );
 
       case "projects":
-        return <ProjectsTasksManagement />;
+        return (
+          <ProjectsTasksManagement />
+        );
+
+      case "live-projects":
+        return (
+          <LiveProjectsManagement />
+        );
 
       case "documents":
-        return <DocumentsManagement />;
+        return (
+          <DocumentsManagement />
+        );
 
       case "legal":
-        return <LegalComplianceManagement />;
+        return (
+          <LegalComplianceManagement />
+        );
 
       case "risk":
-        return <RiskManagement />;
+        return (
+          <RiskManagement />
+        );
 
       case "assets":
-        return <FacilitiesAssetsManagement />;
+        return (
+          <FacilitiesAssetsManagement />
+        );
 
       case "krve-ai":
-        return <KrveAICenterManagement />;
+        return (
+          <KrveAICenterManagement />
+        );
 
       case "ai-assistant":
-        return <AIAssistantManagement />;
+        return (
+          <AIAssistantManagement />
+        );
 
       case "automation":
-        return <AIAutomationManagement />;
+        return (
+          <AIAutomationManagement />
+        );
 
       case "forecasting":
-        return <ForecastingManagement />;
+        return (
+          <ForecastingManagement />
+        );
 
       case "anomaly":
-        return <AnomalyDetectionManagement />;
+        return (
+          <AnomalyDetectionManagement />
+        );
 
       case "recommendations":
-        return <AIRecommendationsManagement />;
+        return (
+          <AIRecommendationsManagement />
+        );
 
       case "enterprise-reports":
-        return <EnterpriseReportsManagement />;
+        return (
+          <EnterpriseReportsManagement />
+        );
 
       case "executive-reports":
-        return <ExecutiveReportsManagement />;
+        return (
+          <ExecutiveReportsManagement />
+        );
 
       case "department-reports":
-        return <DepartmentReportsManagement />;
+        return (
+          <DepartmentReportsManagement />
+        );
 
       case "audit-reports":
-        return <AuditReportsManagement />;
+        return (
+          <AuditReportsManagement />
+        );
 
       case "administration":
-        return <AdministrationManagement />;
+        return (
+          <AdministrationManagement />
+        );
 
       case "users-roles":
-        return <UsersRolesManagement />;
+        return (
+          <UsersRolesManagement />
+        );
 
       case "departments":
-        return <DepartmentsManagement />;
+        return (
+          <DepartmentsManagement />
+        );
 
       case "permissions":
-        return <PermissionsManagement />;
+        return (
+          <PermissionsManagement />
+        );
 
       case "integrations":
-        return <IntegrationsManagement />;
+        return (
+          <IntegrationsManagement />
+        );
 
       case "security-center":
-        return <SecurityCenterManagement />;
+        return (
+          <SecurityCenterManagement />
+        );
 
       case "audit-logs":
-        return <AuditLogsManagement />;
+        return (
+          <AuditLogsManagement />
+        );
 
       case "data-management":
-        return <DataManagement />;
+        return (
+          <DataManagement />
+        );
 
       case "notifications":
-        return <NotificationsManagement />;
+        return (
+          <NotificationsManagement />
+        );
 
       case "system-settings":
-        return <SystemSettingsManagement />;
+        return (
+          <SystemSettingsManagement />
+        );
 
       default:
         return renderDashboard();
     }
   }
-    if (!session) {
+
+  if (
+    !session
+  ) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-100">
         <div className="rounded-2xl border border-slate-200 bg-white px-6 py-5 text-sm text-slate-600 shadow-sm">
@@ -2070,10 +3112,12 @@ export default function FounderPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-950">
-      <div className="flex min-h-screen">
+            <div className="flex min-h-screen">
         <aside
           className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white transition-all duration-300 lg:sticky lg:top-0 lg:h-screen ${
-            sidebarOpen ? "w-[290px]" : "w-[92px]"
+            sidebarOpen
+              ? "w-[290px]"
+              : "w-[92px]"
           } ${
             mobileSidebarOpen
               ? "translate-x-0"
@@ -2084,8 +3128,13 @@ export default function FounderPage() {
             <button
               type="button"
               onClick={() => {
-                setActiveSection("dashboard");
-                setMobileSidebarOpen(false);
+                setActiveSection(
+                  "dashboard",
+                );
+
+                setMobileSidebarOpen(
+                  false,
+                );
               }}
               className="flex min-w-0 items-center gap-3 text-left"
             >
@@ -2109,10 +3158,18 @@ export default function FounderPage() {
             {sidebarOpen ? (
               <button
                 type="button"
-                onClick={() => setSidebarOpen(false)}
+                onClick={() =>
+                  setSidebarOpen(
+                    false,
+                  )
+                }
                 className="hidden h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-950 lg:flex"
               >
-                <X size={16} />
+                <X
+                  size={
+                    16
+                  }
+                />
               </button>
             ) : null}
           </div>
@@ -2121,10 +3178,18 @@ export default function FounderPage() {
             <div className="hidden justify-center border-b border-slate-200 py-3 lg:flex">
               <button
                 type="button"
-                onClick={() => setSidebarOpen(true)}
+                onClick={() =>
+                  setSidebarOpen(
+                    true,
+                  )
+                }
                 className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-950"
               >
-                <Menu size={17} />
+                <Menu
+                  size={
+                    17
+                  }
+                />
               </button>
             </div>
           ) : null}
@@ -2133,15 +3198,24 @@ export default function FounderPage() {
             <div className="shrink-0 border-b border-slate-100 p-4">
               <div className="relative">
                 <Search
-                  size={16}
+                  size={
+                    16
+                  }
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
                   type="search"
-                  value={searchQuery}
-                  onChange={(event) =>
-                    setSearchQuery(event.target.value)
+                  value={
+                    searchQuery
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setSearchQuery(
+                      event.target
+                        .value,
+                    )
                   }
                   placeholder="Search KEOS..."
                   className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
@@ -2151,78 +3225,104 @@ export default function FounderPage() {
           ) : null}
 
           <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
-            {filteredNavigationGroups.map((group) => (
-              <div
-                key={group.title}
-                className="mb-6 last:mb-2"
-              >
-                {sidebarOpen ? (
-                  <div className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    {group.title}
-                  </div>
-                ) : null}
+            {filteredNavigationGroups.map(
+              (
+                group,
+              ) => (
+                <div
+                  key={
+                    group.title
+                  }
+                  className="mb-6 last:mb-2"
+                >
+                  {sidebarOpen ? (
+                    <div className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      {
+                        group.title
+                      }
+                    </div>
+                  ) : null}
 
-                <div className="space-y-1">
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    const active =
-                      activeSection === item.id;
+                  <div className="space-y-1">
+                    {group.items.map(
+                      (
+                        item,
+                      ) => {
+                        const Icon =
+                          item.icon;
 
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() =>
-                          handleNavigation(item.id)
-                        }
-                        title={
-                          sidebarOpen
-                            ? undefined
-                            : item.name
-                        }
-                        className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
-                          active
-                            ? "bg-slate-950 text-white shadow-sm"
-                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-                        } ${
-                          sidebarOpen
-                            ? ""
-                            : "justify-center"
-                        }`}
-                      >
-                        <Icon
-                          size={18}
-                          className="shrink-0"
-                        />
+                        const active =
+                          activeSection ===
+                          item.id;
 
-                        {sidebarOpen ? (
-                          <>
-                            <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                              {item.name}
-                            </span>
+                        return (
+                          <button
+                            key={
+                              item.id
+                            }
+                            type="button"
+                            onClick={() =>
+                              handleNavigation(
+                                item.id,
+                              )
+                            }
+                            title={
+                              sidebarOpen
+                                ? undefined
+                                : item.name
+                            }
+                            className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+                              active
+                                ? "bg-slate-950 text-white shadow-sm"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                            } ${
+                              sidebarOpen
+                                ? ""
+                                : "justify-center"
+                            }`}
+                          >
+                            <Icon
+                              size={
+                                18
+                              }
+                              className="shrink-0"
+                            />
 
-                            {item.badge ? (
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                  active
-                                    ? "bg-white/15 text-white"
-                                    : "bg-slate-200 text-slate-600"
-                                }`}
-                              >
-                                {item.badge}
-                              </span>
+                            {sidebarOpen ? (
+                              <>
+                                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                                  {
+                                    item.name
+                                  }
+                                </span>
+
+                                {item.badge ? (
+                                  <span
+                                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                      active
+                                        ? "bg-white/15 text-white"
+                                        : "bg-slate-200 text-slate-600"
+                                    }`}
+                                  >
+                                    {
+                                      item.badge
+                                    }
+                                  </span>
+                                ) : null}
+                              </>
                             ) : null}
-                          </>
-                        ) : null}
-                      </button>
-                    );
-                  })}
+                          </button>
+                        );
+                      },
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ),
+            )}
 
             {sidebarOpen &&
-            filteredNavigationGroups.length === 0 ? (
+            filteredNavigationGroups.length ===
+              0 ? (
               <div className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
                 No KEOS module found.
               </div>
@@ -2232,7 +3332,11 @@ export default function FounderPage() {
           <div className="shrink-0 border-t border-slate-200 p-3">
             <button
               type="button"
-              onClick={() => setProfileOpen(true)}
+              onClick={() =>
+                setProfileOpen(
+                  true,
+                )
+              }
               className={`flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition hover:bg-slate-100 ${
                 sidebarOpen
                   ? ""
@@ -2243,12 +3347,18 @@ export default function FounderPage() {
                 {founderProfile.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={founderProfile.avatar}
-                    alt={founderProfile.name}
+                    src={
+                      founderProfile.avatar
+                    }
+                    alt={
+                      founderProfile.name
+                    }
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  getInitials(founderProfile.name)
+                  getInitials(
+                    founderProfile.name,
+                  )
                 )}
               </div>
 
@@ -2256,7 +3366,9 @@ export default function FounderPage() {
                 <>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold text-slate-950">
-                      {founderProfile.name}
+                      {
+                        founderProfile.name
+                      }
                     </div>
 
                     <div className="truncate text-xs text-slate-400">
@@ -2265,7 +3377,9 @@ export default function FounderPage() {
                   </div>
 
                   <ChevronDown
-                    size={16}
+                    size={
+                      16
+                    }
                     className="text-slate-400"
                   />
                 </>
@@ -2278,7 +3392,11 @@ export default function FounderPage() {
           <button
             type="button"
             aria-label="Close sidebar"
-            onClick={() => setMobileSidebarOpen(false)}
+            onClick={() =>
+              setMobileSidebarOpen(
+                false,
+              )
+            }
             className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[1px] lg:hidden"
           />
         ) : null}
@@ -2289,21 +3407,29 @@ export default function FounderPage() {
               <button
                 type="button"
                 onClick={() =>
-                  setMobileSidebarOpen(true)
+                  setMobileSidebarOpen(
+                    true,
+                  )
                 }
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50 lg:hidden"
               >
-                <Menu size={19} />
+                <Menu
+                  size={
+                    19
+                  }
+                />
               </button>
 
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold text-slate-950">
-                  {activeNavigationItem?.name ??
+                  {activeNavigationItem
+                    ?.name ??
                     "Founder Dashboard"}
                 </div>
 
                 <div className="mt-0.5 hidden truncate text-xs text-slate-400 sm:block">
-                  {activeNavigationItem?.description ??
+                  {activeNavigationItem
+                    ?.description ??
                     "KRVE Enterprise Operating System"}
                 </div>
               </div>
@@ -2313,17 +3439,30 @@ export default function FounderPage() {
                   type="button"
                   onClick={() => {
                     setNotificationOpen(
-                      (current) => !current,
+                      (
+                        current,
+                      ) =>
+                        !current,
                     );
-                    setProfileOpen(false);
+
+                    setProfileOpen(
+                      false,
+                    );
                   }}
                   className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
                 >
-                  <Bell size={18} />
+                  <Bell
+                    size={
+                      18
+                    }
+                  />
 
-                  {unreadNotificationCount > 0 ? (
+                  {unreadNotificationCount >
+                  0 ? (
                     <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                      {unreadNotificationCount}
+                      {
+                        unreadNotificationCount
+                      }
                     </span>
                   ) : null}
                 </button>
@@ -2332,9 +3471,15 @@ export default function FounderPage() {
                   type="button"
                   onClick={() => {
                     setProfileOpen(
-                      (current) => !current,
+                      (
+                        current,
+                      ) =>
+                        !current,
                     );
-                    setNotificationOpen(false);
+
+                    setNotificationOpen(
+                      false,
+                    );
                   }}
                   className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 pr-3 transition hover:bg-slate-50"
                 >
@@ -2342,8 +3487,12 @@ export default function FounderPage() {
                     {founderProfile.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={founderProfile.avatar}
-                        alt={founderProfile.name}
+                        src={
+                          founderProfile.avatar
+                        }
+                        alt={
+                          founderProfile.name
+                        }
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -2354,11 +3503,15 @@ export default function FounderPage() {
                   </div>
 
                   <span className="hidden max-w-[140px] truncate text-sm font-medium text-slate-700 md:block">
-                    {founderProfile.name}
+                    {
+                      founderProfile.name
+                    }
                   </span>
 
                   <ChevronDown
-                    size={15}
+                    size={
+                      15
+                    }
                     className="hidden text-slate-400 md:block"
                   />
                 </button>
@@ -2374,33 +3527,46 @@ export default function FounderPage() {
                     </h3>
 
                     <p className="mt-0.5 text-xs text-slate-400">
-                      {unreadNotificationCount} unread
+                      {
+                        unreadNotificationCount
+                      }{" "}
+                      unread
                     </p>
                   </div>
 
                   <button
                     type="button"
                     onClick={() =>
-                      setNotificationOpen(false)
+                      setNotificationOpen(
+                        false,
+                      )
                     }
                     className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                   >
-                    <X size={16} />
+                    <X
+                      size={
+                        16
+                      }
+                    />
                   </button>
                 </div>
 
                 <div className="max-h-[420px] overflow-y-auto p-2">
                   {notificationItems.map(
-                    (notification) => (
+                    (
+                      notification,
+                    ) => (
                       <button
-                        key={notification.id}
+                        key={
+                          notification.id
+                        }
                         type="button"
                         onClick={() =>
                           handleNotificationClick(
                             notification,
                           )
                         }
-                        className="flex w-full gap-3 rounded-xl p-3 text-left transition hover:bg-slate-50"
+                        className="flex w-full gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-slate-50"
                       >
                         <div
                           className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
@@ -2410,18 +3576,24 @@ export default function FounderPage() {
                           }`}
                         />
 
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-slate-900">
-                            {notification.title}
-                          </div>
-
-                          <p className="mt-1 text-xs leading-5 text-slate-500">
-                            {notification.message}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-slate-950">
+                            {
+                              notification.title
+                            }
                           </p>
 
-                          <div className="mt-2 text-[11px] text-slate-400">
-                            {notification.time}
-                          </div>
+                          <p className="mt-1 text-xs leading-5 text-slate-500">
+                            {
+                              notification.message
+                            }
+                          </p>
+
+                          <p className="mt-2 text-[11px] font-medium text-slate-400">
+                            {
+                              notification.time
+                            }
+                          </p>
                         </div>
                       </button>
                     ),
@@ -2429,8 +3601,7 @@ export default function FounderPage() {
                 </div>
               </div>
             ) : null}
-
-            {profileOpen ? (
+                        {profileOpen ? (
               <div className="absolute right-4 top-[66px] z-50 w-[min(92vw,310px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:right-6 xl:right-8">
                 <div className="border-b border-slate-200 p-4">
                   <div className="flex items-center gap-3">
@@ -2438,8 +3609,12 @@ export default function FounderPage() {
                       {founderProfile.avatar ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={founderProfile.avatar}
-                          alt={founderProfile.name}
+                          src={
+                            founderProfile.avatar
+                          }
+                          alt={
+                            founderProfile.name
+                          }
                           className="h-full w-full object-cover"
                         />
                       ) : (
@@ -2451,11 +3626,15 @@ export default function FounderPage() {
 
                     <div className="min-w-0">
                       <div className="truncate font-semibold text-slate-950">
-                        {founderProfile.name}
+                        {
+                          founderProfile.name
+                        }
                       </div>
 
                       <div className="mt-0.5 truncate text-xs text-slate-400">
-                        {founderProfile.email}
+                        {
+                          founderProfile.email
+                        }
                       </div>
                     </div>
                   </div>
@@ -2464,10 +3643,17 @@ export default function FounderPage() {
                 <div className="p-2">
                   <button
                     type="button"
-                    onClick={handleProfileEdit}
+                    onClick={
+                      handleProfileEdit
+                    }
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                   >
-                    <UserRound size={17} />
+                    <UserRound
+                      size={
+                        17
+                      }
+                    />
+
                     Founder Profile
                   </button>
 
@@ -2477,11 +3663,19 @@ export default function FounderPage() {
                       handleNavigation(
                         "system-settings",
                       );
-                      setProfileOpen(false);
+
+                      setProfileOpen(
+                        false,
+                      );
                     }}
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                   >
-                    <Settings size={17} />
+                    <Settings
+                      size={
+                        17
+                      }
+                    />
+
                     System Settings
                   </button>
 
@@ -2489,10 +3683,17 @@ export default function FounderPage() {
 
                   <button
                     type="button"
-                    onClick={handleLogout}
+                    onClick={
+                      handleLogout
+                    }
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
                   >
-                    <LogOut size={17} />
+                    <LogOut
+                      size={
+                        17
+                      }
+                    />
+
                     Sign Out
                   </button>
                 </div>
@@ -2505,7 +3706,8 @@ export default function FounderPage() {
           </div>
         </div>
       </div>
-            {selectedNotification ? (
+
+      {selectedNotification ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-white/20 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
@@ -2515,32 +3717,50 @@ export default function FounderPage() {
                 </p>
 
                 <h2 className="mt-1 text-xl font-semibold text-slate-950">
-                  {selectedNotification.title}
+                  {
+                    selectedNotification.title
+                  }
                 </h2>
               </div>
 
               <button
                 type="button"
-                onClick={() => setSelectedNotification(null)}
+                onClick={() =>
+                  setSelectedNotification(
+                    null,
+                  )
+                }
                 className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-950"
               >
-                <X size={17} />
+                <X
+                  size={
+                    17
+                  }
+                />
               </button>
             </div>
 
             <div className="p-6">
               <p className="text-sm leading-7 text-slate-600">
-                {selectedNotification.message}
+                {
+                  selectedNotification.message
+                }
               </p>
 
               <div className="mt-4 text-xs text-slate-400">
-                {selectedNotification.time}
+                {
+                  selectedNotification.time
+                }
               </div>
 
               <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-5">
                 <button
                   type="button"
-                  onClick={() => setSelectedNotification(null)}
+                  onClick={() =>
+                    setSelectedNotification(
+                      null,
+                    )
+                  }
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
                   Close
@@ -2548,11 +3768,18 @@ export default function FounderPage() {
 
                 <button
                   type="button"
-                  onClick={openNotificationSection}
+                  onClick={
+                    openNotificationSection
+                  }
                   className="inline-flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
                 >
                   Open Module
-                  <ArrowRight size={16} />
+
+                  <ArrowRight
+                    size={
+                      16
+                    }
+                  />
                 </button>
               </div>
             </div>
@@ -2577,13 +3804,25 @@ export default function FounderPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setProfileEditorOpen(false);
-                  setProfileImageError("");
-                  setProfileSaved(false);
+                  setProfileEditorOpen(
+                    false,
+                  );
+
+                  setProfileImageError(
+                    "",
+                  );
+
+                  setProfileSaved(
+                    false,
+                  );
                 }}
                 className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-950"
               >
-                <X size={18} />
+                <X
+                  size={
+                    18
+                  }
+                />
               </button>
             </div>
 
@@ -2594,12 +3833,18 @@ export default function FounderPage() {
                     {profileDraft.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={profileDraft.avatar}
-                        alt={profileDraft.name}
+                        src={
+                          profileDraft.avatar
+                        }
+                        alt={
+                          profileDraft.name
+                        }
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      getInitials(profileDraft.name)
+                      getInitials(
+                        profileDraft.name,
+                      )
                     )}
                   </div>
 
@@ -2614,20 +3859,32 @@ export default function FounderPage() {
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       <input
-                        ref={profileImageInputRef}
+                        ref={
+                          profileImageInputRef
+                        }
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         className="hidden"
-                        onChange={handleProfileImageChange}
+                        onChange={
+                          handleProfileImageChange
+                        }
                       />
 
                       <button
                         type="button"
-                        onClick={handleProfileImageButtonClick}
-                        disabled={profileImageLoading}
+                        onClick={
+                          handleProfileImageButtonClick
+                        }
+                        disabled={
+                          profileImageLoading
+                        }
                         className="inline-flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <Camera size={16} />
+                        <Camera
+                          size={
+                            16
+                          }
+                        />
 
                         {profileImageLoading
                           ? "Loading..."
@@ -2637,10 +3894,17 @@ export default function FounderPage() {
                       {profileDraft.avatar ? (
                         <button
                           type="button"
-                          onClick={handleRemoveProfileImage}
+                          onClick={
+                            handleRemoveProfileImage
+                          }
                           className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                         >
-                          <X size={16} />
+                          <X
+                            size={
+                              16
+                            }
+                          />
+
                           Remove
                         </button>
                       ) : null}
@@ -2648,7 +3912,9 @@ export default function FounderPage() {
 
                     {profileImageError ? (
                       <p className="mt-3 text-sm text-red-600">
-                        {profileImageError}
+                        {
+                          profileImageError
+                        }
                       </p>
                     ) : null}
                   </div>
@@ -2668,11 +3934,16 @@ export default function FounderPage() {
 
                     <input
                       type="text"
-                      value={profileDraft.name}
-                      onChange={(event) =>
+                      value={
+                        profileDraft.name
+                      }
+                      onChange={(
+                        event,
+                      ) =>
                         handleProfileFieldChange(
                           "name",
-                          event.target.value,
+                          event.target
+                            .value,
                         )
                       }
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
@@ -2686,11 +3957,16 @@ export default function FounderPage() {
 
                     <input
                       type="text"
-                      value={profileDraft.userId}
-                      onChange={(event) =>
+                      value={
+                        profileDraft.userId
+                      }
+                      onChange={(
+                        event,
+                      ) =>
                         handleProfileFieldChange(
                           "userId",
-                          event.target.value,
+                          event.target
+                            .value,
                         )
                       }
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
@@ -2704,11 +3980,16 @@ export default function FounderPage() {
 
                     <input
                       type="email"
-                      value={profileDraft.email}
-                      onChange={(event) =>
+                      value={
+                        profileDraft.email
+                      }
+                      onChange={(
+                        event,
+                      ) =>
                         handleProfileFieldChange(
                           "email",
-                          event.target.value,
+                          event.target
+                            .value,
                         )
                       }
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
@@ -2722,16 +4003,22 @@ export default function FounderPage() {
 
                     <input
                       type="text"
-                      value={profileDraft.phone}
-                      onChange={(event) =>
+                      value={
+                        profileDraft.phone
+                      }
+                      onChange={(
+                        event,
+                      ) =>
                         handleProfileFieldChange(
                           "phone",
-                          event.target.value,
+                          event.target
+                            .value,
                         )
                       }
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
                     />
                   </label>
+                                    </label>
                 </div>
               </section>
 
@@ -2748,11 +4035,16 @@ export default function FounderPage() {
 
                     <input
                       type="text"
-                      value={profileDraft.designation}
-                      onChange={(event) =>
+                      value={
+                        profileDraft.designation
+                      }
+                      onChange={(
+                        event,
+                      ) =>
                         handleProfileFieldChange(
                           "designation",
-                          event.target.value,
+                          event.target
+                            .value,
                         )
                       }
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
@@ -2766,11 +4058,16 @@ export default function FounderPage() {
 
                     <input
                       type="text"
-                      value={profileDraft.department}
-                      onChange={(event) =>
+                      value={
+                        profileDraft.department
+                      }
+                      onChange={(
+                        event,
+                      ) =>
                         handleProfileFieldChange(
                           "department",
-                          event.target.value,
+                          event.target
+                            .value,
                         )
                       }
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
@@ -2784,11 +4081,16 @@ export default function FounderPage() {
 
                     <input
                       type="text"
-                      value={profileDraft.location}
-                      onChange={(event) =>
+                      value={
+                        profileDraft.location
+                      }
+                      onChange={(
+                        event,
+                      ) =>
                         handleProfileFieldChange(
                           "location",
-                          event.target.value,
+                          event.target
+                            .value,
                         )
                       }
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
@@ -2802,11 +4104,16 @@ export default function FounderPage() {
 
                     <input
                       type="text"
-                      value={profileDraft.joiningDate}
-                      onChange={(event) =>
+                      value={
+                        profileDraft.joiningDate
+                      }
+                      onChange={(
+                        event,
+                      ) =>
                         handleProfileFieldChange(
                           "joiningDate",
-                          event.target.value,
+                          event.target
+                            .value,
                         )
                       }
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
@@ -2820,11 +4127,16 @@ export default function FounderPage() {
                   </span>
 
                   <textarea
-                    value={profileDraft.bio}
-                    onChange={(event) =>
+                    value={
+                      profileDraft.bio
+                    }
+                    onChange={(
+                      event,
+                    ) =>
                       handleProfileFieldChange(
                         "bio",
-                        event.target.value,
+                        event.target
+                          .value,
                       )
                     }
                     rows={5}
@@ -2836,7 +4148,9 @@ export default function FounderPage() {
               <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                 <div className="flex items-start gap-3">
                   <ShieldCheck
-                    size={20}
+                    size={
+                      20
+                    }
                     className="mt-0.5 shrink-0 text-emerald-600"
                   />
 
@@ -2856,7 +4170,12 @@ export default function FounderPage() {
 
               {profileSaved ? (
                 <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                  <ShieldCheck size={17} />
+                  <ShieldCheck
+                    size={
+                      17
+                    }
+                  />
+
                   Founder profile saved successfully.
                 </div>
               ) : null}
@@ -2864,10 +4183,17 @@ export default function FounderPage() {
               <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
-                  onClick={handleProfileReset}
+                  onClick={
+                    handleProfileReset
+                  }
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
-                  <RotateCcw size={16} />
+                  <RotateCcw
+                    size={
+                      16
+                    }
+                  />
+
                   Reset Changes
                 </button>
 
@@ -2875,9 +4201,17 @@ export default function FounderPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setProfileEditorOpen(false);
-                      setProfileImageError("");
-                      setProfileSaved(false);
+                      setProfileEditorOpen(
+                        false,
+                      );
+
+                      setProfileImageError(
+                        "",
+                      );
+
+                      setProfileSaved(
+                        false,
+                      );
                     }}
                     className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                   >
@@ -2886,10 +4220,17 @@ export default function FounderPage() {
 
                   <button
                     type="button"
-                    onClick={handleProfileSave}
+                    onClick={
+                      handleProfileSave
+                    }
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
                   >
-                    <Save size={16} />
+                    <Save
+                      size={
+                        16
+                      }
+                    />
+
                     Save Profile
                   </button>
                 </div>
