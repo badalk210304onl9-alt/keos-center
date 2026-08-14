@@ -1,64 +1,115 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
 
-const CENTRAL_API_URL =
-  process.env.KRVE_CENTRAL_API_URL?.replace(/\/$/, "") ?? "";
+function getConfig() {
+  const baseUrl =
+    (
+      process.env
+        .KRVE_CENTRAL_API_URL ||
+      "https://krve-central-api.badalk210304-onl9.workers.dev"
+    ).replace(/\/+$/, "");
 
-const KEOS_API_KEY =
-  process.env.KEOS_API_KEY ?? "";
+  const secret =
+    process.env
+      .KEOS_API_SECRET;
 
-function configurationError() {
-  return NextResponse.json(
-    {
-      success: false,
-      error: "KEOS Live Project API is not configured.",
-    },
-    {
-      status: 500,
-    },
-  );
-}
-
-function headers() {
   return {
-    "Content-Type": "application/json",
-    "X-KEOS-Key": KEOS_API_KEY,
+    baseUrl,
+    secret,
   };
 }
 
-export async function GET(request: NextRequest) {
-  if (!CENTRAL_API_URL || !KEOS_API_KEY) {
-    return configurationError();
-  }
-
+export async function GET(
+  request: NextRequest,
+) {
   try {
-    const incomingUrl = new URL(request.url);
+    const {
+      baseUrl,
+      secret,
+    } =
+      getConfig();
 
-    const targetUrl = new URL(
-      `${CENTRAL_API_URL}/keos/live-projects`,
+    if (!secret) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "KEOS_API_SECRET is missing in Vercel Environment Variables.",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    const targetUrl =
+      new URL(
+        `${baseUrl}/keos/live-projects`,
+      );
+
+    request.nextUrl.searchParams.forEach(
+      (
+        value,
+        key,
+      ) => {
+        targetUrl.searchParams.set(
+          key,
+          value,
+        );
+      },
     );
 
-    incomingUrl.searchParams.forEach((value, key) => {
-      targetUrl.searchParams.set(key, value);
-    });
+    const response =
+      await fetch(
+        targetUrl.toString(),
+        {
+          method:
+            "GET",
 
-    const response = await fetch(targetUrl.toString(), {
-      method: "GET",
-      headers: headers(),
-      cache: "no-store",
-    });
+          headers: {
+            Accept:
+              "application/json",
 
-    const data = await response.json();
+            "X-KEOS-API-Key":
+              secret,
+          },
 
-    return NextResponse.json(data, {
-      status: response.status,
-    });
+          cache:
+            "no-store",
+        },
+      );
+
+    const data =
+      await response.json();
+
+    return NextResponse.json(
+      data,
+      {
+        status:
+          response.status,
+
+        headers: {
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate",
+        },
+      },
+    );
   } catch (error) {
-    console.error("LIVE_PROJECT_GET_ERROR", error);
+    console.error(
+      "KEOS_LIVE_PROJECTS_GET_ERROR",
+      error,
+    );
 
     return NextResponse.json(
       {
         success: false,
-        error: "Unable to load live projects.",
+
+        message:
+          error instanceof Error
+            ? error.message
+            : "Live projects could not be loaded.",
       },
       {
         status: 500,
