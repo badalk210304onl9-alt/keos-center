@@ -55,7 +55,18 @@ type Application = {
   projectCode?: string | null;
   assignedDepartment?: string | null;
   projectTitle?: string | null;
+  projectRole?: string | null;
+  projectObjective?: string | null;
+  projectDescription?: string | null;
+  projectScope?: string | null;
+  expectedOutcomes?: string | null;
+  keyDeliverables?: string | null;
+  projectGuidelines?: string | null;
+  projectResources?: string | null;
+  reportingFrequency?: string | null;
   coordinatorName?: string | null;
+  coordinatorEmail?: string | null;
+  coordinatorPhone?: string | null;
   startDate?: string | null;
   endDate?: string | null;
   referralCode?: string | null;
@@ -2280,6 +2291,99 @@ function StudentDrawer({
   );
 
   const [
+    projectRole,
+    setProjectRole,
+  ] = useState(
+    item.projectRole ||
+      "",
+  );
+
+  const [
+    projectObjective,
+    setProjectObjective,
+  ] = useState(
+    item.projectObjective ||
+      "",
+  );
+
+  const [
+    projectDescription,
+    setProjectDescription,
+  ] = useState(
+    item.projectDescription ||
+      "",
+  );
+
+  const [
+    projectScope,
+    setProjectScope,
+  ] = useState(
+    item.projectScope ||
+      "",
+  );
+
+  const [
+    expectedOutcomes,
+    setExpectedOutcomes,
+  ] = useState(
+    item.expectedOutcomes ||
+      "",
+  );
+
+  const [
+    keyDeliverables,
+    setKeyDeliverables,
+  ] = useState(
+    item.keyDeliverables ||
+      "",
+  );
+
+  const [
+    projectGuidelines,
+    setProjectGuidelines,
+  ] = useState(
+    item.projectGuidelines ||
+      "",
+  );
+
+  const [
+    projectResources,
+    setProjectResources,
+  ] = useState(
+    item.projectResources ||
+      "",
+  );
+
+  const [
+    reportingFrequency,
+    setReportingFrequency,
+  ] = useState(
+    item.reportingFrequency ||
+      "Weekly",
+  );
+
+  const [
+    coordinatorEmail,
+    setCoordinatorEmail,
+  ] = useState(
+    item.coordinatorEmail ||
+      "",
+  );
+
+  const [
+    coordinatorPhone,
+    setCoordinatorPhone,
+  ] = useState(
+    item.coordinatorPhone ||
+      "",
+  );
+
+  const [
+    projectDetailsSaved,
+    setProjectDetailsSaved,
+  ] = useState(false);
+
+  const [
     taskTitle,
     setTaskTitle,
   ] = useState("");
@@ -2897,6 +3001,573 @@ function StudentDrawer({
                   </div>
                 </div>
               ) : null}
+            </section>
+
+            <section className="rounded-2xl border border-blue-200 bg-gradient-to-br from-white to-blue-50/40 p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-blue-700">
+                    Student My Project
+                  </div>
+
+                  <h3 className="mt-3 text-lg font-black text-slate-950">
+                    Manage Project Details
+                  </h3>
+
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+                    Information saved here is stored in the Central API and is
+                    shown to this student in the My Project section of the Live
+                    Project Portal.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-blue-200 bg-white px-4 py-3">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Project ID
+                  </p>
+
+                  <p className="mt-1 max-w-[220px] break-all font-mono text-xs font-black text-blue-800">
+                    {item.projectCode ||
+                      "Activate project first"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-700">
+                    Project Identity
+                  </p>
+
+                  <h4 className="mt-1 font-black text-slate-950">
+                    Basic Project Information
+                  </h4>
+                </div>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label>
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Project Title
+                    </span>
+
+                    <input
+                      value={projectTitle}
+                      onChange={(event) => {
+                        setProjectTitle(
+                          event.target.value,
+                        );
+                        setProjectDetailsSaved(
+                          false,
+                        );
+                      }}
+                      placeholder="Example: Finance Live Business Project"
+                      className="h-12 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-blue-500"
+                    />
+                  </label>
+
+                  <label>
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Department
+                    </span>
+
+                    <select
+                      value={assignedDepartment}
+                      onChange={(event) => {
+                        setAssignedDepartment(
+                          event.target.value,
+                        );
+                        setProjectDetailsSaved(
+                          false,
+                        );
+                      }}
+                      className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500"
+                    >
+                      {departments.map(
+                        (
+                          departmentName,
+                        ) => (
+                          <option
+                            key={
+                              departmentName
+                            }
+                            value={
+                              departmentName
+                            }
+                          >
+                            {
+                              departmentName
+                            }
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+
+                  <label className="sm:col-span-2">
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Student Project Role
+                    </span>
+
+                    <input
+                      value={projectRole}
+                      onChange={(event) => {
+                        setProjectRole(
+                          event.target.value,
+                        );
+                        setProjectDetailsSaved(
+                          false,
+                        );
+                      }}
+                      placeholder="Example: Finance Research & Business Analysis Associate"
+                      className="h-12 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-blue-500"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-700">
+                    Project Brief
+                  </p>
+
+                  <h4 className="mt-1 font-black text-slate-950">
+                    Objective, Description & Scope
+                  </h4>
+                </div>
+
+                <label className="mt-4 block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Project Objective
+                  </span>
+
+                  <textarea
+                    value={projectObjective}
+                    onChange={(event) => {
+                      setProjectObjective(
+                        event.target.value,
+                      );
+                      setProjectDetailsSaved(
+                        false,
+                      );
+                    }}
+                    rows={4}
+                    placeholder="What should the student achieve through this Live Project?"
+                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-6 outline-none transition focus:border-blue-500"
+                  />
+                </label>
+
+                <label className="mt-4 block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Project Description
+                  </span>
+
+                  <textarea
+                    value={projectDescription}
+                    onChange={(event) => {
+                      setProjectDescription(
+                        event.target.value,
+                      );
+                      setProjectDetailsSaved(
+                        false,
+                      );
+                    }}
+                    rows={5}
+                    placeholder="Explain the business problem, context and work expected from the student."
+                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-6 outline-none transition focus:border-blue-500"
+                  />
+                </label>
+
+                <label className="mt-4 block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Project Scope
+                  </span>
+
+                  <textarea
+                    value={projectScope}
+                    onChange={(event) => {
+                      setProjectScope(
+                        event.target.value,
+                      );
+                      setProjectDetailsSaved(
+                        false,
+                      );
+                    }}
+                    rows={4}
+                    placeholder="Define the areas, activities and boundaries covered by this project."
+                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-6 outline-none transition focus:border-blue-500"
+                  />
+                </label>
+
+                <label className="mt-4 block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Expected Outcomes
+                  </span>
+
+                  <textarea
+                    value={expectedOutcomes}
+                    onChange={(event) => {
+                      setExpectedOutcomes(
+                        event.target.value,
+                      );
+                      setProjectDetailsSaved(
+                        false,
+                      );
+                    }}
+                    rows={4}
+                    placeholder="Describe the expected business or learning outcomes."
+                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-6 outline-none transition focus:border-blue-500"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-700">
+                    Execution
+                  </p>
+
+                  <h4 className="mt-1 font-black text-slate-950">
+                    Deliverables, Guidelines & Resources
+                  </h4>
+
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    You can enter multiple points on separate lines. The Student
+                    Portal can display each line as an individual project item.
+                  </p>
+                </div>
+
+                <label className="mt-4 block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Key Deliverables
+                  </span>
+
+                  <textarea
+                    value={keyDeliverables}
+                    onChange={(event) => {
+                      setKeyDeliverables(
+                        event.target.value,
+                      );
+                      setProjectDetailsSaved(
+                        false,
+                      );
+                    }}
+                    rows={6}
+                    placeholder={"Example:\nCompetitor analysis report\nWeekly progress tracker\nFinal recommendation deck"}
+                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-6 outline-none transition focus:border-blue-500"
+                  />
+                </label>
+
+                <label className="mt-4 block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Project Guidelines
+                  </span>
+
+                  <textarea
+                    value={projectGuidelines}
+                    onChange={(event) => {
+                      setProjectGuidelines(
+                        event.target.value,
+                      );
+                      setProjectDetailsSaved(
+                        false,
+                      );
+                    }}
+                    rows={6}
+                    placeholder={"Example:\nUse reliable sources\nSubmit before deadline\nMaintain confidentiality\nUse professional file names"}
+                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-6 outline-none transition focus:border-blue-500"
+                  />
+                </label>
+
+                <label className="mt-4 block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Resources / Important Links
+                  </span>
+
+                  <textarea
+                    value={projectResources}
+                    onChange={(event) => {
+                      setProjectResources(
+                        event.target.value,
+                      );
+                      setProjectDetailsSaved(
+                        false,
+                      );
+                    }}
+                    rows={5}
+                    placeholder={"Paste documents, Google Drive links, dashboards, websites or reference resources here. Use one item per line."}
+                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-6 outline-none transition focus:border-blue-500"
+                  />
+                </label>
+
+                <label className="mt-4 block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Reporting Frequency
+                  </span>
+
+                  <select
+                    value={reportingFrequency}
+                    onChange={(event) => {
+                      setReportingFrequency(
+                        event.target.value,
+                      );
+                      setProjectDetailsSaved(
+                        false,
+                      );
+                    }}
+                    className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-blue-500"
+                  >
+                    <option value="Weekly">
+                      Weekly
+                    </option>
+
+                    <option value="Twice Weekly">
+                      Twice Weekly
+                    </option>
+
+                    <option value="Fortnightly">
+                      Fortnightly
+                    </option>
+
+                    <option value="Monthly">
+                      Monthly
+                    </option>
+
+                    <option value="Milestone Based">
+                      Milestone Based
+                    </option>
+
+                    <option value="As Required">
+                      As Required
+                    </option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-700">
+                    Coordinator & Timeline
+                  </p>
+
+                  <h4 className="mt-1 font-black text-slate-950">
+                    Contact and Project Duration
+                  </h4>
+                </div>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label>
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Coordinator Name
+                    </span>
+
+                    <input
+                      value={coordinator}
+                      onChange={(event) => {
+                        setCoordinator(
+                          event.target.value,
+                        );
+                        setProjectDetailsSaved(
+                          false,
+                        );
+                      }}
+                      placeholder="Faculty / KRVE project coordinator"
+                      className="h-12 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-blue-500"
+                    />
+                  </label>
+
+                  <label>
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Coordinator Email
+                    </span>
+
+                    <input
+                      type="email"
+                      value={coordinatorEmail}
+                      onChange={(event) => {
+                        setCoordinatorEmail(
+                          event.target.value,
+                        );
+                        setProjectDetailsSaved(
+                          false,
+                        );
+                      }}
+                      placeholder="coordinator@example.com"
+                      className="h-12 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-blue-500"
+                    />
+                  </label>
+
+                  <label>
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Coordinator Phone
+                    </span>
+
+                    <input
+                      type="tel"
+                      value={coordinatorPhone}
+                      onChange={(event) => {
+                        setCoordinatorPhone(
+                          event.target.value,
+                        );
+                        setProjectDetailsSaved(
+                          false,
+                        );
+                      }}
+                      placeholder="+91"
+                      className="h-12 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-blue-500"
+                    />
+                  </label>
+
+                  <label>
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Reporting Frequency
+                    </span>
+
+                    <input
+                      value={reportingFrequency}
+                      readOnly
+                      className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600"
+                    />
+                  </label>
+
+                  <label>
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Start Date
+                    </span>
+
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(event) => {
+                        setStartDate(
+                          event.target.value,
+                        );
+                        setProjectDetailsSaved(
+                          false,
+                        );
+                      }}
+                      className="h-12 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-blue-500"
+                    />
+                  </label>
+
+                  <label>
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                      End Date
+                    </span>
+
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(event) => {
+                        setEndDate(
+                          event.target.value,
+                        );
+                        setProjectDetailsSaved(
+                          false,
+                        );
+                      }}
+                      className="h-12 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-blue-500"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-2xl bg-slate-950 p-5 text-white">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-300">
+                      Publish to Student Portal
+                    </p>
+
+                    <h4 className="mt-1 font-black">
+                      Save My Project Details
+                    </h4>
+
+                    <p className="mt-1 max-w-xl text-xs leading-5 text-slate-300">
+                      After saving, the student can refresh the My Project page
+                      to receive the latest project information.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={
+                      working ||
+                      !projectTitle.trim() ||
+                      !assignedDepartment.trim()
+                    }
+                    onClick={async () => {
+                      await onMutate({
+                        action:
+                          "project_details",
+                        projectTitle:
+                          projectTitle.trim(),
+                        assignedDepartment:
+                          assignedDepartment.trim(),
+                        projectRole:
+                          projectRole.trim(),
+                        projectObjective:
+                          projectObjective.trim(),
+                        projectDescription:
+                          projectDescription.trim(),
+                        projectScope:
+                          projectScope.trim(),
+                        expectedOutcomes:
+                          expectedOutcomes.trim(),
+                        keyDeliverables:
+                          keyDeliverables.trim(),
+                        projectGuidelines:
+                          projectGuidelines.trim(),
+                        projectResources:
+                          projectResources.trim(),
+                        reportingFrequency:
+                          reportingFrequency.trim(),
+                        coordinatorName:
+                          coordinator.trim(),
+                        coordinatorEmail:
+                          coordinatorEmail.trim(),
+                        coordinatorPhone:
+                          coordinatorPhone.trim(),
+                        startDate:
+                          startDate.trim(),
+                        endDate:
+                          endDate.trim(),
+                      });
+
+                      setProjectDetailsSaved(
+                        true,
+                      );
+                    }}
+                    className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {working ? (
+                      <>
+                        <Loader2
+                          size={17}
+                          className="animate-spin"
+                        />
+
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2
+                          size={17}
+                        />
+
+                        Save Project Details
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {projectDetailsSaved ? (
+                  <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-xs font-bold text-emerald-200">
+                    Project details saved. Student can now refresh the My
+                    Project page.
+                  </div>
+                ) : null}
+              </div>
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
