@@ -2965,159 +2965,177 @@ function CertificatePreviewModal({
                 </p>
               </div>
 
-              <div className="mx-auto mt-10 grid max-w-3xl gap-8 sm:grid-cols-2">
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}
-                >
-                  {/* KRVÉ AUTHORISED SEAL */}
+              <div className="mx-auto mt-10 grid max-w-3xl gap-10 sm:grid-cols-2">
+                {/* AUTHORISED SIGNATORY */}
+                <div className="flex flex-col items-center text-center">
                   <div
                     style={{
-                      position: "relative",
-                      width: "132px",
-                      height: "132px",
-                      borderRadius: "9999px",
-                      border: "3px solid #0b285d",
-                      background: "rgba(255,255,255,0.94)",
+                      height: "138px",
+                      width: "100%",
                       display: "flex",
-                      alignItems: "center",
+                      alignItems: "flex-end",
                       justifyContent: "center",
-                      marginBottom: "-10px",
-                      zIndex: 2,
-                      boxShadow:
-                        "0 3px 10px rgba(11,40,93,0.08)",
                     }}
                   >
                     <div
+                      aria-label="KRVÉ Authorised Signature Seal"
                       style={{
-                        position: "absolute",
-                        inset: "6px",
-                        borderRadius: "9999px",
-                        border: "1.5px solid #0b285d",
-                      }}
-                    />
-
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: "12px",
-                        borderRadius: "9999px",
-                        border: "1px dashed #b38b3d",
-                      }}
-                    />
-
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "15px",
-                        left: "0",
-                        right: "0",
-                        textAlign: "center",
+                        position: "relative",
+                        width: "120px",
+                        height: "120px",
+                        flex: "0 0 120px",
+                        borderRadius: "50%",
+                        border: "2.5px solid #0b285d",
+                        background: "#fffdf8",
+                        boxShadow:
+                          "0 2px 8px rgba(11,40,93,0.06)",
                       }}
                     >
+                      {/* inner navy ring */}
                       <div
                         style={{
-                          color: "#0b285d",
-                          fontSize: "14px",
-                          fontWeight: 900,
-                          letterSpacing: "0.22em",
+                          position: "absolute",
+                          inset: "5px",
+                          borderRadius: "50%",
+                          border: "1.5px solid #0b285d",
+                        }}
+                      />
+
+                      {/* dotted gold ring */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: "10px",
+                          borderRadius: "50%",
+                          border: "1px dashed rgba(179,139,61,0.82)",
+                        }}
+                      />
+
+                      {/* brand */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "13px",
+                          left: "20px",
+                          right: "20px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "#0b285d",
+                            fontSize: "14px",
+                            fontWeight: 900,
+                            letterSpacing: "0.18em",
+                            lineHeight: 1,
+                          }}
+                        >
+                          KRVÉ
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: "4px",
+                            color: "#9a7430",
+                            fontSize: "5.5px",
+                            fontWeight: 800,
+                            letterSpacing: "0.11em",
+                            lineHeight: 1.2,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          The Fashion Studio
+                        </div>
+                      </div>
+
+                      {/* side stars */}
+                      <span
+                        style={{
+                          position: "absolute",
+                          left: "9px",
+                          top: "54px",
+                          color: "#b38b3d",
+                          fontSize: "9px",
                           lineHeight: 1,
                         }}
                       >
-                        KRVÉ
-                      </div>
+                        ★
+                      </span>
 
-                      <div
+                      <span
                         style={{
-                          marginTop: "5px",
-                          color: "#9a7430",
-                          fontSize: "6px",
-                          fontWeight: 800,
-                          letterSpacing: "0.12em",
-                          textTransform: "uppercase",
+                          position: "absolute",
+                          right: "9px",
+                          top: "54px",
+                          color: "#b38b3d",
+                          fontSize: "9px",
+                          lineHeight: 1,
                         }}
                       >
-                        The Fashion Studio
+                        ★
+                      </span>
+
+                      {/* blank signature area */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "39px",
+                          left: "25px",
+                          right: "25px",
+                          height: "42px",
+                        }}
+                      >
+                        {/*
+                          YOUR REAL SIGNATURE WILL BE ADDED HERE LATER.
+
+                          Example:
+                          <img
+                            src="/certificates/authorised-signature.png"
+                            alt="Authorised Signature"
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "contain",
+                            }}
+                          />
+                        */}
                       </div>
-                    </div>
 
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: "11px",
-                        top: "57px",
-                        color: "#b38b3d",
-                        fontSize: "11px",
-                        fontWeight: 900,
-                      }}
-                    >
-                      ★
-                    </div>
+                      {/* small inner signature line */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: "27px",
+                          right: "27px",
+                          bottom: "31px",
+                          height: "1px",
+                          background: "rgba(11,40,93,0.55)",
+                        }}
+                      />
 
-                    <div
-                      style={{
-                        position: "absolute",
-                        right: "11px",
-                        top: "57px",
-                        color: "#b38b3d",
-                        fontSize: "11px",
-                        fontWeight: 900,
-                      }}
-                    >
-                      ★
-                    </div>
-
-                    {/* BLANK AREA FOR YOUR REAL SIGNATURE */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: "31px",
-                        right: "31px",
-                        top: "45px",
-                        height: "43px",
-                      }}
-                    />
-
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: "22px",
-                        right: "22px",
-                        bottom: "29px",
-                        height: "1px",
-                        background: "#0b285d",
-                        opacity: 0.65,
-                      }}
-                    />
-
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: "0",
-                        right: "0",
-                        bottom: "12px",
-                        textAlign: "center",
-                        color: "#0b285d",
-                        fontSize: "7px",
-                        fontWeight: 900,
-                        letterSpacing: "0.14em",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Authorised Signature
+                      {/* seal bottom text */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: "15px",
+                          right: "15px",
+                          bottom: "14px",
+                          textAlign: "center",
+                          color: "#0b285d",
+                          fontSize: "6px",
+                          fontWeight: 900,
+                          letterSpacing: "0.1em",
+                          lineHeight: 1,
+                          textTransform: "uppercase",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Authorised Signatory
+                      </div>
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      width: "220px",
-                      height: "1px",
-                      background: "#94a3b8",
-                    }}
-                  />
+                  <div className="mt-3 h-px w-full max-w-[220px] bg-slate-400" />
 
                   <p className="mt-3 text-xs font-black text-slate-900">
                     Authorised Signatory
@@ -3128,8 +3146,21 @@ function CertificatePreviewModal({
                   </p>
                 </div>
 
-                <div>
-                  <div className="mx-auto h-px max-w-[220px] bg-slate-400" />
+                {/* PROJECT COORDINATOR */}
+                <div className="flex flex-col items-center text-center">
+                  {/*
+                    This reserved area keeps the Project Coordinator
+                    signature line exactly aligned with the
+                    Authorised Signatory signature line.
+                  */}
+                  <div
+                    style={{
+                      height: "138px",
+                      width: "100%",
+                    }}
+                  />
+
+                  <div className="mt-3 h-px w-full max-w-[220px] bg-slate-400" />
 
                   <p className="mt-3 text-xs font-black text-slate-900">
                     Project Coordinator
