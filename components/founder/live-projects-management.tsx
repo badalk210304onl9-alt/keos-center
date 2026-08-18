@@ -2617,7 +2617,7 @@ export default function LiveProjectsManagement() {
                               </button>
 
                               <a
-                                href={`https://krvefashionstudio.in/verify/${encodeURIComponent(
+                                href={`https://krve-fashion.vercel.app/verify/${encodeURIComponent(
                                   item.certificateId ||
                                     "",
                                 )}`}
@@ -2960,7 +2960,7 @@ function CertificatePreviewModal({
 
                 <p className="mt-2 text-[10px] leading-5 text-slate-500">
                   Public verification:
-                  krvefashionstudio.in/verify/
+                  krve-fashion.vercel.app/verify/
                   {certificateId}
                 </p>
               </div>
@@ -3188,7 +3188,7 @@ function CertificatePreviewModal({
         <div className="mt-4 flex flex-wrap justify-end gap-2">
           {item.certificateId ? (
             <a
-              href={`https://krvefashionstudio.in/verify/${encodeURIComponent(
+              href={`https://krve-fashion.vercel.app/verify/${encodeURIComponent(
                 item.certificateId,
               )}`}
               target="_blank"
@@ -5799,7 +5799,7 @@ function StudentDrawer({
                   </div>
 
                   <a
-                    href={`https://krvefashionstudio.in/verify/${encodeURIComponent(
+                    href={`https://krve-fashion.vercel.app/verify/${encodeURIComponent(
                       item.certificateId,
                     )}`}
                     target="_blank"
