@@ -8,21 +8,26 @@ import {
 
 import {
   Award,
+  BadgeCheck,
   BarChart3,
   BriefcaseBusiness,
+  CalendarDays,
   CheckCircle2,
   ClipboardCheck,
   ExternalLink,
   Eye,
+  FileText,
   GraduationCap,
   IndianRupee,
   Loader2,
   MessageSquareText,
   RefreshCw,
   Search,
+  ShieldCheck,
   Star,
   UserCheck,
   Users,
+  X,
 } from "lucide-react";
 
 type Evaluation = {
@@ -339,6 +344,199 @@ function EmptyState({
   );
 }
 
+function certificateEligibility(
+  item: Application,
+) {
+  const hasEvaluation =
+    Boolean(
+      item.evaluation,
+    );
+
+  const allTasksApproved =
+    item.taskCount > 0 &&
+    item.approvedTaskCount ===
+      item.taskCount;
+
+  const hasProject =
+    Boolean(
+      item.projectCode &&
+        item.projectTitle &&
+        item.assignedDepartment,
+    );
+
+  const hasDates =
+    Boolean(
+      item.startDate &&
+        item.endDate,
+    );
+
+  const eligible =
+    hasEvaluation &&
+    allTasksApproved &&
+    hasProject &&
+    hasDates;
+
+  const missing: string[] = [];
+
+  if (!hasEvaluation) {
+    missing.push(
+      "Final evaluation",
+    );
+  }
+
+  if (!allTasksApproved) {
+    missing.push(
+      "All assigned tasks approved",
+    );
+  }
+
+  if (!hasProject) {
+    missing.push(
+      "Complete project allocation",
+    );
+  }
+
+  if (!hasDates) {
+    missing.push(
+      "Project start and end dates",
+    );
+  }
+
+  return {
+    eligible,
+    missing,
+  };
+}
+
+function certificateDepartmentCode(
+  value:
+    | string
+    | null
+    | undefined,
+) {
+  const source =
+    String(value || "")
+      .trim()
+      .toUpperCase();
+
+  if (
+    source.includes(
+      "FIN",
+    )
+  ) {
+    return "FIN";
+  }
+
+  if (
+    source.includes(
+      "MARKETING",
+    )
+  ) {
+    return "MKT";
+  }
+
+  if (
+    source.includes(
+      "DIGITAL",
+    )
+  ) {
+    return "DMG";
+  }
+
+  if (
+    source.includes(
+      "SALES",
+    )
+  ) {
+    return "SAL";
+  }
+
+  if (
+    source.includes(
+      "OPERATION",
+    )
+  ) {
+    return "OPS";
+  }
+
+  if (
+    source.includes(
+      "STRATEG",
+    )
+  ) {
+    return "STR";
+  }
+
+  if (
+    source.includes(
+      "E-COMMERCE",
+    ) ||
+    source.includes(
+      "CUSTOMER",
+    )
+  ) {
+    return "ECX";
+  }
+
+  if (
+    source.includes(
+      "ANALYT",
+    )
+  ) {
+    return "BAN";
+  }
+
+  if (
+    source.includes(
+      "HUMAN",
+    ) ||
+    source === "HR"
+  ) {
+    return "HR";
+  }
+
+  if (
+    source.includes(
+      "TECH",
+    )
+  ) {
+    return "TEC";
+  }
+
+  return "GEN";
+}
+
+function previewCertificateId(
+  item: Application,
+) {
+  if (
+    item.certificateId
+  ) {
+    return item.certificateId;
+  }
+
+  const departmentCode =
+    certificateDepartmentCode(
+      item.assignedDepartment ||
+        item.departmentPreference,
+    );
+
+  const suffix =
+    String(
+      item.projectCode ||
+        item.applicationNumber ||
+        item.id,
+    )
+      .replace(
+        /[^A-Z0-9]/gi,
+        "",
+      )
+      .toUpperCase()
+      .slice(-6);
+
+  return `KRVE-LP-2026-${departmentCode}-${suffix || "XXXXXX"}`;
+}
+
 export default function LiveProjectsManagement() {
   const [
     applications,
@@ -408,6 +606,14 @@ export default function LiveProjectsManagement() {
   const [
     selected,
     setSelected,
+  ] =
+    useState<Application | null>(
+      null,
+    );
+
+  const [
+    certificateTarget,
+    setCertificateTarget,
   ] =
     useState<Application | null>(
       null,
@@ -2139,119 +2345,407 @@ export default function LiveProjectsManagement() {
 
       {!loading &&
       tab === "certificates" ? (
-        <section className="mt-6">
+        <section className="mt-6 space-y-5">
+          <div className="overflow-hidden rounded-3xl bg-slate-950 text-white shadow-xl">
+            <div className="grid gap-6 p-6 lg:grid-cols-[1.35fr_0.65fr] lg:p-8">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-blue-300">
+                  KRVE CERTIFICATE CONTROL CENTER
+                </p>
+
+                <h2 className="mt-3 max-w-3xl text-2xl font-black leading-tight sm:text-3xl">
+                  Issue verified Live Project certificates only after successful completion.
+                </h2>
+
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+                  Certificate eligibility checks final evaluation, approved project tasks, project allocation and project dates. Issued certificates remain connected to the public KRVE verification page.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Issued
+                  </p>
+
+                  <p className="mt-2 text-3xl font-black">
+                    {
+                      activeStudents.filter(
+                        (item) =>
+                          Boolean(
+                            item.certificateId,
+                          ),
+                      ).length
+                    }
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Eligible
+                  </p>
+
+                  <p className="mt-2 text-3xl font-black">
+                    {
+                      activeStudents.filter(
+                        (item) =>
+                          !item.certificateId &&
+                          certificateEligibility(
+                            item,
+                          ).eligible,
+                      ).length
+                    }
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Awaiting Evaluation
+                  </p>
+
+                  <p className="mt-2 text-3xl font-black">
+                    {
+                      activeStudents.filter(
+                        (item) =>
+                          !item.certificateId &&
+                          !item.evaluation,
+                      ).length
+                    }
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Completed
+                  </p>
+
+                  <p className="mt-2 text-3xl font-black">
+                    {
+                      activeStudents.filter(
+                        (item) =>
+                          item.status ===
+                          "completed",
+                      ).length
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {activeStudents.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+            <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
               {activeStudents.map(
                 (
                   item,
-                ) => (
-                  <article
-                    key={item.id}
-                    className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                  >
-                    <Award
-                      size={28}
-                      className="text-amber-500"
-                    />
+                ) => {
+                  const eligibility =
+                    certificateEligibility(
+                      item,
+                    );
 
-                    <h3 className="mt-4 truncate text-lg font-black text-slate-950">
-                      {item.fullName}
-                    </h3>
+                  const issued =
+                    Boolean(
+                      item.certificateId,
+                    );
 
-                    <p className="mt-1 text-sm leading-6 text-slate-500">
-                      {item.projectTitle ||
-                        `${item.assignedDepartment ||
-                          item.departmentPreference} Live Business Project`}
-                    </p>
+                  const projectTitle =
+                    item.projectTitle ||
+                    `${item.assignedDepartment ||
+                      item.departmentPreference} Live Business Project`;
 
-                    <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-                      <div className="flex justify-between gap-4 text-xs">
-                        <span className="text-slate-500">
-                          Department
-                        </span>
+                  return (
+                    <article
+                      key={item.id}
+                      className={`min-w-0 overflow-hidden rounded-2xl border bg-white shadow-sm ${
+                        issued
+                          ? "border-emerald-200"
+                          : eligibility.eligible
+                            ? "border-blue-200"
+                            : "border-slate-200"
+                      }`}
+                    >
+                      <div
+                        className={`h-1.5 ${
+                          issued
+                            ? "bg-emerald-500"
+                            : eligibility.eligible
+                              ? "bg-blue-600"
+                              : "bg-slate-300"
+                        }`}
+                      />
 
-                        <strong className="max-w-[190px] text-right">
-                          {item.assignedDepartment ||
-                            item.departmentPreference}
-                        </strong>
-                      </div>
+                      <div className="p-5">
+                        <div className="flex items-start justify-between gap-4">
+                          <div
+                            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+                              issued
+                                ? "bg-emerald-50 text-emerald-700"
+                                : eligibility.eligible
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {issued ? (
+                              <BadgeCheck
+                                size={25}
+                              />
+                            ) : (
+                              <Award
+                                size={25}
+                              />
+                            )}
+                          </div>
 
-                      <div className="mt-2 flex justify-between gap-4 text-xs">
-                        <span className="text-slate-500">
-                          Score
-                        </span>
-
-                        <strong>
-                          {item.evaluation
-                            ?.totalScore ??
-                            "—"}
-                        </strong>
-                      </div>
-
-                      <div className="mt-2 flex justify-between gap-4 text-xs">
-                        <span className="text-slate-500">
-                          Completion
-                        </span>
-
-                        <strong className="capitalize">
-                          {item.status}
-                        </strong>
-                      </div>
-                    </div>
-
-                    {item.certificateId ? (
-                      <>
-                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                          <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700">
-                            Verified Certificate ID
-                          </p>
-
-                          <p className="mt-2 break-all font-mono text-xs font-black text-emerald-800">
-                            {item.certificateId}
-                          </p>
+                          <span
+                            className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider ${
+                              issued
+                                ? "bg-emerald-50 text-emerald-700"
+                                : eligibility.eligible
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            {issued
+                              ? "Verified"
+                              : eligibility.eligible
+                                ? "Ready to Issue"
+                                : "Pending Requirements"}
+                          </span>
                         </div>
 
-                        <a
-                          href={`https://krvefashionstudio.in/verify/${encodeURIComponent(
-                            item.certificateId,
-                          )}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-3 inline-block text-sm font-black text-blue-700"
-                        >
-                          Open Verification Page →
-                        </a>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={
-                          working ===
-                          item.id
-                        }
-                        onClick={() =>
-                          void mutate(
-                            item.id,
-                            {
-                              action:
-                                "certificate",
-                            },
-                          )
-                        }
-                        className="mt-4 w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:opacity-50"
-                      >
-                        Issue Certificate ID
-                      </button>
-                    )}
-                  </article>
-                ),
+                        <h3 className="mt-4 truncate text-lg font-black text-slate-950">
+                          {item.fullName}
+                        </h3>
+
+                        <p className="mt-1 min-h-[48px] text-sm leading-6 text-slate-500">
+                          {projectTitle}
+                        </p>
+
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                          <div className="rounded-xl bg-slate-50 p-3">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                              Final Score
+                            </p>
+
+                            <p className="mt-1 font-black text-slate-950">
+                              {item.evaluation
+                                ?.totalScore !==
+                              undefined
+                                ? `${item.evaluation.totalScore}/100`
+                                : "Pending"}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl bg-slate-50 p-3">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                              Tasks
+                            </p>
+
+                            <p className="mt-1 font-black text-slate-950">
+                              {item.approvedTaskCount}/
+                              {item.taskCount}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl bg-slate-50 p-3">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                              Department
+                            </p>
+
+                            <p className="mt-1 truncate font-black text-slate-950">
+                              {item.assignedDepartment ||
+                                item.departmentPreference}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl bg-slate-50 p-3">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                              Status
+                            </p>
+
+                            <p className="mt-1 font-black capitalize text-slate-950">
+                              {item.status}
+                            </p>
+                          </div>
+                        </div>
+
+                        {issued ? (
+                          <>
+                            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                              <div className="flex items-center gap-2 text-emerald-700">
+                                <ShieldCheck
+                                  size={16}
+                                />
+
+                                <p className="text-[10px] font-black uppercase tracking-wider">
+                                  Verified Certificate ID
+                                </p>
+                              </div>
+
+                              <p className="mt-2 break-all font-mono text-xs font-black text-emerald-900">
+                                {item.certificateId}
+                              </p>
+
+                              <div className="mt-3 flex items-center gap-2 text-xs text-emerald-700">
+                                <CalendarDays
+                                  size={14}
+                                />
+
+                                Issued{" "}
+                                {formatDate(
+                                  item.certificateIssueDate,
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCertificateTarget(
+                                    item,
+                                  )
+                                }
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+                              >
+                                <Eye
+                                  size={15}
+                                />
+
+                                Preview Certificate
+                              </button>
+
+                              <a
+                                href={`https://krvefashionstudio.in/verify/${encodeURIComponent(
+                                  item.certificateId ||
+                                    "",
+                                )}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-xs font-black text-white transition hover:bg-slate-800"
+                              >
+                                <ExternalLink
+                                  size={15}
+                                />
+
+                                Verify Publicly
+                              </a>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {!eligibility.eligible ? (
+                              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                <p className="text-[10px] font-black uppercase tracking-wider text-amber-700">
+                                  Before issuing
+                                </p>
+
+                                <ul className="mt-2 space-y-1.5 text-xs leading-5 text-amber-800">
+                                  {eligibility.missing.map(
+                                    (
+                                      requirement,
+                                    ) => (
+                                      <li
+                                        key={
+                                          requirement
+                                        }
+                                        className="flex gap-2"
+                                      >
+                                        <span>
+                                          •
+                                        </span>
+
+                                        <span>
+                                          {
+                                            requirement
+                                          }
+                                        </span>
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              </div>
+                            ) : (
+                              <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                                <div className="flex items-center gap-2 text-blue-700">
+                                  <CheckCircle2
+                                    size={16}
+                                  />
+
+                                  <strong className="text-xs">
+                                    Certificate eligibility verified
+                                  </strong>
+                                </div>
+
+                                <p className="mt-2 text-xs leading-5 text-blue-700">
+                                  Final evaluation and all required project tasks are complete.
+                                </p>
+                              </div>
+                            )}
+
+                            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCertificateTarget(
+                                    item,
+                                  )
+                                }
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+                              >
+                                <Eye
+                                  size={15}
+                                />
+
+                                Preview
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={
+                                  !eligibility.eligible ||
+                                  working ===
+                                    item.id
+                                }
+                                onClick={() =>
+                                  void mutate(
+                                    item.id,
+                                    {
+                                      action:
+                                        "certificate",
+                                    },
+                                  )
+                                }
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-3 text-xs font-black text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                              >
+                                {working ===
+                                item.id ? (
+                                  <Loader2
+                                    size={15}
+                                    className="animate-spin"
+                                  />
+                                ) : (
+                                  <Award
+                                    size={15}
+                                  />
+                                )}
+
+                                Issue Certificate
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </article>
+                  );
+                },
               )}
             </div>
           ) : (
             <EmptyState
               title="No certificate candidates yet"
-              description="Students who are selected or active will appear here. Issue certificates after project completion and evaluation."
+              description="Selected, active and completed Live Project students will appear here for certificate eligibility review."
             />
           )}
         </section>
@@ -2292,6 +2786,253 @@ export default function LiveProjectsManagement() {
           }
         />
       ) : null}
+
+      {certificateTarget ? (
+        <CertificatePreviewModal
+          item={
+            certificateTarget
+          }
+          onClose={() =>
+            setCertificateTarget(
+              null,
+            )
+          }
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function CertificatePreviewModal({
+  item,
+  onClose,
+}: {
+  item: Application;
+  onClose: () => void;
+}) {
+  const certificateId =
+    previewCertificateId(
+      item,
+    );
+
+  const department =
+    item.assignedDepartment ||
+    item.departmentPreference;
+
+  const projectTitle =
+    item.projectTitle ||
+    `${department} Live Business Project`;
+
+  const score =
+    item.evaluation
+      ?.totalScore;
+
+  return (
+    <div className="fixed inset-0 z-[120] overflow-y-auto bg-slate-950/75 p-4 backdrop-blur-sm sm:p-7">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-3 flex items-center justify-between gap-4">
+          <div className="text-white">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-300">
+              CERTIFICATE PREVIEW
+            </p>
+
+            <h2 className="mt-1 text-xl font-black">
+              {item.fullName}
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={
+              onClose
+            }
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-white transition hover:bg-white/20"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="overflow-hidden rounded-[28px] bg-[#f7f2e8] p-3 shadow-2xl sm:p-5">
+          <div className="relative min-h-[650px] overflow-hidden rounded-[22px] border-[3px] border-[#0b285d] bg-[#fffdf8] px-6 py-8 text-center sm:px-14 sm:py-12">
+            <div className="pointer-events-none absolute inset-3 rounded-[16px] border border-[#c7a45a]/60" />
+
+            <div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-blue-950/5" />
+
+            <div className="pointer-events-none absolute -bottom-24 -right-20 h-64 w-64 rounded-full bg-amber-500/10" />
+
+            <div className="relative z-10 mx-auto max-w-4xl">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0b285d] text-2xl font-black text-white shadow-lg">
+                K
+              </div>
+
+              <p className="mt-4 text-2xl font-black tracking-[0.28em] text-[#0b285d]">
+                KRVÉ
+              </p>
+
+              <p className="mt-1 text-[10px] font-black uppercase tracking-[0.3em] text-[#ad8a43]">
+                THE FASHION STUDIO
+              </p>
+
+              <div className="mx-auto mt-6 h-px w-48 bg-[#c7a45a]" />
+
+              <p className="mt-7 text-xs font-black uppercase tracking-[0.3em] text-[#ad8a43]">
+                Certificate of Completion
+              </p>
+
+              <p className="mt-6 text-sm leading-7 text-slate-600">
+                This is to certify that
+              </p>
+
+              <h1 className="mt-2 text-4xl font-black uppercase tracking-wide text-[#0b285d] sm:text-5xl">
+                {item.fullName}
+              </h1>
+
+              <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
+                has successfully completed the{" "}
+                <strong className="text-slate-900">
+                  KRVÉ Live Business Project Program
+                </strong>{" "}
+                in the domain of{" "}
+                <strong className="text-slate-900">
+                  {department}
+                </strong>{" "}
+                through the project
+              </p>
+
+              <h2 className="mx-auto mt-4 max-w-3xl text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
+                “{projectTitle}”
+              </h2>
+
+              <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-slate-600">
+                During the engagement, the participant completed assigned project requirements and contributed to research, analysis, execution and practical business recommendations relevant to the assigned project scope.
+              </p>
+
+              <div className="mx-auto mt-8 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
+                <div className="rounded-xl border border-slate-200 bg-white/70 p-4">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                    Project ID
+                  </p>
+
+                  <p className="mt-2 break-all text-xs font-black text-slate-900">
+                    {item.projectCode ||
+                      "—"}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white/70 p-4">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                    Project Period
+                  </p>
+
+                  <p className="mt-2 text-xs font-black text-slate-900">
+                    {formatDate(
+                      item.startDate,
+                    )}{" "}
+                    –{" "}
+                    {formatDate(
+                      item.endDate,
+                    )}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white/70 p-4">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                    Final Score
+                  </p>
+
+                  <p className="mt-2 text-xs font-black text-slate-900">
+                    {score !==
+                    undefined
+                      ? `${score}/100`
+                      : "Not evaluated"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mx-auto mt-7 max-w-3xl rounded-xl border border-[#d9c391] bg-[#fff9e9] px-5 py-4">
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[#96732e]">
+                  Certificate ID
+                </p>
+
+                <p className="mt-2 break-all font-mono text-sm font-black text-[#0b285d]">
+                  {certificateId}
+                </p>
+
+                <p className="mt-2 text-[10px] leading-5 text-slate-500">
+                  Public verification:
+                  krvefashionstudio.in/verify/
+                  {certificateId}
+                </p>
+              </div>
+
+              <div className="mx-auto mt-10 grid max-w-3xl gap-8 sm:grid-cols-2">
+                <div>
+                  <div className="mx-auto h-px max-w-[220px] bg-slate-400" />
+
+                  <p className="mt-3 text-xs font-black text-slate-900">
+                    Authorised Signatory
+                  </p>
+
+                  <p className="mt-1 text-[10px] text-slate-500">
+                    KRVÉ — The Fashion Studio
+                  </p>
+                </div>
+
+                <div>
+                  <div className="mx-auto h-px max-w-[220px] bg-slate-400" />
+
+                  <p className="mt-3 text-xs font-black text-slate-900">
+                    Project Coordinator
+                  </p>
+
+                  <p className="mt-1 text-[10px] text-slate-500">
+                    {item.coordinatorName ||
+                      "Coordinator"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mx-auto mt-8 flex max-w-3xl items-center justify-center gap-2 text-[9px] leading-5 text-slate-400">
+                <ShieldCheck
+                  size={14}
+                  className="text-emerald-600"
+                />
+
+                This certificate records completion of a KRVÉ venture-led Live Project. It does not by itself represent employment, a government-recognised qualification or institutional academic credit.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
+          {item.certificateId ? (
+            <a
+              href={`https://krvefashionstudio.in/verify/${encodeURIComponent(
+                item.certificateId,
+              )}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-xs font-black text-white transition hover:bg-emerald-700"
+            >
+              <ShieldCheck
+                size={15}
+              />
+
+              Open Verification
+            </a>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={
+              onClose
+            }
+            className="rounded-xl bg-white px-5 py-3 text-xs font-black text-slate-950 transition hover:bg-slate-100"
+          >
+            Close Preview
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
