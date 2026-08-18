@@ -12,9 +12,12 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   ClipboardCheck,
+  ExternalLink,
+  Eye,
   GraduationCap,
   IndianRupee,
   Loader2,
+  MessageSquareText,
   RefreshCw,
   Search,
   Star,
@@ -94,6 +97,9 @@ type LiveTask = {
   score?: number | null;
   reviewerComment?: string | null;
   submissionUrl?: string | null;
+  submissionSummary?: string | null;
+  studentRemarks?: string | null;
+  submittedAt?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 };
@@ -200,6 +206,36 @@ function formatDate(
       day: "2-digit",
       month: "short",
       year: "numeric",
+    },
+  );
+}
+
+function formatDateTime(
+  value?: string | null,
+) {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return value;
+  }
+
+  return date.toLocaleString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     },
   );
 }
@@ -1676,7 +1712,7 @@ export default function LiveProjectsManagement() {
 
           {tasks.length > 0 ? (
             <div className="mt-5 overflow-x-auto">
-              <table className="w-full min-w-[920px] text-left text-sm">
+              <table className="w-full min-w-[1080px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                     <th className="px-3 py-3">
@@ -1705,6 +1741,10 @@ export default function LiveProjectsManagement() {
 
                     <th className="px-3 py-3">
                       Score
+                    </th>
+
+                    <th className="px-3 py-3">
+                      Action
                     </th>
                   </tr>
                 </thead>
@@ -1782,6 +1822,32 @@ export default function LiveProjectsManagement() {
                           <td className="px-3 py-4 font-black text-slate-950">
                             {task.score ??
                               "—"}
+                          </td>
+
+                          <td className="px-3 py-4">
+                            {task.submissionUrl ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (student) {
+                                    setSelected(
+                                      student,
+                                    );
+                                  }
+                                }}
+                                className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-800"
+                              >
+                                <Eye
+                                  size={14}
+                                />
+
+                                Review Submission
+                              </button>
+                            ) : (
+                              <span className="text-xs text-slate-400">
+                                Awaiting work
+                              </span>
+                            )}
                           </td>
                         </tr>
                       );
@@ -2382,6 +2448,28 @@ function StudentDrawer({
     projectDetailsSaved,
     setProjectDetailsSaved,
   ] = useState(false);
+
+  const [
+    reviewTaskId,
+    setReviewTaskId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    reviewScore,
+    setReviewScore,
+  ] = useState("");
+
+  const [
+    reviewerComment,
+    setReviewerComment,
+  ] = useState("");
+
+  const [
+    reviewMessage,
+    setReviewMessage,
+  ] = useState("");
 
   const [
     taskTitle,
@@ -3738,64 +3826,467 @@ function StudentDrawer({
                   tasks.map(
                     (
                       task,
-                    ) => (
-                      <div
-                        key={task.id}
-                        className="rounded-2xl bg-slate-50 p-4"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-black uppercase tracking-wider text-blue-700">
-                              Week{" "}
-                              {task.weekNumber}
-                            </p>
+                    ) => {
+                      const hasSubmission =
+                        Boolean(
+                          task.submissionUrl,
+                        );
 
-                            <h4 className="mt-1 break-words font-black text-slate-950">
-                              {task.title}
-                            </h4>
+                      const isReviewing =
+                        reviewTaskId ===
+                        task.id;
 
-                            {task.description ? (
-                              <p className="mt-2 text-xs leading-5 text-slate-500">
-                                {task.description}
-                              </p>
-                            ) : null}
+                      const normalizedStatus =
+                        task.status
+                          .trim()
+                          .toLowerCase();
+
+                      return (
+                        <div
+                          key={task.id}
+                          className={`overflow-hidden rounded-2xl border ${
+                            hasSubmission
+                              ? "border-blue-200 bg-blue-50/30"
+                              : "border-slate-200 bg-slate-50"
+                          }`}
+                        >
+                          <div className="p-4">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-wider text-blue-700">
+                                  Week{" "}
+                                  {task.weekNumber}
+                                </p>
+
+                                <h4 className="mt-1 break-words font-black text-slate-950">
+                                  {task.title}
+                                </h4>
+
+                                {task.description ? (
+                                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                                    {task.description}
+                                  </p>
+                                ) : null}
+                              </div>
+
+                              <span
+                                className={`shrink-0 rounded-full px-3 py-1 text-xs font-black capitalize ${
+                                  normalizedStatus ===
+                                  "approved"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : normalizedStatus ===
+                                        "revision_requested"
+                                      ? "bg-amber-100 text-amber-700"
+                                      : normalizedStatus ===
+                                            "submitted" ||
+                                          normalizedStatus ===
+                                            "under_review"
+                                        ? "bg-blue-100 text-blue-700"
+                                        : "bg-white text-slate-700"
+                                }`}
+                              >
+                                {task.status.replaceAll(
+                                  "_",
+                                  " ",
+                                )}
+                              </span>
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
+                              <span>
+                                Priority:{" "}
+                                <strong className="capitalize text-slate-800">
+                                  {task.priority}
+                                </strong>
+                              </span>
+
+                              <span>
+                                Due:{" "}
+                                <strong className="text-slate-800">
+                                  {formatDate(
+                                    task.dueDate,
+                                  )}
+                                </strong>
+                              </span>
+
+                              <span>
+                                Score:{" "}
+                                <strong className="text-slate-800">
+                                  {task.score ??
+                                    "—"}
+                                </strong>
+                              </span>
+
+                              {task.submittedAt ? (
+                                <span>
+                                  Submitted:{" "}
+                                  <strong className="text-slate-800">
+                                    {formatDateTime(
+                                      task.submittedAt,
+                                    )}
+                                  </strong>
+                                </span>
+                              ) : null}
+                            </div>
+
+                            {hasSubmission ? (
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                <a
+                                  href={
+                                    task.submissionUrl ||
+                                    "#"
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white transition hover:bg-blue-800"
+                                >
+                                  <ExternalLink
+                                    size={15}
+                                  />
+
+                                  Open Student Work
+                                </a>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (
+                                      isReviewing
+                                    ) {
+                                      setReviewTaskId(
+                                        null,
+                                      );
+
+                                      setReviewMessage(
+                                        "",
+                                      );
+
+                                      return;
+                                    }
+
+                                    setReviewTaskId(
+                                      task.id,
+                                    );
+
+                                    setReviewScore(
+                                      task.score ===
+                                          null ||
+                                        task.score ===
+                                          undefined
+                                        ? ""
+                                        : String(
+                                            task.score,
+                                          ),
+                                    );
+
+                                    setReviewerComment(
+                                      task.reviewerComment ||
+                                        "",
+                                    );
+
+                                    setReviewMessage(
+                                      "",
+                                    );
+                                  }}
+                                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-700 transition hover:bg-slate-100"
+                                >
+                                  <MessageSquareText
+                                    size={15}
+                                  />
+
+                                  {isReviewing
+                                    ? "Close Review"
+                                    : "Review Submission"}
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-xs font-semibold text-slate-500">
+                                Student has not submitted work for this task yet.
+                              </div>
+                            )}
                           </div>
 
-                          <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-bold capitalize text-slate-700">
-                            {task.status.replaceAll(
-                              "_",
-                              " ",
-                            )}
-                          </span>
+                          {hasSubmission &&
+                          isReviewing ? (
+                            <div className="border-t border-blue-100 bg-white p-4 sm:p-5">
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-700">
+                                    Submitted Work
+                                  </p>
+
+                                  <h5 className="mt-1 font-black text-slate-950">
+                                    Review & Evaluation
+                                  </h5>
+                                </div>
+
+                                <a
+                                  href={
+                                    task.submissionUrl ||
+                                    "#"
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-black text-white transition hover:bg-slate-800"
+                                >
+                                  <ExternalLink
+                                    size={14}
+                                  />
+
+                                  Open Work
+                                </a>
+                              </div>
+
+                              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                    Submission Summary
+                                  </p>
+
+                                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                                    {task.submissionSummary ||
+                                      "No submission summary provided."}
+                                  </p>
+                                </div>
+
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                    Student Remarks
+                                  </p>
+
+                                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                                    {task.studentRemarks ||
+                                      "No additional remarks provided."}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="mt-4 grid gap-4 sm:grid-cols-[180px_minmax(0,1fr)]">
+                                <label>
+                                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                                    Task Score / 100
+                                  </span>
+
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={
+                                      reviewScore
+                                    }
+                                    onChange={(
+                                      event,
+                                    ) =>
+                                      setReviewScore(
+                                        event
+                                          .target
+                                          .value,
+                                      )
+                                    }
+                                    placeholder="0 - 100"
+                                    className="h-12 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-blue-500"
+                                  />
+                                </label>
+
+                                <label>
+                                  <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                                    Evaluator Feedback
+                                  </span>
+
+                                  <textarea
+                                    value={
+                                      reviewerComment
+                                    }
+                                    onChange={(
+                                      event,
+                                    ) =>
+                                      setReviewerComment(
+                                        event
+                                          .target
+                                          .value,
+                                      )
+                                    }
+                                    rows={4}
+                                    placeholder="Write feedback, corrections or appreciation for the student..."
+                                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm leading-6 outline-none transition focus:border-blue-500"
+                                  />
+                                </label>
+                              </div>
+
+                              {task.reviewerComment ? (
+                                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                                    Current Published Feedback
+                                  </p>
+
+                                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                                    {task.reviewerComment}
+                                  </p>
+                                </div>
+                              ) : null}
+
+                              {reviewMessage ? (
+                                <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-bold text-blue-700">
+                                  {reviewMessage}
+                                </div>
+                              ) : null}
+
+                              <div className="mt-5 flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  disabled={
+                                    working
+                                  }
+                                  onClick={async () => {
+                                    const score =
+                                      reviewScore.trim() ===
+                                      ""
+                                        ? undefined
+                                        : Number(
+                                            reviewScore,
+                                          );
+
+                                    if (
+                                      score !==
+                                        undefined &&
+                                      (!Number.isFinite(
+                                        score,
+                                      ) ||
+                                        score <
+                                          0 ||
+                                        score >
+                                          100)
+                                    ) {
+                                      setReviewMessage(
+                                        "Score must be between 0 and 100.",
+                                      );
+
+                                      return;
+                                    }
+
+                                    await onMutate({
+                                      action:
+                                        "task_update",
+                                      taskId:
+                                        task.id,
+                                      status:
+                                        "under_review",
+                                      score,
+                                      reviewerComment:
+                                        reviewerComment.trim(),
+                                    });
+
+                                    setReviewMessage(
+                                      "Review saved. The task remains under review.",
+                                    );
+                                  }}
+                                  className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:opacity-50"
+                                >
+                                  Save Review
+                                </button>
+
+                                <button
+                                  type="button"
+                                  disabled={
+                                    working
+                                  }
+                                  onClick={async () => {
+                                    if (
+                                      !reviewerComment.trim()
+                                    ) {
+                                      setReviewMessage(
+                                        "Write the revision instructions before requesting revision.",
+                                      );
+
+                                      return;
+                                    }
+
+                                    await onMutate({
+                                      action:
+                                        "task_update",
+                                      taskId:
+                                        task.id,
+                                      status:
+                                        "revision_requested",
+                                      score:
+                                        reviewScore.trim() ===
+                                        ""
+                                          ? undefined
+                                          : Number(
+                                              reviewScore,
+                                            ),
+                                      reviewerComment:
+                                        reviewerComment.trim(),
+                                    });
+
+                                    setReviewTaskId(
+                                      null,
+                                    );
+                                  }}
+                                  className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-black text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                                >
+                                  Request Revision
+                                </button>
+
+                                <button
+                                  type="button"
+                                  disabled={
+                                    working
+                                  }
+                                  onClick={async () => {
+                                    const score =
+                                      Number(
+                                        reviewScore,
+                                      );
+
+                                    if (
+                                      reviewScore.trim() ===
+                                        "" ||
+                                      !Number.isFinite(
+                                        score,
+                                      ) ||
+                                      score <
+                                        0 ||
+                                      score >
+                                        100
+                                    ) {
+                                      setReviewMessage(
+                                        "Enter a score between 0 and 100 before approving this task.",
+                                      );
+
+                                      return;
+                                    }
+
+                                    await onMutate({
+                                      action:
+                                        "task_update",
+                                      taskId:
+                                        task.id,
+                                      status:
+                                        "approved",
+                                      score,
+                                      reviewerComment:
+                                        reviewerComment.trim(),
+                                    });
+
+                                    setReviewTaskId(
+                                      null,
+                                    );
+                                  }}
+                                  className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                                >
+                                  Approve Task
+                                </button>
+                              </div>
+
+                              <p className="mt-3 text-[11px] leading-5 text-slate-500">
+                                Approve locks the student submission. Request Revision sends the task back to the student for resubmission.
+                              </p>
+                            </div>
+                          ) : null}
                         </div>
-
-                        <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">
-                          <span>
-                            Priority:{" "}
-                            <strong className="capitalize text-slate-800">
-                              {task.priority}
-                            </strong>
-                          </span>
-
-                          <span>
-                            Due:{" "}
-                            <strong className="text-slate-800">
-                              {formatDate(
-                                task.dueDate,
-                              )}
-                            </strong>
-                          </span>
-
-                          <span>
-                            Score:{" "}
-                            <strong className="text-slate-800">
-                              {task.score ??
-                                "—"}
-                            </strong>
-                          </span>
-                        </div>
-                      </div>
-                    ),
+                      );
+                    },
                   )
                 ) : (
                   <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
