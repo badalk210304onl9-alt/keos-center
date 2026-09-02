@@ -779,5 +779,85 @@ function AddEmployeeModal({
                 onChange={(e) => setDepartment(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 outline-none focus:border-blue-500"
               >
-                <option>Technology & AI</option>
-                <option>
+                <option value="Technology & AI">Technology & AI</option>
+                <option value="Luxury Catalog">Luxury Catalog</option>
+                <option value="People Ops (HR)">People Ops (HR)</option>
+                <option value="Client Relations">Client Relations</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block font-semibold text-slate-600">Access Role</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 outline-none focus:border-blue-500"
+              >
+                <option value="AI Technical Team">AI Technical Team</option>
+                <option value="Catalog Executive">Catalog Executive</option>
+                <option value="Support & CRM Lead">Support & CRM Lead</option>
+                <option value="HR Operations Lead">HR Operations Lead</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-6 flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-1/2 rounded-xl border border-slate-200 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="w-1/2 rounded-xl bg-blue-600 py-2.5 font-bold text-white shadow-md hover:bg-blue-700"
+            >
+              Add Employee
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({
+  title,
+  value,
+  note,
+  icon: Icon,
+}: {
+  title: string;
+  value: string;
+  note: string;
+  icon: IconType;
+}) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600">
+        <Icon size={21} />
+      </div>
+      <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
+      <h2 className="mt-2 text-3xl font-black text-slate-950">{value}</h2>
+      <p className="mt-2 text-xs text-slate-400">{note}</p>
+    </article>
+  );
+}
+
+function ModuleCard({
+  module,
+  onOpen,
+}: {
+  module: HRModule;
+  onOpen: () => void;
+}) {
+  const Icon = module.icon;
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group min-h-[220px] rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl"
+    >
+      <div className="grid h-12 w-1
