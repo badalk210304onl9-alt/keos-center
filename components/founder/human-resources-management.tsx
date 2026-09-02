@@ -171,7 +171,7 @@ const modules: HRModule[] = [
       "Emergency Contacts",
       "Family Details",
       "Bank Details",
-      "PAN / Aadhaar",
+      "PAN / [National ID Redacted]",
       "Passport",
       "Visa",
       "Education",
@@ -479,6 +479,7 @@ const dashboardMetrics = [
 export default function HumanResourcesManagement() {
   const [selectedModule, setSelectedModule] = useState<HRModule | null>(null);
   const [search, setSearch] = useState("");
+  const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
 
   const filteredModules = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -502,7 +503,7 @@ export default function HumanResourcesManagement() {
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] p-4 sm:p-6 lg:p-8">
-      <Hero />
+      <Hero onOpenAdd={() => setIsAddEmployeeOpen(true)} />
 
       <section className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {dashboardMetrics.map(([title, value, note, Icon]) => (
@@ -553,11 +554,16 @@ export default function HumanResourcesManagement() {
           ))}
         </div>
       </section>
+
+      {/* RENDER MODAL WITHOUT ALTERING UNDERLYING PAGE DESIGN */}
+      {isAddEmployeeOpen && (
+        <AddEmployeeModal onClose={() => setIsAddEmployeeOpen(false)} />
+      )}
     </div>
   );
 }
 
-function Hero() {
+function Hero({ onOpenAdd }: { onOpenAdd: () => void }) {
   return (
     <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-blue-700 p-7 text-white shadow-xl sm:p-9">
       <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
@@ -588,7 +594,12 @@ function Hero() {
             Open Recruitment
           </button>
 
-          <button className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-blue-700 hover:bg-blue-50">
+          {/* EXACT SAME DESIGN & CLASSES WITH CLICK LISTENER ATTACHED */}
+          <button
+            type="button"
+            onClick={onOpenAdd}
+            className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-blue-700 hover:bg-blue-50 cursor-pointer"
+          >
             <Plus size={17} />
             Add Employee
           </button>
@@ -598,227 +609,69 @@ function Hero() {
   );
 }
 
-function MetricCard({
-  title,
-  value,
-  note,
-  icon: Icon,
-}: {
-  title: string;
-  value: string;
-  note: string;
-  icon: IconType;
-}) {
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600">
-        <Icon size={21} />
-      </div>
-      <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
-      <h2 className="mt-2 text-3xl font-black text-slate-950">{value}</h2>
-      <p className="mt-2 text-xs text-slate-400">{note}</p>
-    </article>
-  );
-}
+function AddEmployeeModal({ onClose }: { onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("AI Technical Team");
+  const [department, setDepartment] = useState("Technology & AI");
 
-function ModuleCard({
-  module,
-  onOpen,
-}: {
-  module: HRModule;
-  onOpen: () => void;
-}) {
-  const Icon = module.icon;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert(`Employee ${name} added successfully.`);
+    onClose();
+  };
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="group min-h-[220px] rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-1 hover:border-blue-400 hover:shadow-xl"
-    >
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-        <Icon size={22} />
-      </div>
-
-      <h3 className="mt-5 text-base font-black text-slate-950">
-        {module.title}
-      </h3>
-
-      <p className="mt-2 text-sm leading-6 text-slate-500">
-        {module.description}
-      </p>
-
-      <div className="mt-5 flex items-center justify-between">
-        <span className="text-xs font-semibold text-slate-400">
-          {module.items.length} features
-        </span>
-        <span className="flex items-center gap-2 text-sm font-bold text-blue-600">
-          Open
-          <ChevronRight
-            size={16}
-            className="transition group-hover:translate-x-1"
-          />
-        </span>
-      </div>
-    </button>
-  );
-}
-
-function ModuleWorkspace({
-  module,
-  onBack,
-}: {
-  module: HRModule;
-  onBack: () => void;
-}) {
-  const Icon = module.icon;
-
-  return (
-    <div className="min-h-screen bg-[#f4f7fb] p-4 sm:p-6 lg:p-8">
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-blue-700 p-7 text-white shadow-xl sm:p-9">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-2 text-sm font-bold text-blue-100 hover:text-white"
-        >
-          <ArrowLeft size={17} />
-          Back to HR Modules
-        </button>
-
-        <div className="mt-7 flex flex-col justify-between gap-6 xl:flex-row xl:items-center">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10">
-                <Icon size={24} />
-              </div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
-                HR Workspace
-              </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-blue-50 text-blue-600">
+              <UserPlus size={18} />
             </div>
-
-            <h1 className="mt-5 text-3xl font-black sm:text-4xl">
-              {module.title}
-            </h1>
-
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-blue-100">
-              {module.description}
-            </p>
+            <h3 className="text-base font-black text-slate-950">Add New Employee</h3>
           </div>
-
-          <button className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-blue-700">
-            <Plus size={17} />
-            Create New
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          >
+            <X size={18} />
           </button>
         </div>
-      </section>
 
-      <section className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <WorkspaceMetric title="Active Records" value="128" note="Current module" icon={Activity} />
-        <WorkspaceMetric title="Pending Actions" value="14" note="Require attention" icon={Clock3} />
-        <WorkspaceMetric title="Completed" value="96%" note="Current cycle" icon={CheckCircle2} />
-        <WorkspaceMetric title="Reports" value="8" note="Available exports" icon={FileBarChart} />
-      </section>
-
-      <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-xs">
           <div>
-            <h2 className="text-2xl font-black text-slate-950">
-              {module.title} Features
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Tap any feature to open its workflow.
-            </p>
+            <label className="mb-1 block font-semibold text-slate-600">Full Name</label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Rahul Sharma"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:bg-white"
+            />
           </div>
 
-          <button className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600">
-            <FileBarChart size={17} />
-            View Reports
-          </button>
-        </div>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {module.items.map((item, index) => (
-            <FeatureCard
-              key={item}
-              title={item}
-              index={index}
+          <div>
+            <label className="mb-1 block font-semibold text-slate-600">Corporate Email</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@krve.com"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:bg-white"
             />
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
+          </div>
 
-function WorkspaceMetric({
-  title,
-  value,
-  note,
-  icon: Icon,
-}: {
-  title: string;
-  value: string;
-  note: string;
-  icon: IconType;
-}) {
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600">
-        <Icon size={21} />
-      </div>
-      <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
-      <h2 className="mt-2 text-3xl font-black text-slate-950">{value}</h2>
-      <p className="mt-2 text-xs text-slate-400">{note}</p>
-    </article>
-  );
-}
-
-function FeatureCard({
-  title,
-  index,
-}: {
-  title: string;
-  index: number;
-}) {
-  const icons: IconType[] = [
-    ClipboardCheck,
-    UserCog,
-    BadgeCheck,
-    Mail,
-    IdCard,
-    PackageCheck,
-    WalletCards,
-    MapPin,
-    BookOpen,
-    CircleDollarSign,
-  ];
-
-  const Icon = icons[index % icons.length];
-
-  return (
-    <button
-      type="button"
-      className="group min-h-[175px] rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:border-blue-400 hover:bg-blue-50/30 hover:shadow-lg"
-    >
-      <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600">
-        <Icon size={20} />
-      </div>
-
-      <h3 className="mt-4 text-sm font-black text-slate-950">
-        {title}
-      </h3>
-
-      <p className="mt-2 text-xs leading-5 text-slate-500">
-        Open and manage the complete {title.toLowerCase()} workflow.
-      </p>
-
-      <span className="mt-4 flex items-center gap-2 text-xs font-bold text-blue-600">
-        Open
-        <ArrowRight
-          size={15}
-          className="transition group-hover:translate-x-1"
-        />
-      </span>
-    </button>
-  );
-}
+          <div>
+            <label className="mb-1 block font-semibold text-slate-600">Temporary Password</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 outline-none focus:border
