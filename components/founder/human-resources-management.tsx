@@ -86,6 +86,15 @@ type HRModule = {
   items: string[];
 };
 
+interface Employee {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  role: string;
+  status: "Active" | "Inactive";
+}
+
 const modules: HRModule[] = [
   {
     id: "hr-dashboard",
@@ -171,7 +180,7 @@ const modules: HRModule[] = [
       "Emergency Contacts",
       "Family Details",
       "Bank Details",
-      "PAN / [National ID Redacted]",
+      "PAN / ID",
       "Passport",
       "Visa",
       "Education",
@@ -469,17 +478,54 @@ const modules: HRModule[] = [
   },
 ];
 
-const dashboardMetrics = [
-  ["Total Employees", "128", "124 currently active", Users],
-  ["Open Positions", "14", "Across 6 departments", BriefcaseBusiness],
-  ["Attendance", "94.6%", "Current month", CalendarCheck],
-  ["Payroll", "₹18.42L", "Next cycle estimate", IndianRupee],
-];
-
 export default function HumanResourcesManagement() {
   const [selectedModule, setSelectedModule] = useState<HRModule | null>(null);
   const [search, setSearch] = useState("");
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
+
+  // Live Employee State
+  const [employees, setEmployees] = useState<Employee[]>([
+    {
+      id: "EMP-001",
+      name: "Eng. Rohit Sharma",
+      email: "rohit@krve.com",
+      department: "Technology & AI",
+      role: "AI Technical Lead",
+      status: "Active",
+    },
+    {
+      id: "EMP-002",
+      name: "Sarah Jenkins",
+      email: "sarah@krve.com",
+      department: "Luxury Catalog",
+      role: "Catalog Executive",
+      status: "Active",
+    },
+    {
+      id: "EMP-003",
+      name: "Neha Sharma",
+      email: "neha@krve.com",
+      department: "People Ops (HR)",
+      role: "HR Operations Lead",
+      status: "Active",
+    },
+  ]);
+
+  const dashboardMetrics = [
+    ["Total Employees", String(employees.length), `${employees.filter((e) => e.status === "Active").length} currently active`, Users],
+    ["Open Positions", "14", "Across 6 departments", BriefcaseBusiness],
+    ["Attendance", "94.6%", "Current month", CalendarCheck],
+    ["Payroll", "₹18.42L", "Next cycle estimate", IndianRupee],
+  ];
+
+  const handleAddEmployee = (newEmp: Omit<Employee, "id" | "status">) => {
+    const created: Employee = {
+      ...newEmp,
+      id: `EMP-00${employees.length + 1}`,
+      status: "Active",
+    };
+    setEmployees([created, ...employees]);
+  };
 
   const filteredModules = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -488,7 +534,7 @@ export default function HumanResourcesManagement() {
     return modules.filter((module) =>
       `${module.title} ${module.description} ${module.items.join(" ")}`
         .toLowerCase()
-        .includes(query),
+        .includes(query)
     );
   }, [search]);
 
@@ -534,6 +580,50 @@ export default function HumanResourcesManagement() {
         </div>
       </section>
 
+      {/* RECENTLY ONBOARDED DIRECTORY */}
+      <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-black text-slate-950">Active Employee Roster</h2>
+            <p className="text-xs text-slate-500 mt-1">Live synchronized company staff ledger.</p>
+          </div>
+          <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+            {employees.length} Members
+          </span>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 text-xs font-bold uppercase text-slate-400">
+                <th className="pb-3">Employee ID</th>
+                <th className="pb-3">Name</th>
+                <th className="pb-3">Email</th>
+                <th className="pb-3">Department</th>
+                <th className="pb-3">Role</th>
+                <th className="pb-3 text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs">
+              {employees.map((emp) => (
+                <tr key={emp.id} className="hover:bg-slate-50/50">
+                  <td className="py-3 font-mono font-bold text-slate-600">{emp.id}</td>
+                  <td className="py-3 font-bold text-slate-900">{emp.name}</td>
+                  <td className="py-3 text-slate-500">{emp.email}</td>
+                  <td className="py-3 text-slate-600">{emp.department}</td>
+                  <td className="py-3 font-semibold text-blue-700">{emp.role}</td>
+                  <td className="py-3 text-right">
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-600">
+                      {emp.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
           <h2 className="text-2xl font-black text-slate-950">
@@ -555,9 +645,12 @@ export default function HumanResourcesManagement() {
         </div>
       </section>
 
-      {/* RENDER MODAL WITHOUT ALTERING UNDERLYING PAGE DESIGN */}
+      {/* FUNCTIONAL MODAL POPUP */}
       {isAddEmployeeOpen && (
-        <AddEmployeeModal onClose={() => setIsAddEmployeeOpen(false)} />
+        <AddEmployeeModal
+          onClose={() => setIsAddEmployeeOpen(false)}
+          onAdd={handleAddEmployee}
+        />
       )}
     </div>
   );
@@ -594,11 +687,10 @@ function Hero({ onOpenAdd }: { onOpenAdd: () => void }) {
             Open Recruitment
           </button>
 
-          {/* EXACT SAME DESIGN & CLASSES WITH CLICK LISTENER ATTACHED */}
           <button
             type="button"
             onClick={onOpenAdd}
-            className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-blue-700 hover:bg-blue-50 cursor-pointer"
+            className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-blue-700 hover:bg-blue-50 cursor-pointer shadow-md active:scale-95 transition-all"
           >
             <Plus size={17} />
             Add Employee
@@ -609,16 +701,22 @@ function Hero({ onOpenAdd }: { onOpenAdd: () => void }) {
   );
 }
 
-function AddEmployeeModal({ onClose }: { onClose: () => void }) {
+function AddEmployeeModal({
+  onClose,
+  onAdd,
+}: {
+  onClose: () => void;
+  onAdd: (data: { name: string; email: string; department: string; role: string }) => void;
+}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("AI Technical Team");
   const [department, setDepartment] = useState("Technology & AI");
+  const [role, setRole] = useState("AI Technical Team");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Employee ${name} added successfully.`);
+    onAdd({ name, email, department, role });
     onClose();
   };
 
@@ -674,4 +772,4 @@ function AddEmployeeModal({ onClose }: { onClose: () => void }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 outline-none focus:border
+              className="w-full rounded-xl border border-slate-200 bg-slate
