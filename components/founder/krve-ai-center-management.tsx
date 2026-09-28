@@ -11,6 +11,7 @@ import {
   BrainCircuit,
   CheckCircle2,
   ChevronRight,
+  Copy,
   FileBarChart,
   FileSearch,
   FileText,
@@ -21,6 +22,7 @@ import {
   Network,
   Plus,
   Search,
+  Send,
   Settings2,
   ShieldCheck,
   Sparkles,
@@ -29,8 +31,14 @@ import {
   WandSparkles,
   X,
   Zap,
+  RefreshCw,
 } from "lucide-react";
-import { useMemo, useState, type ComponentType } from "react";
+import {
+  useMemo,
+  useState,
+  type ComponentType,
+  type FormEvent,
+} from "react";
 
 type IconType = ComponentType<{
   size?: number;
@@ -46,11 +54,18 @@ type AIModule = {
   items: string[];
 };
 
+type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
+
 const modules: AIModule[] = [
   {
     id: "ai-command-dashboard",
     title: "AI Command Dashboard",
-    description: "View AI usage, automations, decisions, savings and performance.",
+    description:
+      "View AI usage, automations, decisions, savings and performance.",
     icon: BarChart3,
     items: [
       "AI Analyses Today",
@@ -67,7 +82,8 @@ const modules: AIModule[] = [
   {
     id: "enterprise-ai-chat",
     title: "Enterprise AI Chat",
-    description: "Ask KRVE AI questions across enterprise departments and records.",
+    description:
+      "Ask KRVE AI questions across enterprise departments and records.",
     icon: MessageSquare,
     items: [
       "New Conversation",
@@ -87,7 +103,8 @@ const modules: AIModule[] = [
   {
     id: "ai-copilot",
     title: "Founder AI Copilot",
-    description: "Get executive summaries, priorities and next-best actions.",
+    description:
+      "Get executive summaries, priorities and next-best actions.",
     icon: BrainCircuit,
     items: [
       "Daily Executive Brief",
@@ -107,7 +124,8 @@ const modules: AIModule[] = [
   {
     id: "ai-automation",
     title: "AI Automation",
-    description: "Create intelligent workflows, triggers and action rules.",
+    description:
+      "Create intelligent workflows, triggers and action rules.",
     icon: Workflow,
     items: [
       "Create Automation",
@@ -127,7 +145,8 @@ const modules: AIModule[] = [
   {
     id: "ai-agents",
     title: "AI Agents",
-    description: "Deploy specialist AI agents for departments and workflows.",
+    description:
+      "Deploy specialist AI agents for departments and workflows.",
     icon: Bot,
     items: [
       "Founder Agent",
@@ -147,7 +166,8 @@ const modules: AIModule[] = [
   {
     id: "decision-intelligence",
     title: "Decision Intelligence",
-    description: "Compare scenarios and receive data-backed recommendations.",
+    description:
+      "Compare scenarios and receive data-backed recommendations.",
     icon: Lightbulb,
     items: [
       "Decision Register",
@@ -167,7 +187,8 @@ const modules: AIModule[] = [
   {
     id: "forecasting",
     title: "AI Forecasting",
-    description: "Forecast revenue, demand, cash, workforce and operational needs.",
+    description:
+      "Forecast revenue, demand, cash, workforce and operational needs.",
     icon: LineChart,
     items: [
       "Revenue Forecast",
@@ -187,7 +208,8 @@ const modules: AIModule[] = [
   {
     id: "anomaly-detection",
     title: "Anomaly Detection",
-    description: "Detect unusual transactions, stock movements and behaviour.",
+    description:
+      "Detect unusual transactions, stock movements and behaviour.",
     icon: AlertTriangle,
     items: [
       "Financial Anomalies",
@@ -207,7 +229,8 @@ const modules: AIModule[] = [
   {
     id: "recommendation-engine",
     title: "Recommendation Engine",
-    description: "Generate recommendations for products, customers and operations.",
+    description:
+      "Generate recommendations for products, customers and operations.",
     icon: WandSparkles,
     items: [
       "Product Recommendations",
@@ -227,7 +250,8 @@ const modules: AIModule[] = [
   {
     id: "document-intelligence",
     title: "Document Intelligence",
-    description: "Summarise, classify and extract information from enterprise documents.",
+    description:
+      "Summarise, classify and extract information from enterprise documents.",
     icon: FileSearch,
     items: [
       "Document Summary",
@@ -247,7 +271,8 @@ const modules: AIModule[] = [
   {
     id: "knowledge-center",
     title: "Enterprise Knowledge Center",
-    description: "Build a searchable AI knowledge base for KRVE.",
+    description:
+      "Build a searchable AI knowledge base for KRVE.",
     icon: Network,
     items: [
       "Knowledge Sources",
@@ -267,7 +292,8 @@ const modules: AIModule[] = [
   {
     id: "predictive-analytics",
     title: "Predictive Analytics",
-    description: "Predict customer, employee, financial and operational outcomes.",
+    description:
+      "Predict customer, employee, financial and operational outcomes.",
     icon: Gauge,
     items: [
       "Customer Churn",
@@ -287,7 +313,8 @@ const modules: AIModule[] = [
   {
     id: "ai-insights",
     title: "AI Insights Center",
-    description: "View generated insights, trends and recommended actions.",
+    description:
+      "View generated insights, trends and recommended actions.",
     icon: Sparkles,
     items: [
       "Executive Insights",
@@ -307,7 +334,8 @@ const modules: AIModule[] = [
   {
     id: "prompt-library",
     title: "Prompt Library",
-    description: "Manage approved prompts and reusable AI instructions.",
+    description:
+      "Manage approved prompts and reusable AI instructions.",
     icon: FileText,
     items: [
       "Founder Prompts",
@@ -327,7 +355,8 @@ const modules: AIModule[] = [
   {
     id: "model-management",
     title: "AI Model Management",
-    description: "Control model selection, configuration and performance.",
+    description:
+      "Control model selection, configuration and performance.",
     icon: BrainCircuit,
     items: [
       "Model Registry",
@@ -347,7 +376,8 @@ const modules: AIModule[] = [
   {
     id: "ai-governance",
     title: "AI Governance",
-    description: "Manage responsible AI, approvals, access and accountability.",
+    description:
+      "Manage responsible AI, approvals, access and accountability.",
     icon: ShieldCheck,
     items: [
       "AI Policy",
@@ -367,7 +397,8 @@ const modules: AIModule[] = [
   {
     id: "ai-security",
     title: "AI Security & Privacy",
-    description: "Protect enterprise data, prompts and AI interactions.",
+    description:
+      "Protect enterprise data, prompts and AI interactions.",
     icon: ShieldCheck,
     items: [
       "Data Access Rules",
@@ -387,7 +418,8 @@ const modules: AIModule[] = [
   {
     id: "ai-monitoring",
     title: "AI Monitoring",
-    description: "Monitor AI usage, cost, quality and service health.",
+    description:
+      "Monitor AI usage, cost, quality and service health.",
     icon: Activity,
     items: [
       "Usage Dashboard",
@@ -407,7 +439,8 @@ const modules: AIModule[] = [
   {
     id: "ai-training-feedback",
     title: "AI Feedback & Improvement",
-    description: "Review answers, collect feedback and improve AI performance.",
+    description:
+      "Review answers, collect feedback and improve AI performance.",
     icon: CheckCircle2,
     items: [
       "Answer Feedback",
@@ -427,7 +460,8 @@ const modules: AIModule[] = [
   {
     id: "ai-reports",
     title: "AI Reports",
-    description: "Generate usage, savings, quality and governance reports.",
+    description:
+      "Generate usage, savings, quality and governance reports.",
     icon: FileBarChart,
     items: [
       "Executive AI Report",
@@ -447,7 +481,8 @@ const modules: AIModule[] = [
   {
     id: "ai-settings",
     title: "AI Settings",
-    description: "Configure models, permissions, automations and notifications.",
+    description:
+      "Configure models, permissions, automations and notifications.",
     icon: Settings2,
     items: [
       "Default Model",
@@ -467,18 +502,20 @@ const modules: AIModule[] = [
 ];
 
 const dashboardMetrics = [
-  ["AI Analyses Today", "1,284", "Across all departments", Sparkles],
-  ["Automations Active", "42", "31 completed today", Workflow],
-  ["Decisions Assisted", "186", "Current month", Lightbulb],
-  ["Estimated Savings", "₹4.82L", "Through AI actions", Zap],
+  ["AI Analyses Today", "Live", "Connected to KEOS", Sparkles],
+  ["Automations Active", "—", "Live KEOS data", Workflow],
+  ["Decisions Assisted", "—", "Live KEOS data", Lightbulb],
+  ["AI Status", "ONLINE", "KRVE AI ready", Zap],
 ];
 
 export default function KrveAICenterManagement() {
   const [selectedModule, setSelectedModule] = useState<AIModule | null>(null);
+  const [showAI, setShowAI] = useState(false);
   const [search, setSearch] = useState("");
 
   const filteredModules = useMemo(() => {
     const query = search.trim().toLowerCase();
+
     if (!query) return modules;
 
     return modules.filter((module) =>
@@ -488,7 +525,15 @@ export default function KrveAICenterManagement() {
     );
   }, [search]);
 
+  if (showAI) {
+    return <AskKRVEAIWorkspace onBack={() => setShowAI(false)} />;
+  }
+
   if (selectedModule) {
+    if (selectedModule.id === "enterprise-ai-chat") {
+      return <AskKRVEAIWorkspace onBack={() => setSelectedModule(null)} />;
+    }
+
     return (
       <ModuleWorkspace
         module={selectedModule}
@@ -499,7 +544,7 @@ export default function KrveAICenterManagement() {
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] p-4 sm:p-6 lg:p-8">
-      <Hero />
+      <Hero onAskAI={() => setShowAI(true)} />
 
       <section className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {dashboardMetrics.map(([title, value, note, Icon]) => (
@@ -516,12 +561,14 @@ export default function KrveAICenterManagement() {
       <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 focus-within:border-violet-500 focus-within:bg-white">
           <Search size={18} className="text-slate-400" />
+
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search AI modules, agents or automations..."
             className="min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
+
           {search && (
             <button type="button" onClick={() => setSearch("")}>
               <X size={16} className="text-slate-400" />
@@ -535,8 +582,9 @@ export default function KrveAICenterManagement() {
           <h2 className="text-2xl font-black text-slate-950">
             Complete KRVE AI Operations
           </h2>
+
           <p className="mt-2 text-sm text-slate-500">
-            Tap any card to open its complete AI workspace.
+            Ask KRVE AI anything or open an AI workspace.
           </p>
         </div>
 
@@ -554,7 +602,7 @@ export default function KrveAICenterManagement() {
   );
 }
 
-function Hero() {
+function Hero({ onAskAI }: { onAskAI: () => void }) {
   return (
     <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-violet-950 to-blue-700 p-7 text-white shadow-xl sm:p-9">
       <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
@@ -563,6 +611,7 @@ function Hero() {
             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10">
               <Sparkles size={25} />
             </div>
+
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-100">
               Enterprise Intelligence
             </p>
@@ -573,21 +622,28 @@ function Hero() {
           </h1>
 
           <p className="mt-3 max-w-3xl text-sm leading-7 text-violet-100">
-            Unified AI command center for enterprise questions, decision
-            intelligence, forecasting, automation, AI agents, governance,
-            security, analytics and continuous improvement.
+            Your intelligent KRVE + KEOS assistant. Ask questions about
+            business data, sales, finance, HR, inventory, candidates,
+            customers, products, orders and operations.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold hover:bg-white/20">
-            <Workflow size={17} />
-            Create Automation
-          </button>
-
-          <button className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-violet-700 hover:bg-violet-50">
+          <button
+            type="button"
+            onClick={onAskAI}
+            className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-violet-700 shadow-lg transition hover:bg-violet-50"
+          >
             <Sparkles size={17} />
             Ask KRVE AI
+          </button>
+
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold hover:bg-white/20"
+          >
+            <Workflow size={17} />
+            Create Automation
           </button>
         </div>
       </div>
@@ -611,8 +667,11 @@ function MetricCard({
       <div className="grid h-11 w-11 place-items-center rounded-xl bg-violet-50 text-violet-600">
         <Icon size={21} />
       </div>
+
       <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
+
       <h2 className="mt-2 text-3xl font-black text-slate-950">{value}</h2>
+
       <p className="mt-2 text-xs text-slate-400">{note}</p>
     </article>
   );
@@ -662,6 +721,343 @@ function ModuleCard({
   );
 }
 
+function AskKRVEAIWorkspace({ onBack }: { onBack: () => void }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const suggestions = [
+    "KRVE ka founder kaun hai?",
+    "August 2026 me kitni sales hui?",
+    "Inventory me black T-shirts kitni hain?",
+    "Kitne candidates select hue?",
+    "KRVE ke current orders ka summary do.",
+    "KRVE ka business status batao.",
+  ];
+
+  async function askAI(question: string) {
+    const trimmed = question.trim();
+
+    if (!trimmed || loading) return;
+
+    setInput("");
+    setError("");
+
+    const userMessage: ChatMessage = {
+      id: `${Date.now()}-user`,
+      role: "user",
+      content: trimmed,
+    };
+
+    setMessages((previous) => [...previous, userMessage]);
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/keos-ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: trimmed,
+          role: "founder",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "KRVE AI could not process the request.",
+        );
+      }
+
+      const answer =
+        typeof data?.answer === "string"
+          ? data.answer
+          : "I could not generate an answer.";
+
+      const assistantMessage: ChatMessage = {
+        id: `${Date.now()}-assistant`,
+        role: "assistant",
+        content: answer,
+      };
+
+      setMessages((previous) => [...previous, assistantMessage]);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Something went wrong while contacting KRVE AI.";
+
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void askAI(input);
+  }
+
+  function newConversation() {
+    setMessages([]);
+    setInput("");
+    setError("");
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f4f7fb] p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
+        <header className="border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                type="button"
+                onClick={onBack}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+              >
+                <ArrowLeft size={18} />
+              </button>
+
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 text-white shadow-md">
+                <Sparkles size={22} />
+              </div>
+
+              <div className="min-w-0">
+                <h1 className="truncate text-lg font-black text-slate-950">
+                  Ask KRVE AI
+                </h1>
+
+                <div className="mt-0.5 flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="text-xs font-medium text-slate-500">
+                    Connected to KEOS intelligence
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={newConversation}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+            >
+              <Plus size={16} />
+              <span className="hidden sm:inline">New Chat</span>
+            </button>
+          </div>
+        </header>
+
+        <main className="flex min-h-0 flex-1 flex-col">
+          <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-8">
+            {messages.length === 0 ? (
+              <EmptyAIState
+                suggestions={suggestions}
+                onSuggestion={(value) => void askAI(value)}
+              />
+            ) : (
+              <div className="mx-auto max-w-4xl space-y-6">
+                {messages.map((message) => (
+                  <ChatBubble key={message.id} message={message} />
+                ))}
+
+                {loading && (
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-600">
+                      <Sparkles size={18} />
+                    </div>
+
+                    <div className="rounded-2xl rounded-tl-md border border-slate-200 bg-slate-50 px-5 py-4">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-violet-500" />
+                        <span
+                          className="h-2 w-2 animate-bounce rounded-full bg-violet-500"
+                          style={{ animationDelay: "120ms" }}
+                        />
+                        <span
+                          className="h-2 w-2 animate-bounce rounded-full bg-violet-500"
+                          style={{ animationDelay: "240ms" }}
+                        />
+                        <span className="ml-2 text-xs font-medium text-slate-500">
+                          KRVE AI is checking KEOS data...
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+                      <div>
+                        <p className="font-bold">KRVE AI Error</p>
+                        <p className="mt-1">{error}</p>
+
+                        <button
+                          type="button"
+                          onClick={() => setError("")}
+                          className="mt-3 text-xs font-bold underline"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-slate-200 bg-white p-4 sm:p-6">
+            <form
+              onSubmit={handleSubmit}
+              className="mx-auto max-w-4xl"
+            >
+              <div className="flex items-end gap-2 rounded-2xl border border-slate-300 bg-slate-50 p-2 transition focus-within:border-violet-500 focus-within:bg-white focus-within:shadow-md">
+                <textarea
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void askAI(input);
+                    }
+                  }}
+                  rows={1}
+                  placeholder="Ask anything about KRVE or KEOS..."
+                  className="max-h-40 min-h-[48px] flex-1 resize-none bg-transparent px-3 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                  disabled={loading}
+                />
+
+                <button
+                  type="submit"
+                  disabled={!input.trim() || loading}
+                  className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-violet-600 text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {loading ? (
+                    <RefreshCw size={18} className="animate-spin" />
+                  ) : (
+                    <Send size={18} />
+                  )}
+                </button>
+              </div>
+
+              <p className="mt-3 text-center text-[11px] text-slate-400">
+                KRVE AI uses available KEOS business data for KRVE-specific
+                questions. It will not invent unavailable figures.
+              </p>
+            </form>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function EmptyAIState({
+  suggestions,
+  onSuggestion,
+}: {
+  suggestions: string[];
+  onSuggestion: (value: string) => void;
+}) {
+  return (
+    <div className="mx-auto flex max-w-4xl flex-col items-center justify-center py-10 text-center sm:py-16">
+      <div className="grid h-20 w-20 place-items-center rounded-3xl bg-gradient-to-br from-violet-100 to-blue-100 text-violet-600">
+        <Sparkles size={38} />
+      </div>
+
+      <h2 className="mt-7 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+        What can I help you with?
+      </h2>
+
+      <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
+        Ask KRVE AI about your business. It can analyse connected KEOS data
+        across sales, orders, products, inventory, customers, candidates,
+        projects and other available enterprise records.
+      </p>
+
+      <div className="mt-8 grid w-full gap-3 sm:grid-cols-2">
+        {suggestions.map((suggestion) => (
+          <button
+            key={suggestion}
+            type="button"
+            onClick={() => onSuggestion(suggestion)}
+            className="group rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-violet-300 hover:bg-violet-50/40 hover:shadow-md"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-semibold text-slate-700">
+                {suggestion}
+              </span>
+
+              <ArrowRight
+                size={16}
+                className="shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-violet-600"
+              />
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChatBubble({ message }: { message: ChatMessage }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyAnswer() {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+
+      window.setTimeout(() => {
+        setCopied(false);
+      }, 1500);
+    } catch {
+      // Clipboard permission can be unavailable in some environments.
+    }
+  }
+
+  if (message.role === "user") {
+    return (
+      <div className="flex justify-end">
+        <div className="max-w-[85%] rounded-2xl rounded-tr-md bg-violet-600 px-5 py-3.5 text-sm leading-7 text-white shadow-sm">
+          {message.content}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-3">
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-600">
+        <Sparkles size={18} />
+      </div>
+
+      <div className="min-w-0 max-w-[90%]">
+        <div className="rounded-2xl rounded-tl-md border border-slate-200 bg-white px-5 py-4 text-sm leading-7 text-slate-700 shadow-sm">
+          <div className="whitespace-pre-wrap break-words">
+            {message.content}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void copyAnswer()}
+          className="mt-2 flex items-center gap-1.5 px-2 text-xs font-semibold text-slate-400 transition hover:text-slate-700"
+        >
+          <Copy size={13} />
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ModuleWorkspace({
   module,
   onBack,
@@ -689,6 +1085,7 @@ function ModuleWorkspace({
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10">
                 <Icon size={24} />
               </div>
+
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-100">
                 AI Workspace
               </p>
@@ -703,7 +1100,10 @@ function ModuleWorkspace({
             </p>
           </div>
 
-          <button className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-violet-700">
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-violet-700"
+          >
             <Plus size={17} />
             Create New
           </button>
@@ -711,10 +1111,33 @@ function ModuleWorkspace({
       </section>
 
       <section className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <WorkspaceMetric title="Active Records" value="1,284" note="Current module" icon={Activity} />
-        <WorkspaceMetric title="Pending Actions" value="14" note="Require attention" icon={BellRing} />
-        <WorkspaceMetric title="Success Rate" value="96%" note="Current cycle" icon={CheckCircle2} />
-        <WorkspaceMetric title="Reports" value="8" note="Available exports" icon={FileBarChart} />
+        <WorkspaceMetric
+          title="Active Records"
+          value="—"
+          note="Live module data"
+          icon={Activity}
+        />
+
+        <WorkspaceMetric
+          title="Pending Actions"
+          value="—"
+          note="Current module"
+          icon={BellRing}
+        />
+
+        <WorkspaceMetric
+          title="Success Rate"
+          value="—"
+          note="Live AI data"
+          icon={CheckCircle2}
+        />
+
+        <WorkspaceMetric
+          title="Reports"
+          value="—"
+          note="Available exports"
+          icon={FileBarChart}
+        />
       </section>
 
       <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -723,12 +1146,16 @@ function ModuleWorkspace({
             <h2 className="text-2xl font-black text-slate-950">
               {module.title} Features
             </h2>
+
             <p className="mt-2 text-sm text-slate-500">
               Tap any feature to open its AI workflow.
             </p>
           </div>
 
-          <button className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600">
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600"
+          >
             <FileBarChart size={17} />
             View Reports
           </button>
@@ -760,8 +1187,11 @@ function WorkspaceMetric({
       <div className="grid h-11 w-11 place-items-center rounded-xl bg-violet-50 text-violet-600">
         <Icon size={21} />
       </div>
+
       <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
+
       <h2 className="mt-2 text-3xl font-black text-slate-950">{value}</h2>
+
       <p className="mt-2 text-xs text-slate-400">{note}</p>
     </article>
   );
