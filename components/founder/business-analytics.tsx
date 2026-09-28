@@ -54,7 +54,7 @@ type PaymentStatus =
 
 type OrderStatus =
   | "Pending"
-  | | "Confirmed"
+  | "Confirmed"
   | "Processing"
   | "Packed"
   | "Shipped"
