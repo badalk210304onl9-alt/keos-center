@@ -29,21 +29,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Keep the model fixed for this test.
-    // Do not depend on a possibly incorrect Vercel GEMINI_MODEL value.
-    const model = "gemini-2.5-flash";
+    const model =
+      process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
     const url =
-      "https://generativelanguage.googleapis.com/v1beta/models/" +
-      model +
-      ":generateContent";
+      "https://generativelanguage.googleapis.com/v1beta/interactions";
 
-    const prompt = [
+    const systemInstruction = [
       "You are KRVE AI, the internal AI assistant for KRVE – The Fashion Studio and KEOS.",
       "",
-      "Answer the user's question clearly and professionally.",
-      "Do not invent KRVE business data.",
-      "If live KRVE/KEOS data is not provided to you, do not pretend that you know it.",
+      "Answer clearly, professionally and concisely.",
+      "",
+      "IMPORTANT RULES:",
+      "1. Never invent KRVE business data.",
+      "2. Never invent sales, revenue, inventory, orders, candidates, employees or financial figures.",
+      "3. If business data is not provided to you, clearly say that the data is not available in the current context.",
+      "4. Do not claim that you checked KEOS unless KEOS data was actually provided.",
+      "5. For general questions, answer normally.",
+      "6. For KRVE-specific questions, use only verified information supplied in the prompt.",
+    ].join("\n");
+
+    const input = [
+      systemInstruction,
       "",
       "User question:",
       message,
@@ -51,45 +58,46 @@ export async function POST(request: NextRequest) {
 
     const response = await fetch(url, {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
+
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 1024,
+        model: model,
+        input: input,
+        store: false,
+        generation_config: {
+          thinking_level: "low",
         },
       }),
     });
 
     const responseText = await response.text();
 
-    console.log("KRVE AI Gemini status:", response.status);
-    console.log("KRVE AI Gemini response:", responseText);
+    console.log(
+      "KRVE AI Gemini status:",
+      response.status
+    );
 
     if (!response.ok) {
-      let googleError = "";
+      console.error(
+        "KRVE AI Gemini response:",
+        responseText
+      );
+
+      let googleMessage = "";
 
       try {
         const errorData = JSON.parse(responseText);
 
-        googleError =
+        googleMessage =
           errorData?.error?.message ||
           errorData?.error?.status ||
           "";
       } catch {
-        googleError = responseText;
+        googleMessage = responseText;
       }
 
       return NextResponse.json(
@@ -98,7 +106,7 @@ export async function POST(request: NextRequest) {
             "Gemini API error (" +
             response.status +
             "). " +
-            (googleError || "Unknown Gemini API error."),
+            (googleMessage || "Unknown Gemini API error."),
         },
         { status: 502 }
       );
@@ -117,15 +125,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const parts =
-      data?.candidates?.[0]?.content?.parts;
-
     let answer = "";
 
-    if (Array.isArray(parts)) {
-      for (const part of parts) {
-        if (typeof part?.text === "string") {
-          answer += part.text;
+    if (typeof data?.output_text === "string") {
+      answer = data.output_text.trim();
+    }
+
+    if (!answer && Array.isArray(data?.steps)) {
+      for (const step of data.steps) {
+        if (
+          step?.type === "model_output" &&
+          Array.isArray(step?.content)
+        ) {
+          for (const content of step.content) {
+            if (typeof content?.text === "string") {
+              answer += content.text;
+            }
+          }
         }
       }
     }
@@ -142,16 +158,20 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      answer,
+      answer: answer,
       source: "Gemini",
-      model,
+      model: model,
     });
   } catch (error) {
-    console.error("KRVE AI route error:", error);
+    console.error(
+      "KRVE AI route error:",
+      error
+    );
 
     return NextResponse.json(
       {
-        error: "Unable to process your KRVE AI request.",
+        error:
+          "Unable to process your KRVE AI request.",
       },
       { status: 500 }
     );
