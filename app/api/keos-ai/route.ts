@@ -71,14 +71,13 @@ ${question}`,
     console.log("===================================");
 
     if (!response.ok) {
-      return NextResponse.json(
-        {
-          error: "Gemini request failed.",
-          status: response.status,
-          details: raw,
-        },
-        { status: 502 }
-      );
+     return NextResponse.json(
+  {
+    error: `Gemini request failed (${response.status})`,
+    details: raw,
+  },
+  { status: 502 }
+);
     }
 
     let data: any;
