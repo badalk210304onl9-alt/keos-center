@@ -14,9 +14,7 @@ export async function POST(request: NextRequest) {
         {
           error: "Please enter a question.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
@@ -25,47 +23,49 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       return NextResponse.json(
         {
-          error:
-            "GEMINI_API_KEY is not configured on the server.",
+          error: "GEMINI_API_KEY is not configured on the server.",
         },
-        {
-          status: 500,
-        }
+        { status: 500 }
       );
     }
 
-    const model =
-      process.env.GEMINI_MODEL ||
-      "gemini-2.5-flash";
+    // Keep the model fixed for this test.
+    // Do not depend on a possibly incorrect Vercel GEMINI_MODEL value.
+    const model = "gemini-2.5-flash";
 
     const url =
       "https://generativelanguage.googleapis.com/v1beta/models/" +
       model +
       ":generateContent";
 
+    const prompt = [
+      "You are KRVE AI, the internal AI assistant for KRVE – The Fashion Studio and KEOS.",
+      "",
+      "Answer the user's question clearly and professionally.",
+      "Do not invent KRVE business data.",
+      "If live KRVE/KEOS data is not provided to you, do not pretend that you know it.",
+      "",
+      "User question:",
+      message,
+    ].join("\n");
+
     const response = await fetch(url, {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
-
       body: JSON.stringify({
         contents: [
           {
             role: "user",
-
             parts: [
               {
-                text:
-                  "You are KRVE AI, the internal AI assistant for KRVE – The Fashion Studio and KEOS. Answer clearly and professionally.\n\nUser question:\n" +
-                  message,
+                text: prompt,
               },
             ],
           },
         ],
-
         generationConfig: {
           temperature: 0.2,
           maxOutputTokens: 1024,
@@ -73,26 +73,34 @@ export async function POST(request: NextRequest) {
       }),
     });
 
-    const responseText =
-      await response.text();
+    const responseText = await response.text();
+
+    console.log("KRVE AI Gemini status:", response.status);
+    console.log("KRVE AI Gemini response:", responseText);
 
     if (!response.ok) {
-      console.error(
-        "Gemini API error:",
-        response.status,
-        responseText
-      );
+      let googleError = "";
+
+      try {
+        const errorData = JSON.parse(responseText);
+
+        googleError =
+          errorData?.error?.message ||
+          errorData?.error?.status ||
+          "";
+      } catch {
+        googleError = responseText;
+      }
 
       return NextResponse.json(
         {
           error:
             "Gemini API error (" +
             response.status +
-            ")",
+            "). " +
+            (googleError || "Unknown Gemini API error."),
         },
-        {
-          status: 502,
-        }
+        { status: 502 }
       );
     }
 
@@ -103,12 +111,9 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json(
         {
-          error:
-            "Invalid response received from Gemini.",
+          error: "Invalid response received from Gemini.",
         },
-        {
-          status: 502,
-        }
+        { status: 502 }
       );
     }
 
@@ -119,9 +124,7 @@ export async function POST(request: NextRequest) {
 
     if (Array.isArray(parts)) {
       for (const part of parts) {
-        if (
-          typeof part?.text === "string"
-        ) {
+        if (typeof part?.text === "string") {
           answer += part.text;
         }
       }
@@ -132,34 +135,25 @@ export async function POST(request: NextRequest) {
     if (!answer) {
       return NextResponse.json(
         {
-          error:
-            "Gemini did not return an answer.",
+          error: "Gemini did not return an answer.",
         },
-        {
-          status: 502,
-        }
+        { status: 502 }
       );
     }
 
     return NextResponse.json({
-      answer: answer,
+      answer,
       source: "Gemini",
-      model: model,
+      model,
     });
   } catch (error) {
-    console.error(
-      "KRVE AI route error:",
-      error
-    );
+    console.error("KRVE AI route error:", error);
 
     return NextResponse.json(
       {
-        error:
-          "Unable to process your KRVE AI request.",
+        error: "Unable to process your KRVE AI request.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
