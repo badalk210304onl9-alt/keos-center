@@ -19,7 +19,6 @@ import {
   Eye,
   IndianRupee,
   MapPin,
-  MonitorSmartphone,
   PackageCheck,
   RefreshCcw,
   ShoppingBag,
@@ -44,89 +43,11 @@ import {
   YAxis,
 } from "recharts";
 
-type DateRange = "7D" | "30D" | "90D" | "1Y";
-
-type PaymentStatus =
-  | "Paid"
-  | "Pending"
-  | "Failed"
-  | "Refunded";
-
-type OrderStatus =
-  | "Pending"
-  | "Confirmed"
-  | "Processing"
-  | "Packed"
-  | "Shipped"
-  | "Out for Delivery"
-  | "Delivered"
-  | "Cancelled"
-  | "Returned";
-
-type ShippingAddress = {
-  recipientName?: string;
-  phone?: string;
-  addressLine1?: string;
-  addressLine2?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  country?: string;
-};
-
-type RawApiOrder = {
-  id: string;
-  orderNumber: string;
-  customerId: string | null;
-
-  customer: {
-    name: string;
-    firstName?: string | null;
-    lastName?: string | null;
-    email: string;
-    phone: string;
-  };
-
-  status: string;
-  paymentStatus: string;
-
-  subtotal: number;
-  discount: number;
-  shipping: number;
-  tax: number;
-  total: number;
-  currency: string;
-
-  couponCode?: string | null;
-
-  shippingAddress?: ShippingAddress;
-  billingAddress?: ShippingAddress;
-
-  notes?: string | null;
-  itemCount?: number;
-
-  createdAt: string;
-  updatedAt: string;
-};
-
-type OrdersApiResponse = {
-  success: boolean;
-  message?: string;
-
-  orders?: RawApiOrder[];
-
-  pagination?: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
-};
-
-type Order = RawApiOrder & {
-  paymentStatusNormalized: PaymentStatus;
-  orderStatusNormalized: OrderStatus;
-};
+type DateRange =
+  | "7D"
+  | "30D"
+  | "90D"
+  | "1Y";
 
 type MetricCardProps = {
   title: string;
@@ -137,7 +58,124 @@ type MetricCardProps = {
     size?: number;
     className?: string;
   }>;
-  tone: "blue" | "red" | "green" | "orange";
+  tone:
+    | "blue"
+    | "red"
+    | "green"
+    | "orange";
+};
+
+type AnalyticsData = {
+  live: boolean;
+  generatedAt: string;
+
+  period: {
+    from: string;
+    to: string;
+  };
+
+  revenue: {
+    grossSales: number;
+    netSales: number;
+    discounts: number;
+    shipping: number;
+    tax: number;
+    orderCount: number;
+    averageOrderValue: number;
+    growthPercent: number;
+  };
+
+  sales: {
+    daily: Array<{
+      date: string;
+      orders: number;
+      revenue: number;
+    }>;
+
+    orderStatus: Array<{
+      status: string;
+      count: number;
+    }>;
+
+    paymentStatus: Array<{
+      status: string;
+      count: number;
+    }>;
+
+    paymentMethod: Array<{
+      method: string;
+      orders: number;
+      revenue: number;
+    }>;
+  };
+
+  products: {
+    topSelling: Array<{
+      productId?: string;
+      name: string;
+      sku?: string | null;
+      quantity?: number;
+      units?: number;
+      revenue?: number;
+      orders?: number;
+    }>;
+
+    slowMoving: Array<{
+      productId?: string;
+      name: string;
+      sku?: string | null;
+      quantity?: number;
+      units?: number;
+      revenue?: number;
+      orders?: number;
+    }>;
+
+    categoryPerformance: Array<{
+      category: string;
+      revenue: number;
+      orders: number;
+      quantity?: number;
+      units?: number;
+    }>;
+  };
+
+  customers: {
+    newCustomers: number;
+    returningCustomers: number;
+    activeCustomers: number;
+    repeatPurchaseRate: number;
+    customerRevenue: number;
+    averageCustomerValue: number;
+  };
+
+  inventory: {
+    totalProducts: number;
+    inStockProducts: number;
+    lowStockProducts: number;
+    outOfStockProducts: number;
+    totalUnits: number;
+    inventoryValue: number;
+
+    movement: Array<{
+      type: string;
+      quantity: number;
+      value?: number;
+    }>;
+  };
+
+  finance: {
+    revenue: number;
+    expensesAvailable: boolean;
+    grossProfitAvailable: boolean;
+    netCashFlowAvailable: boolean;
+    note: string;
+  };
+};
+
+type AnalyticsApiResponse = {
+  success: boolean;
+  message?: string;
+  data?: AnalyticsData | null;
 };
 
 const CHART_COLORS = [
@@ -147,77 +185,17 @@ const CHART_COLORS = [
   "#f59e0b",
 ];
 
-function normalizePaymentStatus(
-  value: string,
-): PaymentStatus {
-  const normalized = value
-    .trim()
-    .toLowerCase();
-
-  if (normalized === "paid") {
-    return "Paid";
-  }
-
-  if (normalized === "pending") {
-    return "Pending";
-  }
-
-  if (normalized === "failed") {
-    return "Failed";
-  }
-
-  if (normalized === "refunded") {
-    return "Refunded";
-  }
-
-  return "Pending";
-}
-
-function normalizeOrderStatus(
-  value: string,
-): OrderStatus {
-  const statuses: OrderStatus[] = [
-    "Pending",
-    "Confirmed",
-    "Processing",
-    "Packed",
-    "Shipped",
-    "Out for Delivery",
-    "Delivered",
-    "Cancelled",
-    "Returned",
-  ];
-
-  const match = statuses.find(
-    (status) =>
-      status.toLowerCase() ===
-      value.trim().toLowerCase(),
-  );
-
-  return match ?? "Pending";
-}
-
-function mapOrder(
-  order: RawApiOrder,
-): Order {
-  return {
-    ...order,
-    paymentStatusNormalized:
-      normalizePaymentStatus(
-        order.paymentStatus,
-      ),
-    orderStatusNormalized:
-      normalizeOrderStatus(
-        order.status,
-      ),
-  };
-}
-
 function formatCurrency(
   value: number,
 ) {
   if (!Number.isFinite(value)) {
     return "₹0";
+  }
+
+  if (value >= 10000000) {
+    return `₹${(
+      value / 10000000
+    ).toFixed(1)}Cr`;
   }
 
   if (value >= 100000) {
@@ -264,165 +242,166 @@ function formatNumber(
   );
 }
 
-function getDateRangeStart(
+function formatPercentage(
+  value: number,
+) {
+  if (!Number.isFinite(value)) {
+    return "0%";
+  }
+
+  return `${value.toFixed(
+    value % 1 === 0 ? 0 : 1,
+  )}%`;
+}
+
+function getDateRange(
   range: DateRange,
 ) {
-  const date = new Date();
+  const now =
+    new Date();
+
+  const to =
+    new Date(now);
+
+  to.setHours(
+    23,
+    59,
+    59,
+    999,
+  );
+
+  const from =
+    new Date(now);
 
   if (range === "7D") {
-    date.setDate(
-      date.getDate() - 6,
+    from.setDate(
+      from.getDate() - 6,
     );
   }
 
   if (range === "30D") {
-    date.setDate(
-      date.getDate() - 29,
+    from.setDate(
+      from.getDate() - 29,
     );
   }
 
   if (range === "90D") {
-    date.setDate(
-      date.getDate() - 89,
+    from.setDate(
+      from.getDate() - 89,
     );
   }
 
   if (range === "1Y") {
-    date.setFullYear(
-      date.getFullYear() - 1,
+    from.setFullYear(
+      from.getFullYear() - 1,
     );
-    date.setDate(
-      date.getDate() + 1,
+
+    from.setDate(
+      from.getDate() + 1,
     );
   }
 
-  date.setHours(
+  from.setHours(
     0,
     0,
     0,
     0,
   );
 
-  return date;
+  return {
+    from:
+      from.toISOString(),
+    to:
+      to.toISOString(),
+  };
 }
 
-function isRevenueOrder(
-  order: Order,
+function formatDateLabel(
+  value: string,
+  range: DateRange,
 ) {
-  return (
-    order.paymentStatusNormalized ===
-      "Paid" &&
-    order.orderStatusNormalized !==
-      "Cancelled" &&
-    order.orderStatusNormalized !==
-      "Returned"
+  const date =
+    new Date(value);
+
+  if (
+    !Number.isFinite(
+      date.getTime(),
+    )
+  ) {
+    return value;
+  }
+
+  if (range === "1Y") {
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        month: "short",
+        year: "numeric",
+      },
+    );
+  }
+
+  return date.toLocaleDateString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+    },
   );
 }
 
-function getCustomerKey(
-  order: Order,
+function normalizePaymentStatus(
+  value: string,
 ) {
-  if (order.customerId) {
-    return `id:${order.customerId}`;
-  }
-
-  if (
-    order.customer?.email?.trim()
-  ) {
-    return `email:${order.customer.email
+  const normalized =
+    value
       .trim()
-      .toLowerCase()}`;
-  }
-
-  if (
-    order.customer?.phone?.trim()
-  ) {
-    return `phone:${order.customer.phone
-      .trim()
-      .toLowerCase()}`;
-  }
-
-  return `order:${order.id}`;
-}
-
-function getRegion(
-  address?: ShippingAddress,
-) {
-  const state =
-    address?.state
-      ?.trim()
       .toLowerCase();
 
-  if (!state) {
-    return "Unknown Region";
+  if (
+    normalized.includes("paid")
+  ) {
+    return "Paid";
   }
 
-  const north = [
-    "uttar pradesh",
-    "uttarakhand",
-    "delhi",
-    "haryana",
-    "punjab",
-    "himachal pradesh",
-    "jammu and kashmir",
-    "ladakh",
-    "rajasthan",
-    "chandigarh",
-  ];
-
-  const west = [
-    "maharashtra",
-    "gujarat",
-    "goa",
-    "madhya pradesh",
-    "chhattisgarh",
-    "dadra and nagar haveli",
-    "daman and diu",
-  ];
-
-  const south = [
-    "karnataka",
-    "tamil nadu",
-    "kerala",
-    "andhra pradesh",
-    "telangana",
-    "puducherry",
-    "andaman and nicobar islands",
-    "lakshadweep",
-  ];
-
-  const east = [
-    "bihar",
-    "jharkhand",
-    "odisha",
-    "west bengal",
-    "sikkim",
-    "assam",
-    "arunachal pradesh",
-    "manipur",
-    "meghalaya",
-    "mizoram",
-    "nagaland",
-    "tripura",
-  ];
-
-  if (north.includes(state)) {
-    return "North India";
+  if (
+    normalized.includes("pending")
+  ) {
+    return "Pending";
   }
 
-  if (west.includes(state)) {
-    return "West India";
+  if (
+    normalized.includes("failed")
+  ) {
+    return "Failed";
   }
 
-  if (south.includes(state)) {
-    return "South India";
+  if (
+    normalized.includes("refund")
+  ) {
+    return "Refunded";
   }
 
-  if (east.includes(state)) {
-    return "East India";
+  return value || "Unknown";
+}
+
+function normalizeOrderStatus(
+  value: string,
+) {
+  if (!value) {
+    return "Unknown";
   }
 
-  return "Other India";
+  return value
+    .replaceAll(
+      "_",
+      " ",
+    )
+    .replace(
+      /\b\w/g,
+      (letter) =>
+        letter.toUpperCase(),
+    );
 }
 
 function MetricCard({
@@ -514,7 +493,11 @@ function MiniCard({
   title: string;
   value: string;
   change: string;
-  tone: "blue" | "red" | "green" | "orange";
+  tone:
+    | "blue"
+    | "red"
+    | "green"
+    | "orange";
 }) {
   const iconClass =
     tone === "red"
@@ -602,523 +585,680 @@ function InsightCard({
   );
 }
 
+function DataStatus({
+  label,
+  status,
+  description,
+  live = false,
+}: {
+  label: string;
+  status: string;
+  description: string;
+  live?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+      <div>
+        <p className="text-xs font-black text-slate-800">
+          {label}
+        </p>
+
+        <p className="mt-1 text-[11px] text-slate-400">
+          {description}
+        </p>
+      </div>
+
+      <span
+        className={`shrink-0 rounded-full px-3 py-1 text-[9px] font-black ${
+          live
+            ? "bg-green-50 text-green-700"
+            : status ===
+                "NO DATA"
+              ? "bg-orange-50 text-orange-700"
+              : "bg-slate-200 text-slate-500"
+        }`}
+      >
+        {status}
+      </span>
+    </div>
+  );
+}
+
 export default function BusinessAnalytics() {
-  const [selectedRange, setSelectedRange] =
+  const [
+    selectedRange,
+    setSelectedRange,
+  ] =
     useState<DateRange>("30D");
 
-  const [comparePeriod, setComparePeriod] =
+  const [
+    comparePeriod,
+    setComparePeriod,
+  ] =
     useState(true);
 
-  const [isRefreshing, setIsRefreshing] =
+  const [
+    isRefreshing,
+    setIsRefreshing,
+  ] =
     useState(false);
 
-  const [orders, setOrders] =
-    useState<Order[]>([]);
+  const [
+    analytics,
+    setAnalytics,
+  ] =
+    useState<AnalyticsData | null>(
+      null,
+    );
 
-  const [isLoading, setIsLoading] =
+  const [
+    isLoading,
+    setIsLoading,
+  ] =
     useState(true);
 
-  const [error, setError] =
+  const [
+    error,
+    setError,
+  ] =
     useState("");
 
-  const loadAnalytics = useCallback(
-    async () => {
-      setIsLoading(true);
-      setError("");
-
-      try {
-        const response =
-          await fetch(
-            "/api/orders?limit=100",
-            {
-              method: "GET",
-              headers: {
-                Accept:
-                  "application/json",
-              },
-              cache:
-                "no-store",
-            },
-          );
-
-        let result:
-          | OrdersApiResponse
-          | null = null;
-
+  const loadAnalytics =
+    useCallback(
+      async () => {
         try {
-          result =
-            (await response.json()) as OrdersApiResponse;
-        } catch {
-          result = null;
-        }
+          setError("");
 
-        if (
-          !response.ok ||
-          !result?.success
+          const {
+            from,
+            to,
+          } =
+            getDateRange(
+              selectedRange,
+            );
+
+          const params =
+            new URLSearchParams();
+
+          params.set(
+            "from",
+            from,
+          );
+
+          params.set(
+            "to",
+            to,
+          );
+
+          const response =
+            await fetch(
+              `/api/business-analytics?${params.toString()}`,
+              {
+                method:
+                  "GET",
+
+                headers: {
+                  Accept:
+                    "application/json",
+                },
+
+                cache:
+                  "no-store",
+              },
+            );
+
+          let result:
+            | AnalyticsApiResponse
+            | null =
+            null;
+
+          try {
+            result =
+              (await response.json()) as AnalyticsApiResponse;
+          } catch {
+            result =
+              null;
+          }
+
+          if (
+            !response.ok ||
+            !result?.success ||
+            !result.data
+          ) {
+            throw new Error(
+              result?.message ||
+                `Business Analytics API returned ${response.status}.`,
+            );
+          }
+
+          setAnalytics(
+            result.data,
+          );
+        } catch (
+          requestError,
         ) {
-          throw new Error(
-            result?.message ||
-              `Orders API returned ${response.status}.`,
+          console.error(
+            "BUSINESS_ANALYTICS_LOAD_ERROR",
+            requestError,
+          );
+
+          setAnalytics(
+            null,
+          );
+
+          setError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Unable to load live business analytics.",
+          );
+        } finally {
+          setIsLoading(
+            false,
           );
         }
-
-        const liveOrders =
-          Array.isArray(
-            result.orders,
-          )
-            ? result.orders.map(
-                mapOrder,
-              )
-            : [];
-
-        setOrders(
-          liveOrders,
-        );
-      } catch (requestError) {
-        console.error(
-          "BUSINESS_ANALYTICS_LOAD_ERROR",
-          requestError,
-        );
-
-        setOrders([]);
-
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Unable to load live analytics data.",
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [],
-  );
+      },
+      [
+        selectedRange,
+      ],
+    );
 
   useEffect(() => {
+    setIsLoading(
+      true,
+    );
+
     void loadAnalytics();
-  }, [loadAnalytics]);
+  }, [
+    loadAnalytics,
+  ]);
+
+  /*
+   * Automatic live refresh.
+   *
+   * Every 30 seconds KEOS asks the Central API again.
+   * New orders entered into D1 will therefore appear
+   * without manually refreshing the browser.
+   */
+  useEffect(() => {
+    const interval =
+      window.setInterval(
+        () => {
+          void loadAnalytics();
+        },
+        30_000,
+      );
+
+    return () =>
+      window.clearInterval(
+        interval,
+      );
+  }, [
+    loadAnalytics,
+  ]);
 
   const refreshAnalytics =
     async () => {
-      setIsRefreshing(true);
+      setIsRefreshing(
+        true,
+      );
 
       try {
         await loadAnalytics();
       } finally {
-        setIsRefreshing(false);
+        setIsRefreshing(
+          false,
+        );
       }
     };
 
-  const filteredOrders =
-    useMemo(() => {
-      const start =
-        getDateRangeStart(
-          selectedRange,
-        );
+  const currentPeriodLabel =
+    selectedRange ===
+    "7D"
+      ? "Last 7 Days"
+      : selectedRange ===
+          "30D"
+        ? "Last 30 Days"
+        : selectedRange ===
+            "90D"
+          ? "Last 90 Days"
+          : "Last 12 Months";
 
-      return orders.filter(
-        (order) => {
-          const created =
-            new Date(
-              order.createdAt,
-            );
+  const revenue =
+    analytics?.revenue;
 
-          return (
-            Number.isFinite(
-              created.getTime(),
-            ) &&
-            created >= start
-          );
-        },
-      );
-    }, [
-      orders,
-      selectedRange,
-    ]);
+  const sales =
+    analytics?.sales;
 
-  const revenueOrders =
-    useMemo(
-      () =>
-        filteredOrders.filter(
-          isRevenueOrder,
-        ),
-      [filteredOrders],
-    );
+  const customers =
+    analytics?.customers;
+
+  const products =
+    analytics?.products;
+
+  const inventory =
+    analytics?.inventory;
+
+  const finance =
+    analytics?.finance;
 
   const totalRevenue =
-    useMemo(
-      () =>
-        revenueOrders.reduce(
-          (sum, order) =>
-            sum +
-            Number(order.total || 0),
-          0,
-        ),
-      [revenueOrders],
-    );
+    revenue?.netSales ??
+    0;
 
   const totalOrders =
-    filteredOrders.length;
+    revenue?.orderCount ??
+    0;
 
   const averageOrderValue =
-    revenueOrders.length > 0
-      ? totalRevenue /
-        revenueOrders.length
-      : 0;
+    revenue?.averageOrderValue ??
+    0;
 
   const uniqueCustomers =
-    useMemo(() => {
-      const customers =
-        new Set<string>();
+    customers?.activeCustomers ??
+    0;
 
-      filteredOrders.forEach(
-        (order) => {
-          customers.add(
-            getCustomerKey(order),
-          );
-        },
-      );
+  const returningCustomers =
+    customers?.returningCustomers ??
+    0;
 
-      return customers.size;
-    }, [filteredOrders]);
+  const newCustomers =
+    customers?.newCustomers ??
+    0;
+
+  const growthPercent =
+    revenue?.growthPercent ??
+    0;
 
   const paidOrders =
-    filteredOrders.filter(
-      (order) =>
-        order.paymentStatusNormalized ===
-        "Paid",
-    ).length;
+    sales?.paymentStatus
+      ?.filter(
+        (item) =>
+          normalizePaymentStatus(
+            item.status,
+          ) === "Paid",
+      )
+      .reduce(
+        (
+          sum,
+          item,
+        ) =>
+          sum +
+          Number(
+            item.count ??
+              0,
+          ),
+        0,
+      ) ?? 0;
 
   const pendingPayments =
-    filteredOrders.filter(
-      (order) =>
-        order.paymentStatusNormalized ===
-        "Pending",
-    ).length;
+    sales?.paymentStatus
+      ?.filter(
+        (item) =>
+          normalizePaymentStatus(
+            item.status,
+          ) === "Pending",
+      )
+      .reduce(
+        (
+          sum,
+          item,
+        ) =>
+          sum +
+          Number(
+            item.count ??
+              0,
+          ),
+        0,
+      ) ?? 0;
 
   const failedPayments =
-    filteredOrders.filter(
-      (order) =>
-        order.paymentStatusNormalized ===
-        "Failed",
-    ).length;
+    sales?.paymentStatus
+      ?.filter(
+        (item) =>
+          normalizePaymentStatus(
+            item.status,
+          ) === "Failed",
+      )
+      .reduce(
+        (
+          sum,
+          item,
+        ) =>
+          sum +
+          Number(
+            item.count ??
+              0,
+          ),
+        0,
+      ) ?? 0;
 
   const refundedOrders =
-    filteredOrders.filter(
-      (order) =>
-        order.paymentStatusNormalized ===
-        "Refunded",
-    ).length;
-
-  const openOrders =
-    filteredOrders.filter(
-      (order) =>
-        ![
-          "Delivered",
-          "Cancelled",
-          "Returned",
-        ].includes(
-          order.orderStatusNormalized,
-        ),
-    ).length;
+    sales?.paymentStatus
+      ?.filter(
+        (item) =>
+          normalizePaymentStatus(
+            item.status,
+          ) === "Refunded",
+      )
+      .reduce(
+        (
+          sum,
+          item,
+        ) =>
+          sum +
+          Number(
+            item.count ??
+              0,
+          ),
+        0,
+      ) ?? 0;
 
   const paymentIssues =
     pendingPayments +
     failedPayments;
 
+  const openOrders =
+    sales?.orderStatus
+      ?.filter(
+        (item) => {
+          const status =
+            normalizeOrderStatus(
+              item.status,
+            );
+
+          return ![
+            "Delivered",
+            "Cancelled",
+            "Returned",
+          ].includes(
+            status,
+          );
+        },
+      )
+      .reduce(
+        (
+          sum,
+          item,
+        ) =>
+          sum +
+          Number(
+            item.count ??
+              0,
+          ),
+        0,
+      ) ?? 0;
+
   const revenueTrend =
     useMemo(() => {
-      const buckets =
-        new Map<
-          string,
-          {
-            label: string;
-            revenue: number;
-            orders: number;
-          }
-        >();
-
-      filteredOrders.forEach(
-        (order) => {
-          if (!isRevenueOrder(order)) {
-            return;
-          }
-
-          const date =
-            new Date(
-              order.createdAt,
-            );
-
-          if (
-            !Number.isFinite(
-              date.getTime(),
-            )
-          ) {
-            return;
-          }
-
-          const key =
-            selectedRange === "1Y"
-              ? `${date.getFullYear()}-${String(
-                  date.getMonth() + 1,
-                ).padStart(2, "0")}`
-              : `${date.getFullYear()}-${String(
-                  date.getMonth() + 1,
-                ).padStart(2, "0")}-${String(
-                  date.getDate(),
-                ).padStart(2, "0")}`;
-
-          const label =
-            selectedRange === "1Y"
-              ? date.toLocaleDateString(
-                  "en-IN",
-                  {
-                    month: "short",
-                    year: "numeric",
-                  },
-                )
-              : date.toLocaleDateString(
-                  "en-IN",
-                  {
-                    day: "2-digit",
-                    month: "short",
-                  },
-                );
-
-          const existing =
-            buckets.get(key);
-
-          if (existing) {
-            existing.revenue +=
-              Number(
-                order.total || 0,
-              );
-
-            existing.orders += 1;
-          } else {
-            buckets.set(
-              key,
-              {
-                label,
-                revenue:
-                  Number(
-                    order.total || 0,
-                  ),
-                orders: 1,
-              },
-            );
-          }
-        },
+      return (
+        sales?.daily
+          ?.map(
+            (
+              item,
+            ) => ({
+              label:
+                formatDateLabel(
+                  item.date,
+                  selectedRange,
+                ),
+              revenue:
+                Number(
+                  item.revenue ??
+                    0,
+                ),
+              orders:
+                Number(
+                  item.orders ??
+                    0,
+                ),
+            }),
+          ) ?? []
       );
-
-      return Array.from(
-        buckets.entries(),
-      )
-        .sort(([a], [b]) =>
-          a.localeCompare(b),
-        )
-        .map(
-          ([, value]) =>
-            value,
-        );
     }, [
-      filteredOrders,
+      sales?.daily,
       selectedRange,
     ]);
 
   const paymentData =
-    useMemo(
-      () => [
-        {
-          name: "Paid",
-          value: paidOrders,
-        },
-        {
-          name: "Pending",
-          value: pendingPayments,
-        },
-        {
-          name: "Failed",
-          value: failedPayments,
-        },
-        {
-          name: "Refunded",
-          value: refundedOrders,
-        },
-      ].filter(
-        (item) =>
-          item.value > 0,
-      ),
-      [
-        paidOrders,
-        pendingPayments,
-        failedPayments,
-        refundedOrders,
-      ],
-    );
+    useMemo(() => {
+      return (
+        sales?.paymentStatus
+          ?.map(
+            (
+              item,
+            ) => ({
+              name:
+                normalizePaymentStatus(
+                  item.status,
+                ),
+              value:
+                Number(
+                  item.count ??
+                    0,
+                ),
+            }),
+          )
+          .filter(
+            (item) =>
+              item.value > 0,
+          ) ?? []
+      );
+    }, [
+      sales?.paymentStatus,
+    ]);
 
   const customerSegments =
     useMemo(() => {
-      const customerOrders =
-        new Map<
-          string,
-          number
-        >();
-
-      filteredOrders.forEach(
-        (order) => {
-          const key =
-            getCustomerKey(order);
-
-          customerOrders.set(
-            key,
-            (customerOrders.get(
-              key,
-            ) ?? 0) + 1,
-          );
-        },
-      );
-
-      let newCustomers = 0;
-      let returningCustomers = 0;
-
-      customerOrders.forEach(
-        (count) => {
-          if (count > 1) {
-            returningCustomers += 1;
-          } else {
-            newCustomers += 1;
-          }
-        },
-      );
-
-      return [
+      const data = [
         {
           name: "New Customers",
-          value: newCustomers,
+          value:
+            newCustomers,
         },
         {
           name: "Returning Customers",
-          value: returningCustomers,
+          value:
+            returningCustomers,
         },
-      ].filter(
+      ];
+
+      return data.filter(
         (item) =>
           item.value > 0,
       );
-    }, [filteredOrders]);
-
-  const regionalSales =
-    useMemo(() => {
-      const regions =
-        new Map<
-          string,
-          {
-            revenue: number;
-            orders: number;
-          }
-        >();
-
-      revenueOrders.forEach(
-        (order) => {
-          const region =
-            getRegion(
-              order.shippingAddress,
-            );
-
-          const current =
-            regions.get(
-              region,
-            ) ?? {
-              revenue: 0,
-              orders: 0,
-            };
-
-          current.revenue +=
-            Number(
-              order.total || 0,
-            );
-
-          current.orders += 1;
-
-          regions.set(
-            region,
-            current,
-          );
-        },
-      );
-
-      const total =
-        Array.from(
-          regions.values(),
-        ).reduce(
-          (sum, item) =>
-            sum +
-            item.revenue,
-          0,
-        );
-
-      return Array.from(
-        regions.entries(),
-      )
-        .sort(
-          ([, a], [, b]) =>
-            b.revenue -
-            a.revenue,
-        )
-        .map(
-          ([region, value]) => ({
-            region,
-            revenue:
-              value.revenue,
-            orders:
-              value.orders,
-            percentage:
-              total > 0
-                ? Number(
-                    (
-                      (value.revenue /
-                        total) *
-                      100
-                    ).toFixed(1),
-                  )
-                : 0,
-          }),
-        );
-    }, [revenueOrders]);
+    }, [
+      newCustomers,
+      returningCustomers,
+    ]);
 
   const orderStatusData =
     useMemo(() => {
-      const statuses =
-        new Map<
-          string,
-          number
-        >();
-
-      filteredOrders.forEach(
-        (order) => {
-          statuses.set(
-            order.orderStatusNormalized,
-            (statuses.get(
-              order.orderStatusNormalized,
-            ) ?? 0) + 1,
-          );
-        },
+      return (
+        sales?.orderStatus
+          ?.map(
+            (
+              item,
+            ) => ({
+              status:
+                normalizeOrderStatus(
+                  item.status,
+                ),
+              value:
+                Number(
+                  item.count ??
+                    0,
+                ),
+            }),
+          )
+          .sort(
+            (
+              a,
+              b,
+            ) =>
+              b.value -
+              a.value,
+          ) ?? []
       );
+    }, [
+      sales?.orderStatus,
+    ]);
 
-      return Array.from(
-        statuses.entries(),
-      )
-        .sort(
-          ([, a], [, b]) =>
-            b - a,
-        )
-        .map(
-          ([status, value]) => ({
-            status,
-            value,
-          }),
-        );
-    }, [filteredOrders]);
+  const paymentMethodData =
+    useMemo(() => {
+      return (
+        sales?.paymentMethod
+          ?.map(
+            (
+              item,
+            ) => ({
+              method:
+                item.method ||
+                "Unknown",
+              orders:
+                Number(
+                  item.orders ??
+                    0,
+                ),
+              revenue:
+                Number(
+                  item.revenue ??
+                    0,
+                ),
+            }),
+          )
+          .filter(
+            (item) =>
+              item.orders >
+                0 ||
+              item.revenue >
+                0,
+          ) ?? []
+      );
+    }, [
+      sales?.paymentMethod,
+    ]);
+
+  const categoryData =
+    useMemo(() => {
+      return (
+        products?.categoryPerformance
+          ?.map(
+            (
+              item,
+            ) => ({
+              category:
+                item.category ||
+                "Other",
+              revenue:
+                Number(
+                  item.revenue ??
+                    0,
+                ),
+              orders:
+                Number(
+                  item.orders ??
+                    0,
+                ),
+              units:
+                Number(
+                  item.units ??
+                    item.quantity ??
+                    0,
+                ),
+            }),
+          )
+          .sort(
+            (
+              a,
+              b,
+            ) =>
+              b.revenue -
+              a.revenue,
+          ) ?? []
+      );
+    }, [
+      products?.categoryPerformance,
+    ]);
+
+  const topProducts =
+    useMemo(() => {
+      return (
+        products?.topSelling
+          ?.map(
+            (
+              item,
+            ) => ({
+              name:
+                item.name ||
+                "Unnamed Product",
+              sku:
+                item.sku ||
+                null,
+              units:
+                Number(
+                  item.units ??
+                    item.quantity ??
+                    0,
+                ),
+              revenue:
+                Number(
+                  item.revenue ??
+                    0,
+                ),
+              orders:
+                Number(
+                  item.orders ??
+                    0,
+                ),
+            }),
+          )
+          .slice(
+            0,
+            10,
+          ) ?? []
+      );
+    }, [
+      products?.topSelling,
+    ]);
+
+  const inventoryMovement =
+    useMemo(() => {
+      return (
+        inventory?.movement
+          ?.map(
+            (
+              item,
+            ) => ({
+              type:
+                normalizeOrderStatus(
+                  item.type,
+                ),
+              quantity:
+                Number(
+                  item.quantity ??
+                    0,
+                ),
+              value:
+                Number(
+                  item.value ??
+                    0,
+                ),
+            }),
+          )
+          .filter(
+            (item) =>
+              item.quantity !==
+                0 ||
+              item.value !==
+                0,
+          ) ?? []
+      );
+    }, [
+      inventory?.movement,
+    ]);
+
+  const regionalSalesAvailable =
+    false;
 
   const exportReport =
     () => {
@@ -1129,12 +1269,40 @@ export default function BusinessAnalytics() {
         ],
         [
           "Date Range",
-          selectedRange,
+          currentPeriodLabel,
         ],
         [
-          "Total Revenue",
+          "Revenue",
           formatFullCurrency(
             totalRevenue,
+          ),
+        ],
+        [
+          "Gross Sales",
+          formatFullCurrency(
+            revenue?.grossSales ??
+              0,
+          ),
+        ],
+        [
+          "Discounts",
+          formatFullCurrency(
+            revenue?.discounts ??
+              0,
+          ),
+        ],
+        [
+          "Shipping",
+          formatFullCurrency(
+            revenue?.shipping ??
+              0,
+          ),
+        ],
+        [
+          "Tax",
+          formatFullCurrency(
+            revenue?.tax ??
+              0,
           ),
         ],
         [
@@ -1168,9 +1336,21 @@ export default function BusinessAnalytics() {
           ),
         ],
         [
-          "Unique Customers",
+          "Active Customers",
           String(
             uniqueCustomers,
+          ),
+        ],
+        [
+          "New Customers",
+          String(
+            newCustomers,
+          ),
+        ],
+        [
+          "Returning Customers",
+          String(
+            returningCustomers,
           ),
         ],
         [
@@ -1180,9 +1360,31 @@ export default function BusinessAnalytics() {
           ),
         ],
         [
-          "Open Orders",
+          "Repeat Purchase Rate",
+          formatPercentage(
+            customers?.repeatPurchaseRate ??
+              0,
+          ),
+        ],
+        [
+          "Inventory Products",
           String(
-            openOrders,
+            inventory?.totalProducts ??
+              0,
+          ),
+        ],
+        [
+          "Inventory Units",
+          String(
+            inventory?.totalUnits ??
+              0,
+          ),
+        ],
+        [
+          "Inventory Value",
+          formatFullCurrency(
+            inventory?.inventoryValue ??
+              0,
           ),
         ],
       ];
@@ -1190,10 +1392,14 @@ export default function BusinessAnalytics() {
       const csv =
         report
           .map(
-            (row) =>
+            (
+              row,
+            ) =>
               row
                 .map(
-                  (value) =>
+                  (
+                    value,
+                  ) =>
                     `"${String(
                       value,
                     ).replaceAll(
@@ -1224,7 +1430,8 @@ export default function BusinessAnalytics() {
           "a",
         );
 
-      anchor.href = url;
+      anchor.href =
+        url;
 
       anchor.download =
         "keos-business-analytics.csv";
@@ -1244,12 +1451,6 @@ export default function BusinessAnalytics() {
 
   const openAskAI =
     () => {
-      /*
-        Existing KEOS AI Center can listen for this event
-        and open the same Ask KRVE AI workspace.
-
-        No duplicate AI implementation is created here.
-      */
       window.dispatchEvent(
         new CustomEvent(
           "keos:open-ask-ai",
@@ -1262,15 +1463,6 @@ export default function BusinessAnalytics() {
         ),
       );
     };
-
-  const currentPeriodLabel =
-    selectedRange === "7D"
-      ? "Last 7 Days"
-      : selectedRange === "30D"
-        ? "Last 30 Days"
-        : selectedRange === "90D"
-          ? "Last 90 Days"
-          : "Last 12 Months";
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -1287,9 +1479,9 @@ export default function BusinessAnalytics() {
             </h1>
 
             <p className="mt-3 max-w-3xl text-sm leading-7 text-blue-100">
-              Live business analytics calculated from
-              KRVE order data. No demo revenue or
-              fabricated business figures are used.
+              Live business analytics calculated directly from
+              KRVE Central API and Cloudflare D1. No demo
+              revenue or fabricated business figures are used.
             </p>
           </div>
 
@@ -1342,10 +1534,14 @@ export default function BusinessAnalytics() {
               "1Y",
             ] as DateRange[]
           ).map(
-            (range) => (
+            (
+              range,
+            ) => (
               <button
                 type="button"
-                key={range}
+                key={
+                  range
+                }
                 onClick={() =>
                   setSelectedRange(
                     range,
@@ -1403,7 +1599,7 @@ export default function BusinessAnalytics() {
             type="button"
             className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-400"
             disabled
-            title="Custom date filtering will be connected to the analytics API when required."
+            title="Custom date filtering is not connected yet."
           >
             <CalendarDays size={16} />
             Custom Dates
@@ -1442,8 +1638,18 @@ export default function BusinessAnalytics() {
                   totalRevenue,
                 )
           }
-          description={`${currentPeriodLabel} · Paid orders only`}
-          icon={CircleDollarSign}
+          change={
+            comparePeriod &&
+            analytics
+              ? `${growthPercent >= 0 ? "+" : ""}${growthPercent.toFixed(
+                  1,
+                )}%`
+              : undefined
+          }
+          description={`${currentPeriodLabel} · Central API revenue`}
+          icon={
+            CircleDollarSign
+          }
           tone="blue"
         />
 
@@ -1456,16 +1662,20 @@ export default function BusinessAnalytics() {
                   totalOrders,
                 )
           }
-          description={`${currentPeriodLabel} · Actual orders`}
-          icon={ShoppingBag}
+          description={`${currentPeriodLabel} · Actual D1 orders`}
+          icon={
+            ShoppingBag
+          }
           tone="red"
         />
 
         <MetricCard
           title="Net Profit"
           value="N/A"
-          description="Expense/accounting data is not connected yet"
-          icon={IndianRupee}
+          description="Expense / COGS accounting data is not connected"
+          icon={
+            IndianRupee
+          }
           tone="green"
         />
 
@@ -1473,7 +1683,9 @@ export default function BusinessAnalytics() {
           title="Conversion Rate"
           value="N/A"
           description="Website visitor/session data is not connected"
-          icon={Target}
+          icon={
+            Target
+          }
           tone="orange"
         />
 
@@ -1486,7 +1698,7 @@ export default function BusinessAnalytics() {
                   uniqueCustomers,
                 )
           }
-          description="Unique customers identified from live orders"
+          description="Active customers from live Central API data"
           icon={Users}
           tone="blue"
         />
@@ -1500,8 +1712,10 @@ export default function BusinessAnalytics() {
                   averageOrderValue,
                 )
           }
-          description="Paid revenue divided by paid orders"
-          icon={BarChart3}
+          description="Central API AOV for selected period"
+          icon={
+            BarChart3
+          }
           tone="red"
         />
       </section>
@@ -1514,8 +1728,7 @@ export default function BusinessAnalytics() {
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Actual paid-order revenue for{" "}
-              {currentPeriodLabel.toLowerCase()}
+              Live daily revenue from KRVE Central API
             </p>
           </div>
 
@@ -1523,8 +1736,12 @@ export default function BusinessAnalytics() {
             {revenueTrend.length ===
             0 ? (
               <EmptyState
-                title="No revenue recorded"
-                description="There are no paid orders in the selected period. Revenue is therefore ₹0."
+                title={
+                  isLoading
+                    ? "Loading revenue..."
+                    : "No revenue recorded"
+                }
+                description="There are no revenue records in the selected period."
               />
             ) : (
               <ResponsiveContainer
@@ -1564,7 +1781,9 @@ export default function BusinessAnalytics() {
 
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    vertical={false}
+                    vertical={
+                      false
+                    }
                     stroke="#e2e8f0"
                   />
 
@@ -1590,17 +1809,7 @@ export default function BusinessAnalytics() {
                     }
                   />
 
-                  <Tooltip
-                    formatter={(
-                      value,
-                    ) =>
-                      formatFullCurrency(
-                        Number(
-                          value,
-                        ),
-                      )
-                    }
-                  />
+                  <Tooltip />
 
                   <Area
                     type="monotone"
@@ -1623,14 +1832,14 @@ export default function BusinessAnalytics() {
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            Actual payment state of orders
+            Actual payment state from D1
           </p>
 
           {paymentData.length ===
           0 ? (
             <div className="mt-5">
               <EmptyState
-                title="No orders"
+                title="No payment data"
                 description="Payment status data will appear after orders are recorded."
               />
             </div>
@@ -1768,7 +1977,9 @@ export default function BusinessAnalytics() {
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    vertical={false}
+                    vertical={
+                      false
+                    }
                     stroke="#e2e8f0"
                   />
 
@@ -1823,7 +2034,7 @@ export default function BusinessAnalytics() {
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                Derived from actual order frequency
+                Live customer analytics from Central API
               </p>
             </div>
 
@@ -1838,7 +2049,7 @@ export default function BusinessAnalytics() {
             <div className="mt-6">
               <EmptyState
                 title="No customers yet"
-                description="Customer segmentation will appear when live orders contain customer records."
+                description="Customer segmentation will appear when live customer records are available."
               />
             </div>
           ) : (
@@ -1940,11 +2151,424 @@ export default function BusinessAnalytics() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-black text-slate-900">
+                Payment Methods
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Revenue and order count by payment method
+              </p>
+            </div>
+
+            <CircleDollarSign
+              size={22}
+              className="text-blue-600"
+            />
+          </div>
+
+          {paymentMethodData.length ===
+          0 ? (
+            <div className="mt-6">
+              <EmptyState
+                title="No payment method data"
+                description="Payment method analytics will appear when payment records are available."
+              />
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {paymentMethodData.map(
+                (
+                  item,
+                ) => (
+                  <div
+                    key={
+                      item.method
+                    }
+                    className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-black text-slate-800">
+                        {
+                          item.method
+                        }
+                      </span>
+
+                      <span className="text-xs font-bold text-slate-500">
+                        {formatNumber(
+                          item.orders,
+                        )}{" "}
+                        orders
+                      </span>
+                    </div>
+
+                    <p className="mt-2 text-lg font-black text-blue-700">
+                      {formatFullCurrency(
+                        item.revenue,
+                      )}
+                    </p>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
+        </article>
+
+        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">
+                Category Performance
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Actual product-category sales
+              </p>
+            </div>
+
+            <ShoppingBag
+              size={22}
+              className="text-red-600"
+            />
+          </div>
+
+          {categoryData.length ===
+          0 ? (
+            <div className="mt-6">
+              <EmptyState
+                title="No category data"
+                description="Category performance will appear after product line-item data is recorded."
+              />
+            </div>
+          ) : (
+            <div className="mt-6 space-y-5">
+              {categoryData.map(
+                (
+                  item,
+                ) => {
+                  const maxRevenue =
+                    Math.max(
+                      ...categoryData.map(
+                        (
+                          category,
+                        ) =>
+                          category.revenue,
+                      ),
+                      1,
+                    );
+
+                  const percentage =
+                    (
+                      (item.revenue /
+                        maxRevenue) *
+                      100
+                    );
+
+                  return (
+                    <div
+                      key={
+                        item.category
+                      }
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <div>
+                          <strong className="text-xs text-slate-800">
+                            {
+                              item.category
+                            }
+                          </strong>
+
+                          <span className="ml-2 text-[10px] text-slate-400">
+                            {formatNumber(
+                              item.units,
+                            )}{" "}
+                            units
+                          </span>
+                        </div>
+
+                        <strong className="text-xs text-slate-900">
+                          {formatCurrency(
+                            item.revenue,
+                          )}
+                        </strong>
+                      </div>
+
+                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-blue-600"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(
+                                0,
+                                percentage,
+                              ),
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                },
+              )}
+            </div>
+          )}
+        </article>
+      </section>
+
+      <section className="mt-6 grid gap-6 xl:grid-cols-2">
+        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">
+                Product Analytics
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Live product-level sales from order line items
+              </p>
+            </div>
+
+            <PackageCheck
+              size={22}
+              className="text-blue-600"
+            />
+          </div>
+
+          {topProducts.length ===
+          0 ? (
+            <div className="mt-6">
+              <EmptyState
+                title="No product sales data"
+                description="Product analytics will appear when order line-item records are available."
+              />
+            </div>
+          ) : (
+            <div className="mt-6 overflow-x-auto">
+              <table className="w-full min-w-[600px] text-left">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="pb-3 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      Product
+                    </th>
+
+                    <th className="pb-3 text-right text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      Units
+                    </th>
+
+                    <th className="pb-3 text-right text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      Orders
+                    </th>
+
+                    <th className="pb-3 text-right text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      Revenue
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {topProducts.map(
+                    (
+                      product,
+                      index,
+                    ) => (
+                      <tr
+                        key={`${product.name}-${product.sku ?? index}`}
+                        className="border-b border-slate-50"
+                      >
+                        <td className="py-4">
+                          <p className="text-xs font-black text-slate-800">
+                            {
+                              product.name
+                            }
+                          </p>
+
+                          {product.sku ? (
+                            <p className="mt-1 text-[10px] text-slate-400">
+                              SKU:{" "}
+                              {
+                                product.sku
+                              }
+                            </p>
+                          ) : null}
+                        </td>
+
+                        <td className="py-4 text-right text-xs font-bold text-slate-700">
+                          {formatNumber(
+                            product.units,
+                          )}
+                        </td>
+
+                        <td className="py-4 text-right text-xs font-bold text-slate-700">
+                          {formatNumber(
+                            product.orders,
+                          )}
+                        </td>
+
+                        <td className="py-4 text-right text-xs font-black text-blue-700">
+                          {formatCurrency(
+                            product.revenue,
+                          )}
+                        </td>
+                      </tr>
+                    ),
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </article>
+
+        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">
+                Inventory Overview
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Live inventory information from Central API
+              </p>
+            </div>
+
+            <PackageCheck
+              size={22}
+              className="text-green-600"
+            />
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl bg-blue-50 p-4">
+              <p className="text-[10px] font-bold uppercase text-blue-600">
+                Products
+              </p>
+
+              <p className="mt-2 text-2xl font-black text-blue-900">
+                {formatNumber(
+                  inventory?.totalProducts ??
+                    0,
+                )}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-green-50 p-4">
+              <p className="text-[10px] font-bold uppercase text-green-600">
+                In Stock
+              </p>
+
+              <p className="mt-2 text-2xl font-black text-green-900">
+                {formatNumber(
+                  inventory?.inStockProducts ??
+                    0,
+                )}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-orange-50 p-4">
+              <p className="text-[10px] font-bold uppercase text-orange-600">
+                Low Stock
+              </p>
+
+              <p className="mt-2 text-2xl font-black text-orange-900">
+                {formatNumber(
+                  inventory?.lowStockProducts ??
+                    0,
+                )}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-red-50 p-4">
+              <p className="text-[10px] font-bold uppercase text-red-600">
+                Out of Stock
+              </p>
+
+              <p className="mt-2 text-2xl font-black text-red-900">
+                {formatNumber(
+                  inventory?.outOfStockProducts ??
+                    0,
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500">
+                Total Units
+              </span>
+
+              <strong className="text-sm text-slate-900">
+                {formatNumber(
+                  inventory?.totalUnits ??
+                    0,
+                )}
+              </strong>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500">
+                Inventory Value
+              </span>
+
+              <strong className="text-sm text-blue-700">
+                {formatFullCurrency(
+                  inventory?.inventoryValue ??
+                    0,
+                )}
+              </strong>
+            </div>
+          </div>
+
+          {inventoryMovement.length >
+          0 ? (
+            <div className="mt-5">
+              <p className="mb-3 text-xs font-black text-slate-800">
+                Inventory Movement
+              </p>
+
+              <div className="space-y-2">
+                {inventoryMovement
+                  .slice(
+                    0,
+                    6,
+                  )
+                  .map(
+                    (
+                      movement,
+                      index,
+                    ) => (
+                      <div
+                        key={`${movement.type}-${index}`}
+                        className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
+                      >
+                        <span className="text-xs font-semibold text-slate-600">
+                          {
+                            movement.type
+                          }
+                        </span>
+
+                        <span className="text-xs font-black text-slate-900">
+                          {formatNumber(
+                            movement.quantity,
+                          )}
+                        </span>
+                      </div>
+                    ),
+                  )}
+              </div>
+            </div>
+          ) : null}
+        </article>
+      </section>
+
+      <section className="mt-6 grid gap-6 xl:grid-cols-2">
+        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">
                 Regional Sales
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                Revenue calculated from shipping state
+                Requires shipping-address analytics
               </p>
             </div>
 
@@ -1954,65 +2578,19 @@ export default function BusinessAnalytics() {
             />
           </div>
 
-          {regionalSales.length ===
-          0 ? (
-            <div className="mt-6">
+          <div className="mt-6">
+            {regionalSalesAvailable ? (
               <EmptyState
-                title="No regional sales"
-                description="Regional analytics will appear when paid orders contain shipping location data."
+                title="Regional data available"
+                description="Regional sales data is connected."
               />
-            </div>
-          ) : (
-            <div className="mt-7 space-y-6">
-              {regionalSales.map(
-                (region) => (
-                  <div
-                    key={
-                      region.region
-                    }
-                  >
-                    <div className="mb-2 flex items-center justify-between">
-                      <div>
-                        <strong className="text-xs">
-                          {
-                            region.region
-                          }
-                        </strong>
-
-                        <span className="ml-2 text-[10px] text-slate-400">
-                          {formatCurrency(
-                            region.revenue,
-                          )}
-                        </span>
-                      </div>
-
-                      <strong className="text-xs">
-                        {
-                          region.percentage
-                        }
-                        %
-                      </strong>
-                    </div>
-
-                    <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className="h-full rounded-full bg-blue-600"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.max(
-                              0,
-                              region.percentage,
-                            ),
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ),
-              )}
-            </div>
-          )}
+            ) : (
+              <EmptyState
+                title="Regional sales not connected"
+                description="The Central Business Analytics endpoint currently returns revenue, orders, products, customers and inventory analytics, but does not expose shipping addresses. KEOS will not invent regional revenue."
+              />
+            )}
+          </div>
         </article>
 
         <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -2036,44 +2614,88 @@ export default function BusinessAnalytics() {
           <div className="mt-6 space-y-3">
             <DataStatus
               label="Orders"
-              status="LIVE"
-              description="KRVE Orders API"
-              live
+              status={
+                analytics
+                  ? "LIVE"
+                  : "NO DATA"
+              }
+              description="KRVE Central API → Cloudflare D1"
+              live={
+                !!analytics
+              }
             />
 
             <DataStatus
               label="Revenue"
-              status="LIVE"
-              description="Calculated from paid orders"
-              live
+              status={
+                revenue
+                  ? "LIVE"
+                  : "NO DATA"
+              }
+              description="Central API business analytics"
+              live={
+                !!revenue
+              }
             />
 
             <DataStatus
               label="Customers"
-              status="LIVE"
-              description="Derived from order customer records"
-              live
+              status={
+                customers
+                  ? "LIVE"
+                  : "NO DATA"
+              }
+              description="Central API customer analytics"
+              live={
+                !!customers
+              }
             />
 
             <DataStatus
-              label="Regional Sales"
+              label="Product Revenue"
               status={
-                regionalSales.length >
+                topProducts.length >
                 0
                   ? "LIVE"
                   : "NO DATA"
               }
-              description="Derived from shipping address"
+              description="Central API order line-item analytics"
               live={
-                regionalSales.length >
+                topProducts.length >
                 0
               }
             />
 
             <DataStatus
-              label="Expenses / Profit"
+              label="Inventory"
+              status={
+                inventory
+                  ? "LIVE"
+                  : "NO DATA"
+              }
+              description="Central API inventory analytics"
+              live={
+                !!inventory
+              }
+            />
+
+            <DataStatus
+              label="Regional Sales"
               status="NOT CONNECTED"
-              description="No expense/accounting source available"
+              description="Shipping-address analytics not exposed by current endpoint"
+            />
+
+            <DataStatus
+              label="Expenses / Profit"
+              status={
+                finance?.expensesAvailable
+                  ? "LIVE"
+                  : "NOT CONNECTED"
+              }
+              description="No expense / COGS monetary source available"
+              live={
+                !!finance?.expensesAvailable
+              }
             />
 
             <DataStatus
@@ -2087,12 +2709,6 @@ export default function BusinessAnalytics() {
               status="NOT CONNECTED"
               description="Marketing spend and attribution unavailable"
             />
-
-            <DataStatus
-              label="Product Revenue"
-              status="NOT CONNECTED"
-              description="Orders API currently does not expose order line items"
-            />
           </div>
         </article>
       </section>
@@ -2100,19 +2716,57 @@ export default function BusinessAnalytics() {
       <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
           <h2 className="text-lg font-black text-slate-900">
-            Product Analytics
+            Customer Intelligence
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            Product-level revenue requires order line-item data from the
-            Orders API.
+            Live customer metrics from KRVE Central API
           </p>
         </div>
 
-        <div className="mt-6">
-          <EmptyState
-            title="Product-level sales data is not available yet"
-            description="The current live Orders API returns itemCount but does not return individual product IDs, SKUs, quantities or line-item prices. KEOS will not invent product sales figures."
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MiniCard
+            icon={Users}
+            title="Active Customers"
+            value={formatNumber(
+              customers?.activeCustomers ??
+                0,
+            )}
+            change="Live Central API"
+            tone="blue"
+          />
+
+          <MiniCard
+            icon={UserCheck}
+            title="New Customers"
+            value={formatNumber(
+              customers?.newCustomers ??
+                0,
+            )}
+            change="Selected period"
+            tone="green"
+          />
+
+          <MiniCard
+            icon={UserCheck}
+            title="Returning Customers"
+            value={formatNumber(
+              customers?.returningCustomers ??
+                0,
+            )}
+            change="Live customer history"
+            tone="green"
+          />
+
+          <MiniCard
+            icon={BarChart3}
+            title="Repeat Purchase Rate"
+            value={formatPercentage(
+              customers?.repeatPurchaseRate ??
+                0,
+            )}
+            change="Central API calculation"
+            tone="orange"
           />
         </div>
       </section>
@@ -2149,23 +2803,10 @@ export default function BusinessAnalytics() {
           <MiniCard
             icon={UserCheck}
             title="Returning Customers"
-            value={
-              customerSegments.find(
-                (item) =>
-                  item.name ===
-                  "Returning Customers",
-              )?.value
-                ? formatNumber(
-                    customerSegments.find(
-                      (item) =>
-                        item.name ===
-                        "Returning Customers",
-                    )?.value ??
-                      0,
-                  )
-                : "0"
-            }
-            change="Derived from order history"
+            value={formatNumber(
+              returningCustomers,
+            )}
+            change="Live Central API"
             tone="green"
           />
 
@@ -2227,17 +2868,21 @@ export default function BusinessAnalytics() {
 
         <div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <InsightCard
-            icon={CircleDollarSign}
+            icon={
+              CircleDollarSign
+            }
             title="Revenue Status"
             description={
-              totalRevenue > 0
-                ? `Paid revenue recorded in the selected period is ${formatFullCurrency(
+              totalRevenue >
+              0
+                ? `Revenue recorded in the selected period is ${formatFullCurrency(
                     totalRevenue,
                   )}.`
-                : "No paid revenue has been recorded in the selected period."
+                : "No revenue has been recorded in the selected period."
             }
             badge={
-              totalRevenue > 0
+              totalRevenue >
+              0
                 ? "LIVE DATA"
                 : "₹0 RECORDED"
             }
@@ -2245,7 +2890,9 @@ export default function BusinessAnalytics() {
           />
 
           <InsightCard
-            icon={ShoppingBag}
+            icon={
+              ShoppingBag
+            }
             title="Order Activity"
             description={`${formatNumber(
               totalOrders,
@@ -2259,65 +2906,46 @@ export default function BusinessAnalytics() {
             title="Customer Activity"
             description={`${formatNumber(
               uniqueCustomers,
-            )} unique customer record(s) are identifiable from the current order data.`}
+            )} active customer record(s) are available in the selected period.`}
             badge="LIVE DATA"
             tone="blue"
           />
 
           <InsightCard
-            icon={PackageCheck}
-            title="Data Coverage"
-            description="Expenses, product line-items, website funnel and marketing attribution are not connected yet."
-            badge="DATA GAP"
-            tone="orange"
+            icon={
+              PackageCheck
+            }
+            title="Inventory Coverage"
+            description={`${formatNumber(
+              inventory?.totalUnits ??
+                0,
+            )} inventory unit(s) are currently tracked by the Central API.`}
+            badge="LIVE DATA"
+            tone="green"
           />
         </div>
       </section>
 
-      <div className="mt-5 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-        {isLoading
-          ? "Loading live KRVE Central API data..."
-          : "Live analytics calculated from KRVE order data"}
+      <div className="mt-5 flex flex-col items-center justify-center gap-1 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+        <span>
+          {isLoading
+            ? "Loading live KRVE Central API data..."
+            : "Live analytics calculated from KRVE Central API + Cloudflare D1"}
+        </span>
+
+        {analytics?.generatedAt ? (
+          <span className="normal-case tracking-normal">
+            Last updated:{" "}
+            {new Date(
+              analytics.generatedAt,
+            ).toLocaleString(
+              "en-IN",
+            )}
+            {" · "}
+            Auto-refresh: 30 seconds
+          </span>
+        ) : null}
       </div>
-    </div>
-  );
-}
-
-function DataStatus({
-  label,
-  status,
-  description,
-  live = false,
-}: {
-  label: string;
-  status: string;
-  description: string;
-  live?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-      <div>
-        <p className="text-xs font-black text-slate-800">
-          {label}
-        </p>
-
-        <p className="mt-1 text-[11px] text-slate-400">
-          {description}
-        </p>
-      </div>
-
-      <span
-        className={`shrink-0 rounded-full px-3 py-1 text-[9px] font-black ${
-          live
-            ? "bg-green-50 text-green-700"
-            : status ===
-                "NO DATA"
-              ? "bg-orange-50 text-orange-700"
-              : "bg-slate-200 text-slate-500"
-        }`}
-      >
-        {status}
-      </span>
     </div>
   );
 }
