@@ -29,9 +29,9 @@ import {
   UserCheck,
   UserRound,
   Users,
-  WalletCards,
   X,
   XCircle,
+  type LucideIcon,
 } from "lucide-react";
 
 type ApprovalStatus = "Pending" | "Approved" | "Rejected";
@@ -52,6 +52,10 @@ type ApprovalItem = {
   amount?: string;
   priority: ApprovalPriority;
   status: ApprovalStatus;
+
+  // FIX: approval icons are LucideIcon components.
+  icon: LucideIcon;
+
   attachments: number;
   notes: string;
   decisionNote?: string | null;
@@ -102,7 +106,7 @@ type ApiHistoryItem = {
   to_status?: string | null;
   note?: string | null;
   actor_id?: string | null;
-  created_at?: string | null;
+  created_at?: string;
 };
 
 type ApiApprovalsResponse = {
@@ -166,10 +170,7 @@ function getDepartmentClasses(department: string) {
     return "bg-blue-50 text-blue-700";
   }
 
-  if (
-    department === "Human Resources" ||
-    department === "HR"
-  ) {
+  if (department === "Human Resources" || department === "HR") {
     return "bg-violet-50 text-violet-700";
   }
 
@@ -191,7 +192,7 @@ function getDepartmentClasses(department: string) {
 function getApprovalIcon(
   category?: string | null,
   department?: string | null,
-) {
+): LucideIcon {
   const value = `${category ?? ""} ${department ?? ""}`.toLowerCase();
 
   if (
@@ -418,10 +419,13 @@ function mapApproval(
     ),
     priority: normalizePriority(approval.priority),
     status: normalizeStatus(approval.status),
+
+    // FIXED
     icon: getApprovalIcon(
       approval.category,
       approval.department,
     ),
+
     attachments: parseAttachments(
       approval.attachments_json ??
         approval.attachments ??
@@ -2395,7 +2399,7 @@ function SummaryCard({
   title: string;
   value: string;
   description: string;
-  icon: typeof Clock3;
+  icon: LucideIcon;
   tone: "blue" | "red" | "green" | "orange";
 }) {
   const toneClass =
@@ -2438,7 +2442,7 @@ function DetailCard({
   value,
   description,
 }: {
-  icon: typeof UserRound;
+  icon: LucideIcon;
   label: string;
   value: string;
   description: string;
