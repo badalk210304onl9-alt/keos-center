@@ -5,34 +5,35 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ComponentType,
 } from "react";
 
 import {
   Activity,
+  AlertTriangle,
+  ArrowDownRight,
   ArrowUpRight,
   BarChart3,
-  BrainCircuit,
+  Boxes,
   CalendarDays,
-  ChartNoAxesCombined,
+  ChevronDown,
   CircleDollarSign,
+  Clock3,
   Download,
-  Eye,
-  IndianRupee,
-  MapPin,
-  PackageCheck,
-  RefreshCcw,
-  ShoppingBag,
+  FileSpreadsheet,
+  Package,
+  RefreshCw,
+  ShoppingCart,
   Sparkles,
-  Target,
-  UserCheck,
   Users,
+  Wallet,
 } from "lucide-react";
 
 import {
   Area,
   AreaChart,
   Bar,
-  BarChart as RechartsBarChart,
+  BarChart,
   CartesianGrid,
   Cell,
   Pie,
@@ -43,2908 +44,1954 @@ import {
   YAxis,
 } from "recharts";
 
+/* -------------------------------------------------------------------------- */
+/* Types                                                                      */
+/* -------------------------------------------------------------------------- */
+
 type DateRange =
-  | "7D"
-  | "30D"
-  | "90D"
-  | "1Y";
+  | "today"
+  | "7d"
+  | "30d"
+  | "90d"
+  | "year";
 
 type MetricCardProps = {
   title: string;
   value: string;
-  change?: string;
-  description: string;
-  icon: React.ComponentType<{
-    size?: number;
-    className?: string;
-  }>;
-  tone:
-    | "blue"
-    | "red"
-    | "green"
-    | "orange";
+  subtitle?: string;
+  icon: ComponentType<{ className?: string }>;
+  trend?: number | null;
+};
+
+type MiniCardProps = {
+  title: string;
+  value: string;
+  subtitle?: string;
+  icon: ComponentType<{ className?: string }>;
+};
+
+type InsightCardProps = {
+  title: string;
+  value: string;
+  subtitle: string;
+  icon: ComponentType<{ className?: string }>;
+  tone?: "blue" | "green" | "red" | "amber";
+};
+
+type DailySales = {
+  date: string;
+  orders: number;
+  revenue: number;
+};
+
+type StatusItem = {
+  status: string;
+  count: number;
+};
+
+type PaymentMethodItem = {
+  method: string;
+  orders: number;
+  revenue: number;
+};
+
+type ProductPerformance = {
+  productId?: string;
+  productName?: string;
+  name?: string;
+  sku?: string;
+  category?: string;
+  unitsSold?: number;
+  quantity?: number;
+  revenue?: number;
+};
+
+type CategoryPerformance = {
+  category?: string;
+  name?: string;
+  unitsSold?: number;
+  quantity?: number;
+  revenue?: number;
+};
+
+type InventoryMovement = {
+  date?: string;
+  units?: number;
+  quantity?: number;
 };
 
 type AnalyticsData = {
-  live: boolean;
-  generatedAt: string;
+  live?: boolean;
+  generatedAt?: string;
 
-  period: {
-    from: string;
-    to: string;
+  period?: {
+    from?: string;
+    to?: string;
   };
 
-  revenue: {
-    grossSales: number;
-    netSales: number;
-    discounts: number;
-    shipping: number;
-    tax: number;
-    orderCount: number;
-    averageOrderValue: number;
-    growthPercent: number;
+  revenue?: {
+    grossSales?: number;
+    netSales?: number;
+    discounts?: number;
+    shipping?: number;
+    tax?: number;
+    orderCount?: number;
+    averageOrderValue?: number;
+    growthPercent?: number;
   };
 
-  sales: {
-    daily: Array<{
-      date: string;
-      orders: number;
-      revenue: number;
-    }>;
-
-    orderStatus: Array<{
-      status: string;
-      count: number;
-    }>;
-
-    paymentStatus: Array<{
-      status: string;
-      count: number;
-    }>;
-
-    paymentMethod: Array<{
-      method: string;
-      orders: number;
-      revenue: number;
-    }>;
+  sales?: {
+    daily?: DailySales[];
+    orderStatus?: StatusItem[];
+    paymentStatus?: StatusItem[];
+    paymentMethod?: PaymentMethodItem[];
   };
 
-  products: {
-    topSelling: Array<{
-      productId?: string;
-      name: string;
-      sku?: string | null;
-      quantity?: number;
-      units?: number;
-      revenue?: number;
-      orders?: number;
-    }>;
-
-    slowMoving: Array<{
-      productId?: string;
-      name: string;
-      sku?: string | null;
-      quantity?: number;
-      units?: number;
-      revenue?: number;
-      orders?: number;
-    }>;
-
-    categoryPerformance: Array<{
-      category: string;
-      revenue: number;
-      orders: number;
-      quantity?: number;
-      units?: number;
-    }>;
+  products?: {
+    topSelling?: ProductPerformance[];
+    slowMoving?: ProductPerformance[];
+    categoryPerformance?: CategoryPerformance[];
   };
 
-  customers: {
-    newCustomers: number;
-    returningCustomers: number;
-    activeCustomers: number;
-    repeatPurchaseRate: number;
-    customerRevenue: number;
-    averageCustomerValue: number;
+  customers?: {
+    newCustomers?: number;
+    returningCustomers?: number;
+    activeCustomers?: number;
+    repeatPurchaseRate?: number;
+    customerRevenue?: number;
+    averageCustomerValue?: number;
   };
 
-  inventory: {
-    totalProducts: number;
-    inStockProducts: number;
-    lowStockProducts: number;
-    outOfStockProducts: number;
-    totalUnits: number;
-    inventoryValue: number;
-
-    movement: Array<{
-      type: string;
-      quantity: number;
-      value?: number;
-    }>;
+  inventory?: {
+    totalProducts?: number;
+    inStockProducts?: number;
+    lowStockProducts?: number;
+    outOfStockProducts?: number;
+    totalUnits?: number;
+    inventoryValue?: number;
+    movement?: InventoryMovement[];
   };
 
-  finance: {
-    revenue: number;
-    expensesAvailable: boolean;
-    grossProfitAvailable: boolean;
-    netCashFlowAvailable: boolean;
-    note: string;
+  finance?: {
+    revenue?: number;
+    expensesAvailable?: boolean;
+    grossProfitAvailable?: boolean;
+    netCashFlowAvailable?: boolean;
+    note?: string;
   };
 };
 
-type AnalyticsApiResponse = {
-  success: boolean;
-  message?: string;
+type AnalyticsResponse = {
+  success?: boolean;
   data?: AnalyticsData | null;
+  message?: string;
 };
 
-const CHART_COLORS = [
-  "#2563eb",
-  "#ef4444",
-  "#16a34a",
-  "#f59e0b",
-];
+/* -------------------------------------------------------------------------- */
+/* Helpers                                                                    */
+/* -------------------------------------------------------------------------- */
 
-function formatCurrency(
-  value: number,
-) {
-  if (!Number.isFinite(value)) {
-    return "₹0";
+const numberValue = (value: unknown): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const textValue = (value: unknown, fallback = "—"): string => {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
   }
 
-  if (value >= 10000000) {
-    return `₹${(
-      value / 10000000
-    ).toFixed(1)}Cr`;
+  return String(value);
+};
+
+const formatCurrency = (value: unknown): string => {
+  const amount = numberValue(value);
+
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const formatNumber = (value: unknown): string => {
+  return new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0,
+  }).format(numberValue(value));
+};
+
+const formatPercent = (value: unknown): string => {
+  return `${numberValue(value).toFixed(1)}%`;
+};
+
+const formatDateLabel = (dateValue: string): string => {
+  if (!dateValue) {
+    return "—";
   }
 
-  if (value >= 100000) {
-    return `₹${(
-      value / 100000
-    ).toFixed(1)}L`;
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return dateValue;
   }
 
-  if (value >= 1000) {
-    return `₹${Math.round(
-      value / 1000,
-    )}K`;
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+  });
+};
+
+const formatDateTime = (dateValue?: string): string => {
+  if (!dateValue) {
+    return "—";
   }
 
-  return `₹${Math.round(value)}`;
-}
+  const date = new Date(dateValue);
 
-function formatFullCurrency(
-  value: number,
-) {
-  return new Intl.NumberFormat(
-    "en-IN",
-    {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    },
-  ).format(
-    Number.isFinite(value)
-      ? value
-      : 0,
-  );
-}
-
-function formatNumber(
-  value: number,
-) {
-  return new Intl.NumberFormat(
-    "en-IN",
-  ).format(
-    Number.isFinite(value)
-      ? value
-      : 0,
-  );
-}
-
-function formatPercentage(
-  value: number,
-) {
-  if (!Number.isFinite(value)) {
-    return "0%";
+  if (Number.isNaN(date.getTime())) {
+    return dateValue;
   }
 
-  return `${value.toFixed(
-    value % 1 === 0 ? 0 : 1,
-  )}%`;
-}
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
-function getDateRange(
-  range: DateRange,
-) {
-  const now =
-    new Date();
+const formatDateForApi = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
-  const to =
-    new Date(now);
+  return `${year}-${month}-${day}`;
+};
 
-  to.setHours(
-    23,
-    59,
-    59,
-    999,
-  );
+const getDateRange = (range: DateRange) => {
+  const to = new Date();
+  const from = new Date(to);
 
-  const from =
-    new Date(now);
-
-  if (range === "7D") {
-    from.setDate(
-      from.getDate() - 6,
-    );
+  if (range === "today") {
+    from.setHours(0, 0, 0, 0);
   }
 
-  if (range === "30D") {
-    from.setDate(
-      from.getDate() - 29,
-    );
+  if (range === "7d") {
+    from.setDate(from.getDate() - 6);
   }
 
-  if (range === "90D") {
-    from.setDate(
-      from.getDate() - 89,
-    );
+  if (range === "30d") {
+    from.setDate(from.getDate() - 29);
   }
 
-  if (range === "1Y") {
-    from.setFullYear(
-      from.getFullYear() - 1,
-    );
-
-    from.setDate(
-      from.getDate() + 1,
-    );
+  if (range === "90d") {
+    from.setDate(from.getDate() - 89);
   }
 
-  from.setHours(
-    0,
-    0,
-    0,
-    0,
-  );
+  if (range === "year") {
+    from.setMonth(0, 1);
+    from.setHours(0, 0, 0, 0);
+  }
 
   return {
-    from:
-      from.toISOString(),
-    to:
-      to.toISOString(),
+    from: formatDateForApi(from),
+    to: formatDateForApi(to),
   };
-}
+};
 
-function formatDateLabel(
-  value: string,
-  range: DateRange,
-) {
-  const date =
-    new Date(value);
+const normalizeLabel = (value: unknown): string => {
+  return textValue(value, "Unknown")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+};
 
-  if (
-    !Number.isFinite(
-      date.getTime(),
-    )
-  ) {
-    return value;
+const downloadCsv = (
+  filename: string,
+  rows: Array<Record<string, unknown>>,
+) => {
+  if (!rows.length) {
+    return;
   }
 
-  if (range === "1Y") {
-    return date.toLocaleDateString(
-      "en-IN",
-      {
-        month: "short",
-        year: "numeric",
-      },
-    );
-  }
+  const headers = Object.keys(rows[0]);
 
-  return date.toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-    },
-  );
-}
+  const csvRows = [
+    headers.join(","),
+    ...rows.map((row) =>
+      headers
+        .map((header) => {
+          const value = row[header];
 
-function normalizePaymentStatus(
-  value: string,
-) {
-  const normalized =
-    value
-      .trim()
-      .toLowerCase();
+          if (value === null || value === undefined) {
+            return "";
+          }
 
-  if (
-    normalized.includes("paid")
-  ) {
-    return "Paid";
-  }
+          const stringValue = String(value).replace(/"/g, '""');
 
-  if (
-    normalized.includes("pending")
-  ) {
-    return "Pending";
-  }
+          return `"${stringValue}"`;
+        })
+        .join(","),
+    ),
+  ];
 
-  if (
-    normalized.includes("failed")
-  ) {
-    return "Failed";
-  }
+  const blob = new Blob([csvRows.join("\n")], {
+    type: "text/csv;charset=utf-8;",
+  });
 
-  if (
-    normalized.includes("refund")
-  ) {
-    return "Refunded";
-  }
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
 
-  return value || "Unknown";
-}
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
 
-function normalizeOrderStatus(
-  value: string,
-) {
-  if (!value) {
-    return "Unknown";
-  }
+  URL.revokeObjectURL(url);
+};
 
-  return value
-    .replaceAll(
-      "_",
-      " ",
-    )
-    .replace(
-      /\b\w/g,
-      (letter) =>
-        letter.toUpperCase(),
-    );
-}
+/* -------------------------------------------------------------------------- */
+/* Small UI components                                                        */
+/* -------------------------------------------------------------------------- */
 
 function MetricCard({
   title,
   value,
-  change,
-  description,
+  subtitle,
   icon: Icon,
-  tone,
+  trend,
 }: MetricCardProps) {
-  const toneClass =
-    tone === "red"
-      ? "bg-red-50 text-red-600"
-      : tone === "green"
-        ? "bg-green-50 text-green-600"
-        : tone === "orange"
-          ? "bg-orange-50 text-orange-600"
-          : "bg-blue-50 text-blue-600";
+  const hasTrend = trend !== null && trend !== undefined;
+  const positive = numberValue(trend) >= 0;
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-      <div className="flex items-start justify-between">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-slate-500">{title}</p>
+
+          <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+            {value}
+          </p>
+
+          {subtitle ? (
+            <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+          ) : null}
+        </div>
+
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+
+      {hasTrend ? (
         <div
-          className={`grid h-11 w-11 place-items-center rounded-xl ${toneClass}`}
+          className={`mt-4 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
+            positive
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-red-50 text-red-700"
+          }`}
         >
-          <Icon size={21} />
+          {positive ? (
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          ) : (
+            <ArrowDownRight className="h-3.5 w-3.5" />
+          )}
+
+          {Math.abs(numberValue(trend)).toFixed(1)}%
         </div>
-
-        {change ? (
-          <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500">
-            <ArrowUpRight size={12} />
-            {change}
-          </span>
-        ) : null}
-      </div>
-
-      <p className="mt-5 text-xs font-semibold text-slate-500">
-        {title}
-      </p>
-
-      <h2 className="mt-2 text-2xl font-black text-slate-900">
-        {value}
-      </h2>
-
-      <p className="mt-2 text-[11px] leading-5 text-slate-400">
-        {description}
-      </p>
-    </article>
-  );
-}
-
-function EmptyState({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex min-h-[180px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 text-center">
-      <div>
-        <div className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-white text-slate-400 shadow-sm">
-          <BarChart3 size={20} />
-        </div>
-
-        <h3 className="mt-4 text-sm font-black text-slate-700">
-          {title}
-        </h3>
-
-        <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-slate-400">
-          {description}
-        </p>
-      </div>
+      ) : null}
     </div>
   );
 }
 
 function MiniCard({
-  icon: Icon,
   title,
   value,
-  change,
-  tone,
-}: {
-  icon: React.ComponentType<{
-    size?: number;
-    className?: string;
-  }>;
-  title: string;
-  value: string;
-  change: string;
-  tone:
-    | "blue"
-    | "red"
-    | "green"
-    | "orange";
-}) {
-  const iconClass =
-    tone === "red"
-      ? "text-red-600"
-      : tone === "green"
-        ? "text-green-600"
-        : tone === "orange"
-          ? "text-orange-600"
-          : "text-blue-600";
-
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <Icon
-        size={20}
-        className={iconClass}
-      />
-
-      <p className="mt-4 text-xs font-semibold text-slate-500">
-        {title}
-      </p>
-
-      <h3 className="mt-2 text-2xl font-black text-slate-900">
-        {value}
-      </h3>
-
-      <span className="mt-2 block text-xs font-bold text-slate-400">
-        {change}
-      </span>
-    </article>
-  );
-}
-
-function InsightCard({
+  subtitle,
   icon: Icon,
-  title,
-  description,
-  badge,
-  tone,
-}: {
-  icon: React.ComponentType<{
-    size?: number;
-  }>;
-  title: string;
-  description: string;
-  badge: string;
-  tone:
-    | "blue"
-    | "red"
-    | "green"
-    | "orange";
-}) {
-  const toneClass =
-    tone === "red"
-      ? "bg-red-500/15 text-red-300"
-      : tone === "green"
-        ? "bg-green-500/15 text-green-300"
-        : tone === "orange"
-          ? "bg-orange-500/15 text-orange-300"
-          : "bg-blue-500/15 text-blue-300";
-
+}: MiniCardProps) {
   return (
-    <article className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div
-          className={`grid h-10 w-10 place-items-center rounded-xl ${toneClass}`}
-        >
-          <Icon size={19} />
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+          <Icon className="h-5 w-5" />
         </div>
 
-        <span
-          className={`rounded-full px-2 py-1 text-[9px] font-bold ${toneClass}`}
-        >
-          {badge}
-        </span>
+        <div className="min-w-0">
+          <p className="truncate text-xs font-medium text-slate-500">
+            {title}
+          </p>
+
+          <p className="mt-1 text-lg font-bold text-slate-900">
+            {value}
+          </p>
+
+          {subtitle ? (
+            <p className="truncate text-[11px] text-slate-500">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
       </div>
-
-      <h3 className="mt-4 text-sm font-bold text-white">
-        {title}
-      </h3>
-
-      <p className="mt-2 text-xs leading-6 text-slate-400">
-        {description}
-      </p>
-    </article>
-  );
-}
-
-function DataStatus({
-  label,
-  status,
-  description,
-  live = false,
-}: {
-  label: string;
-  status: string;
-  description: string;
-  live?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-      <div>
-        <p className="text-xs font-black text-slate-800">
-          {label}
-        </p>
-
-        <p className="mt-1 text-[11px] text-slate-400">
-          {description}
-        </p>
-      </div>
-
-      <span
-        className={`shrink-0 rounded-full px-3 py-1 text-[9px] font-black ${
-          live
-            ? "bg-green-50 text-green-700"
-            : status ===
-                "NO DATA"
-              ? "bg-orange-50 text-orange-700"
-              : "bg-slate-200 text-slate-500"
-        }`}
-      >
-        {status}
-      </span>
     </div>
   );
 }
 
-export default function BusinessAnalytics() {
-  const [
-    selectedRange,
-    setSelectedRange,
-  ] =
-    useState<DateRange>("30D");
-
-  const [
-    comparePeriod,
-    setComparePeriod,
-  ] =
-    useState(true);
-
-  const [
-    isRefreshing,
-    setIsRefreshing,
-  ] =
-    useState(false);
-
-  const [
-    analytics,
-    setAnalytics,
-  ] =
-    useState<AnalyticsData | null>(
-      null,
-    );
-
-  const [
-    isLoading,
-    setIsLoading,
-  ] =
-    useState(true);
-
-  const [
-    error,
-    setError,
-  ] =
-    useState("");
-
-  const loadAnalytics =
-    useCallback(
-      async () => {
-        try {
-          setError("");
-
-          const {
-            from,
-            to,
-          } =
-            getDateRange(
-              selectedRange,
-            );
-
-          const params =
-            new URLSearchParams();
-
-          params.set(
-            "from",
-            from,
-          );
-
-          params.set(
-            "to",
-            to,
-          );
-
-          const response =
-            await fetch(
-              `/api/business-analytics?${params.toString()}`,
-              {
-                method:
-                  "GET",
-
-                headers: {
-                  Accept:
-                    "application/json",
-                },
-
-                cache:
-                  "no-store",
-              },
-            );
-
-          let result:
-            | AnalyticsApiResponse
-            | null =
-            null;
-
-          try {
-            result =
-              (await response.json()) as AnalyticsApiResponse;
-          } catch {
-            result =
-              null;
-          }
-
-          if (
-            !response.ok ||
-            !result?.success ||
-            !result.data
-          ) {
-            throw new Error(
-              result?.message ||
-                `Business Analytics API returned ${response.status}.`,
-            );
-          }
-
-          setAnalytics(
-            result.data,
-          );
-        } catch (
-          requestError,
-        ) {
-          console.error(
-            "BUSINESS_ANALYTICS_LOAD_ERROR",
-            requestError,
-          );
-
-          setAnalytics(
-            null,
-          );
-
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Unable to load live business analytics.",
-          );
-        } finally {
-          setIsLoading(
-            false,
-          );
-        }
-      },
-      [
-        selectedRange,
-      ],
-    );
-
-  useEffect(() => {
-    setIsLoading(
-      true,
-    );
-
-    void loadAnalytics();
-  }, [
-    loadAnalytics,
-  ]);
-
-  /*
-   * Automatic live refresh.
-   *
-   * Every 30 seconds KEOS asks the Central API again.
-   * New orders entered into D1 will therefore appear
-   * without manually refreshing the browser.
-   */
-  useEffect(() => {
-    const interval =
-      window.setInterval(
-        () => {
-          void loadAnalytics();
-        },
-        30_000,
-      );
-
-    return () =>
-      window.clearInterval(
-        interval,
-      );
-  }, [
-    loadAnalytics,
-  ]);
-
-  const refreshAnalytics =
-    async () => {
-      setIsRefreshing(
-        true,
-      );
-
-      try {
-        await loadAnalytics();
-      } finally {
-        setIsRefreshing(
-          false,
-        );
-      }
-    };
-
-  const currentPeriodLabel =
-    selectedRange ===
-    "7D"
-      ? "Last 7 Days"
-      : selectedRange ===
-          "30D"
-        ? "Last 30 Days"
-        : selectedRange ===
-            "90D"
-          ? "Last 90 Days"
-          : "Last 12 Months";
-
-  const revenue =
-    analytics?.revenue;
-
-  const sales =
-    analytics?.sales;
-
-  const customers =
-    analytics?.customers;
-
-  const products =
-    analytics?.products;
-
-  const inventory =
-    analytics?.inventory;
-
-  const finance =
-    analytics?.finance;
-
-  const totalRevenue =
-    revenue?.netSales ??
-    0;
-
-  const totalOrders =
-    revenue?.orderCount ??
-    0;
-
-  const averageOrderValue =
-    revenue?.averageOrderValue ??
-    0;
-
-  const uniqueCustomers =
-    customers?.activeCustomers ??
-    0;
-
-  const returningCustomers =
-    customers?.returningCustomers ??
-    0;
-
-  const newCustomers =
-    customers?.newCustomers ??
-    0;
-
-  const growthPercent =
-    revenue?.growthPercent ??
-    0;
-
-  const paidOrders =
-    sales?.paymentStatus
-      ?.filter(
-        (item) =>
-          normalizePaymentStatus(
-            item.status,
-          ) === "Paid",
-      )
-      .reduce(
-        (
-          sum,
-          item,
-        ) =>
-          sum +
-          Number(
-            item.count ??
-              0,
-          ),
-        0,
-      ) ?? 0;
-
-  const pendingPayments =
-    sales?.paymentStatus
-      ?.filter(
-        (item) =>
-          normalizePaymentStatus(
-            item.status,
-          ) === "Pending",
-      )
-      .reduce(
-        (
-          sum,
-          item,
-        ) =>
-          sum +
-          Number(
-            item.count ??
-              0,
-          ),
-        0,
-      ) ?? 0;
-
-  const failedPayments =
-    sales?.paymentStatus
-      ?.filter(
-        (item) =>
-          normalizePaymentStatus(
-            item.status,
-          ) === "Failed",
-      )
-      .reduce(
-        (
-          sum,
-          item,
-        ) =>
-          sum +
-          Number(
-            item.count ??
-              0,
-          ),
-        0,
-      ) ?? 0;
-
-  const refundedOrders =
-    sales?.paymentStatus
-      ?.filter(
-        (item) =>
-          normalizePaymentStatus(
-            item.status,
-          ) === "Refunded",
-      )
-      .reduce(
-        (
-          sum,
-          item,
-        ) =>
-          sum +
-          Number(
-            item.count ??
-              0,
-          ),
-        0,
-      ) ?? 0;
-
-  const paymentIssues =
-    pendingPayments +
-    failedPayments;
-
-  const openOrders =
-    sales?.orderStatus
-      ?.filter(
-        (item) => {
-          const status =
-            normalizeOrderStatus(
-              item.status,
-            );
-
-          return ![
-            "Delivered",
-            "Cancelled",
-            "Returned",
-          ].includes(
-            status,
-          );
-        },
-      )
-      .reduce(
-        (
-          sum,
-          item,
-        ) =>
-          sum +
-          Number(
-            item.count ??
-              0,
-          ),
-        0,
-      ) ?? 0;
-
-  const revenueTrend =
-    useMemo(() => {
-      return (
-        sales?.daily
-          ?.map(
-            (
-              item,
-            ) => ({
-              label:
-                formatDateLabel(
-                  item.date,
-                  selectedRange,
-                ),
-              revenue:
-                Number(
-                  item.revenue ??
-                    0,
-                ),
-              orders:
-                Number(
-                  item.orders ??
-                    0,
-                ),
-            }),
-          ) ?? []
-      );
-    }, [
-      sales?.daily,
-      selectedRange,
-    ]);
-
-  const paymentData =
-    useMemo(() => {
-      return (
-        sales?.paymentStatus
-          ?.map(
-            (
-              item,
-            ) => ({
-              name:
-                normalizePaymentStatus(
-                  item.status,
-                ),
-              value:
-                Number(
-                  item.count ??
-                    0,
-                ),
-            }),
-          )
-          .filter(
-            (item) =>
-              item.value > 0,
-          ) ?? []
-      );
-    }, [
-      sales?.paymentStatus,
-    ]);
-
-  const customerSegments =
-    useMemo(() => {
-      const data = [
-        {
-          name: "New Customers",
-          value:
-            newCustomers,
-        },
-        {
-          name: "Returning Customers",
-          value:
-            returningCustomers,
-        },
-      ];
-
-      return data.filter(
-        (item) =>
-          item.value > 0,
-      );
-    }, [
-      newCustomers,
-      returningCustomers,
-    ]);
-
-  const orderStatusData =
-    useMemo(() => {
-      return (
-        sales?.orderStatus
-          ?.map(
-            (
-              item,
-            ) => ({
-              status:
-                normalizeOrderStatus(
-                  item.status,
-                ),
-              value:
-                Number(
-                  item.count ??
-                    0,
-                ),
-            }),
-          )
-          .sort(
-            (
-              a,
-              b,
-            ) =>
-              b.value -
-              a.value,
-          ) ?? []
-      );
-    }, [
-      sales?.orderStatus,
-    ]);
-
-  const paymentMethodData =
-    useMemo(() => {
-      return (
-        sales?.paymentMethod
-          ?.map(
-            (
-              item,
-            ) => ({
-              method:
-                item.method ||
-                "Unknown",
-              orders:
-                Number(
-                  item.orders ??
-                    0,
-                ),
-              revenue:
-                Number(
-                  item.revenue ??
-                    0,
-                ),
-            }),
-          )
-          .filter(
-            (item) =>
-              item.orders >
-                0 ||
-              item.revenue >
-                0,
-          ) ?? []
-      );
-    }, [
-      sales?.paymentMethod,
-    ]);
-
-  const categoryData =
-    useMemo(() => {
-      return (
-        products?.categoryPerformance
-          ?.map(
-            (
-              item,
-            ) => ({
-              category:
-                item.category ||
-                "Other",
-              revenue:
-                Number(
-                  item.revenue ??
-                    0,
-                ),
-              orders:
-                Number(
-                  item.orders ??
-                    0,
-                ),
-              units:
-                Number(
-                  item.units ??
-                    item.quantity ??
-                    0,
-                ),
-            }),
-          )
-          .sort(
-            (
-              a,
-              b,
-            ) =>
-              b.revenue -
-              a.revenue,
-          ) ?? []
-      );
-    }, [
-      products?.categoryPerformance,
-    ]);
-
-  const topProducts =
-    useMemo(() => {
-      return (
-        products?.topSelling
-          ?.map(
-            (
-              item,
-            ) => ({
-              name:
-                item.name ||
-                "Unnamed Product",
-              sku:
-                item.sku ||
-                null,
-              units:
-                Number(
-                  item.units ??
-                    item.quantity ??
-                    0,
-                ),
-              revenue:
-                Number(
-                  item.revenue ??
-                    0,
-                ),
-              orders:
-                Number(
-                  item.orders ??
-                    0,
-                ),
-            }),
-          )
-          .slice(
-            0,
-            10,
-          ) ?? []
-      );
-    }, [
-      products?.topSelling,
-    ]);
-
-  const inventoryMovement =
-    useMemo(() => {
-      return (
-        inventory?.movement
-          ?.map(
-            (
-              item,
-            ) => ({
-              type:
-                normalizeOrderStatus(
-                  item.type,
-                ),
-              quantity:
-                Number(
-                  item.quantity ??
-                    0,
-                ),
-              value:
-                Number(
-                  item.value ??
-                    0,
-                ),
-            }),
-          )
-          .filter(
-            (item) =>
-              item.quantity !==
-                0 ||
-              item.value !==
-                0,
-          ) ?? []
-      );
-    }, [
-      inventory?.movement,
-    ]);
-
-  const regionalSalesAvailable =
-    false;
-
-  const exportReport =
-    () => {
-      const report = [
-        [
-          "Metric",
-          "Value",
-        ],
-        [
-          "Date Range",
-          currentPeriodLabel,
-        ],
-        [
-          "Revenue",
-          formatFullCurrency(
-            totalRevenue,
-          ),
-        ],
-        [
-          "Gross Sales",
-          formatFullCurrency(
-            revenue?.grossSales ??
-              0,
-          ),
-        ],
-        [
-          "Discounts",
-          formatFullCurrency(
-            revenue?.discounts ??
-              0,
-          ),
-        ],
-        [
-          "Shipping",
-          formatFullCurrency(
-            revenue?.shipping ??
-              0,
-          ),
-        ],
-        [
-          "Tax",
-          formatFullCurrency(
-            revenue?.tax ??
-              0,
-          ),
-        ],
-        [
-          "Orders",
-          String(
-            totalOrders,
-          ),
-        ],
-        [
-          "Paid Orders",
-          String(
-            paidOrders,
-          ),
-        ],
-        [
-          "Pending Payments",
-          String(
-            pendingPayments,
-          ),
-        ],
-        [
-          "Failed Payments",
-          String(
-            failedPayments,
-          ),
-        ],
-        [
-          "Refunded Orders",
-          String(
-            refundedOrders,
-          ),
-        ],
-        [
-          "Active Customers",
-          String(
-            uniqueCustomers,
-          ),
-        ],
-        [
-          "New Customers",
-          String(
-            newCustomers,
-          ),
-        ],
-        [
-          "Returning Customers",
-          String(
-            returningCustomers,
-          ),
-        ],
-        [
-          "Average Order Value",
-          formatFullCurrency(
-            averageOrderValue,
-          ),
-        ],
-        [
-          "Repeat Purchase Rate",
-          formatPercentage(
-            customers?.repeatPurchaseRate ??
-              0,
-          ),
-        ],
-        [
-          "Inventory Products",
-          String(
-            inventory?.totalProducts ??
-              0,
-          ),
-        ],
-        [
-          "Inventory Units",
-          String(
-            inventory?.totalUnits ??
-              0,
-          ),
-        ],
-        [
-          "Inventory Value",
-          formatFullCurrency(
-            inventory?.inventoryValue ??
-              0,
-          ),
-        ],
-      ];
-
-      const csv =
-        report
-          .map(
-            (
-              row,
-            ) =>
-              row
-                .map(
-                  (
-                    value,
-                  ) =>
-                    `"${String(
-                      value,
-                    ).replaceAll(
-                      '"',
-                      '""',
-                    )}"`,
-                )
-                .join(","),
-          )
-          .join("\n");
-
-      const blob =
-        new Blob(
-          [csv],
-          {
-            type:
-              "text/csv;charset=utf-8;",
-          },
-        );
-
-      const url =
-        URL.createObjectURL(
-          blob,
-        );
-
-      const anchor =
-        document.createElement(
-          "a",
-        );
-
-      anchor.href =
-        url;
-
-      anchor.download =
-        "keos-business-analytics.csv";
-
-      document.body.appendChild(
-        anchor,
-      );
-
-      anchor.click();
-
-      anchor.remove();
-
-      URL.revokeObjectURL(
-        url,
-      );
-    };
-
-  const openAskAI =
-    () => {
-      window.dispatchEvent(
-        new CustomEvent(
-          "keos:open-ask-ai",
-          {
-            detail: {
-              source:
-                "business-analytics",
-            },
-          },
-        ),
-      );
-    };
+function InsightCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  tone = "blue",
+}: InsightCardProps) {
+  const toneClass = {
+    blue: "bg-blue-50 text-blue-600",
+    green: "bg-emerald-50 text-emerald-600",
+    red: "bg-red-50 text-red-600",
+    amber: "bg-amber-50 text-amber-600",
+  }[tone];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <section className="rounded-3xl bg-gradient-to-r from-blue-600 via-blue-700 to-blue-900 p-7 text-white shadow-xl shadow-blue-900/10 sm:p-9">
-        <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-100">
-              <ChartNoAxesCombined size={16} />
-              Enterprise Intelligence Center
-            </div>
-
-            <h1 className="mt-4 text-3xl font-black sm:text-4xl">
-              Business Analytics
-            </h1>
-
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-blue-100">
-              Live business analytics calculated directly from
-              KRVE Central API and Cloudflare D1. No demo
-              revenue or fabricated business figures are used.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={
-                refreshAnalytics
-              }
-              disabled={
-                isRefreshing
-              }
-              className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <RefreshCcw
-                size={17}
-                className={
-                  isRefreshing
-                    ? "animate-spin"
-                    : ""
-                }
-              />
-
-              {isRefreshing
-                ? "Refreshing..."
-                : "Refresh Live Data"}
-            </button>
-
-            <button
-              type="button"
-              onClick={
-                exportReport
-              }
-              className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-blue-700 hover:bg-blue-50"
-            >
-              <Download size={17} />
-              Export Report
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="mt-6 flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center">
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              "7D",
-              "30D",
-              "90D",
-              "1Y",
-            ] as DateRange[]
-          ).map(
-            (
-              range,
-            ) => (
-              <button
-                type="button"
-                key={
-                  range
-                }
-                onClick={() =>
-                  setSelectedRange(
-                    range,
-                  )
-                }
-                className={`rounded-xl px-4 py-2.5 text-xs font-bold transition ${
-                  selectedRange ===
-                  range
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {range ===
-                  "7D" &&
-                  "Last 7 Days"}
-
-                {range ===
-                  "30D" &&
-                  "Last 30 Days"}
-
-                {range ===
-                  "90D" &&
-                  "Last 90 Days"}
-
-                {range ===
-                  "1Y" &&
-                  "Last 12 Months"}
-              </button>
-            ),
-          )}
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${toneClass}`}
+        >
+          <Icon className="h-5 w-5" />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600">
-            <input
-              type="checkbox"
-              checked={
-                comparePeriod
-              }
-              onChange={(
-                event,
-              ) =>
-                setComparePeriod(
-                  event.target
-                    .checked,
-                )
-              }
-              className="h-4 w-4 accent-blue-600"
-            />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-slate-500">{title}</p>
 
-            Compare previous period
-          </label>
-
-          <button
-            type="button"
-            className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-400"
-            disabled
-            title="Custom date filtering is not connected yet."
-          >
-            <CalendarDays size={16} />
-            Custom Dates
-          </button>
-        </div>
-      </section>
-
-      {error ? (
-        <section className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5">
-          <div className="flex items-start gap-3">
-            <Activity
-              size={20}
-              className="mt-0.5 text-red-600"
-            />
-
-            <div>
-              <h2 className="text-sm font-black text-red-800">
-                Live Analytics Data Error
-              </h2>
-
-              <p className="mt-1 text-xs leading-5 text-red-700">
-                {error}
-              </p>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      <section className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        <MetricCard
-          title="Total Revenue"
-          value={
-            isLoading
-              ? "Loading..."
-              : formatCurrency(
-                  totalRevenue,
-                )
-          }
-          change={
-            comparePeriod &&
-            analytics
-              ? `${growthPercent >= 0 ? "+" : ""}${growthPercent.toFixed(
-                  1,
-                )}%`
-              : undefined
-          }
-          description={`${currentPeriodLabel} · Central API revenue`}
-          icon={
-            CircleDollarSign
-          }
-          tone="blue"
-        />
-
-        <MetricCard
-          title="Orders"
-          value={
-            isLoading
-              ? "Loading..."
-              : formatNumber(
-                  totalOrders,
-                )
-          }
-          description={`${currentPeriodLabel} · Actual D1 orders`}
-          icon={
-            ShoppingBag
-          }
-          tone="red"
-        />
-
-        <MetricCard
-          title="Net Profit"
-          value="N/A"
-          description="Expense / COGS accounting data is not connected"
-          icon={
-            IndianRupee
-          }
-          tone="green"
-        />
-
-        <MetricCard
-          title="Conversion Rate"
-          value="N/A"
-          description="Website visitor/session data is not connected"
-          icon={
-            Target
-          }
-          tone="orange"
-        />
-
-        <MetricCard
-          title="Total Customers"
-          value={
-            isLoading
-              ? "Loading..."
-              : formatNumber(
-                  uniqueCustomers,
-                )
-          }
-          description="Active customers from live Central API data"
-          icon={Users}
-          tone="blue"
-        />
-
-        <MetricCard
-          title="Average Order Value"
-          value={
-            isLoading
-              ? "Loading..."
-              : formatCurrency(
-                  averageOrderValue,
-                )
-          }
-          description="Central API AOV for selected period"
-          icon={
-            BarChart3
-          }
-          tone="red"
-        />
-      </section>
-
-      <section className="mt-6 grid gap-6 xl:grid-cols-[1.45fr_0.55fr]">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div>
-            <h2 className="text-lg font-black text-slate-900">
-              Revenue Trend
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Live daily revenue from KRVE Central API
-            </p>
-          </div>
-
-          <div className="mt-7 h-[350px]">
-            {revenueTrend.length ===
-            0 ? (
-              <EmptyState
-                title={
-                  isLoading
-                    ? "Loading revenue..."
-                    : "No revenue recorded"
-                }
-                description="There are no revenue records in the selected period."
-              />
-            ) : (
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-              >
-                <AreaChart
-                  data={
-                    revenueTrend
-                  }
-                >
-                  <defs>
-                    <linearGradient
-                      id="analyticsRevenueGradient"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="#2563eb"
-                        stopOpacity={
-                          0.25
-                        }
-                      />
-
-                      <stop
-                        offset="95%"
-                        stopColor="#2563eb"
-                        stopOpacity={
-                          0
-                        }
-                      />
-                    </linearGradient>
-                  </defs>
-
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={
-                      false
-                    }
-                    stroke="#e2e8f0"
-                  />
-
-                  <XAxis
-                    dataKey="label"
-                    axisLine={
-                      false
-                    }
-                    tickLine={
-                      false
-                    }
-                  />
-
-                  <YAxis
-                    axisLine={
-                      false
-                    }
-                    tickLine={
-                      false
-                    }
-                    tickFormatter={
-                      formatCurrency
-                    }
-                  />
-
-                  <Tooltip />
-
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#2563eb"
-                    strokeWidth={
-                      3
-                    }
-                    fill="url(#analyticsRevenueGradient)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </article>
-
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-black text-slate-900">
-            Payment Status
-          </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Actual payment state from D1
+          <p className="mt-1 text-xl font-bold text-slate-900">
+            {value}
           </p>
 
-          {paymentData.length ===
-          0 ? (
-            <div className="mt-5">
-              <EmptyState
-                title="No payment data"
-                description="Payment status data will appear after orders are recorded."
-              />
-            </div>
-          ) : (
-            <>
-              <div className="mt-5 h-[235px]">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                >
-                  <PieChart>
-                    <Pie
-                      data={
-                        paymentData
-                      }
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius={
-                        60
-                      }
-                      outerRadius={
-                        88
-                      }
-                      paddingAngle={
-                        4
-                      }
-                    >
-                      {paymentData.map(
-                        (
-                          item,
-                          index,
-                        ) => (
-                          <Cell
-                            key={
-                              item.name
-                            }
-                            fill={
-                              CHART_COLORS[
-                                index %
-                                  CHART_COLORS.length
-                              ]
-                            }
-                          />
-                        ),
-                      )}
-                    </Pie>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+function EmptyState({
+  message = "No data available for this period.",
+}: {
+  message?: string;
+}) {
+  return (
+    <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-6 text-center">
+      <div>
+        <BarChart3 className="mx-auto h-8 w-8 text-slate-300" />
 
-              <div className="space-y-3">
-                {paymentData.map(
-                  (
-                    item,
-                    index,
-                  ) => (
-                    <div
-                      key={
-                        item.name
-                      }
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{
-                            backgroundColor:
-                              CHART_COLORS[
-                                index %
-                                  CHART_COLORS.length
-                              ],
-                          }}
-                        />
+        <p className="mt-3 text-sm font-medium text-slate-500">
+          {message}
+        </p>
+      </div>
+    </div>
+  );
+}
 
-                        <span className="text-xs font-semibold text-slate-600">
-                          {
-                            item.name
-                          }
-                        </span>
-                      </div>
+/* -------------------------------------------------------------------------- */
+/* Main component                                                             */
+/* -------------------------------------------------------------------------- */
 
-                      <strong className="text-xs text-slate-900">
-                        {formatNumber(
-                          item.value,
-                        )}
-                      </strong>
-                    </div>
-                  ),
-                )}
-              </div>
-            </>
-          )}
-        </article>
-      </section>
+export default function BusinessAnalytics() {
+  const [range, setRange] = useState<DateRange>("30d");
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-2">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  const [showRangeMenu, setShowRangeMenu] = useState(false);
+
+  const loadAnalytics = useCallback(
+    async (silent = false) => {
+      try {
+        if (silent) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+
+        setError(null);
+
+        const dates = getDateRange(range);
+
+        const params = new URLSearchParams({
+          from: dates.from,
+          to: dates.to,
+        });
+
+        const response = await fetch(
+          `/api/business-analytics?${params.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+            },
+            cache: "no-store",
+          },
+        );
+
+        let result: AnalyticsResponse | null = null;
+
+        try {
+          result = (await response.json()) as AnalyticsResponse;
+        } catch {
+          result = null;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            result?.message ||
+              `Business analytics request failed with status ${response.status}.`,
+          );
+        }
+
+        if (!result?.success || !result.data) {
+          throw new Error(
+            result?.message ||
+              "Business analytics data could not be loaded.",
+          );
+        }
+
+        setAnalytics(result.data);
+        setLastUpdated(new Date());
+      } catch (requestError) {
+        console.error(
+          "BUSINESS_ANALYTICS_LOAD_ERROR",
+          requestError,
+        );
+
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Unable to load business analytics.",
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [range],
+  );
+
+  useEffect(() => {
+    void loadAnalytics(false);
+  }, [loadAnalytics]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      void loadAnalytics(true);
+    }, 30000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [loadAnalytics]);
+
+  /* ------------------------------------------------------------------------ */
+  /* Derived data                                                             */
+  /* ------------------------------------------------------------------------ */
+
+  const revenue = analytics?.revenue;
+  const sales = analytics?.sales;
+  const customers = analytics?.customers;
+  const inventory = analytics?.inventory;
+  const products = analytics?.products;
+  const finance = analytics?.finance;
+
+  const dailySales = useMemo(() => {
+    return Array.isArray(sales?.daily) ? sales.daily : [];
+  }, [sales?.daily]);
+
+  const orderStatus = useMemo(() => {
+    return Array.isArray(sales?.orderStatus)
+      ? sales.orderStatus
+      : [];
+  }, [sales?.orderStatus]);
+
+  const paymentStatus = useMemo(() => {
+    return Array.isArray(sales?.paymentStatus)
+      ? sales.paymentStatus
+      : [];
+  }, [sales?.paymentStatus]);
+
+  const paymentMethods = useMemo(() => {
+    return Array.isArray(sales?.paymentMethod)
+      ? sales.paymentMethod
+      : [];
+  }, [sales?.paymentMethod]);
+
+  const topSelling = useMemo(() => {
+    return Array.isArray(products?.topSelling)
+      ? products.topSelling
+      : [];
+  }, [products?.topSelling]);
+
+  const slowMoving = useMemo(() => {
+    return Array.isArray(products?.slowMoving)
+      ? products.slowMoving
+      : [];
+  }, [products?.slowMoving]);
+
+  const categoryPerformance = useMemo(() => {
+    return Array.isArray(products?.categoryPerformance)
+      ? products.categoryPerformance
+      : [];
+  }, [products?.categoryPerformance]);
+
+  const inventoryMovement = useMemo(() => {
+    return Array.isArray(inventory?.movement)
+      ? inventory.movement
+      : [];
+  }, [inventory?.movement]);
+
+  const openOrders = useMemo(() => {
+    return orderStatus
+      .filter((item) => {
+        const status = String(item.status || "").toLowerCase();
+
+        return ![
+          "delivered",
+          "cancelled",
+          "canceled",
+          "refunded",
+          "failed",
+        ].includes(status);
+      })
+      .reduce(
+        (total, item) => total + numberValue(item.count),
+        0,
+      );
+  }, [orderStatus]);
+
+  const totalOrders = numberValue(revenue?.orderCount);
+
+  const totalRevenue = numberValue(revenue?.netSales);
+
+  const averageOrderValue =
+    numberValue(revenue?.averageOrderValue) ||
+    (totalOrders > 0 ? totalRevenue / totalOrders : 0);
+
+  const customerCount = numberValue(
+    customers?.activeCustomers,
+  );
+
+  const repeatPurchaseRate = numberValue(
+    customers?.repeatPurchaseRate,
+  );
+
+  const totalInventoryUnits = numberValue(
+    inventory?.totalUnits,
+  );
+
+  const inventoryValue = numberValue(
+    inventory?.inventoryValue,
+  );
+
+  const lowStockProducts = numberValue(
+    inventory?.lowStockProducts,
+  );
+
+  const outOfStockProducts = numberValue(
+    inventory?.outOfStockProducts,
+  );
+
+  const regionalSalesAvailable = false;
+
+  const rangeLabel: Record<DateRange, string> = {
+    today: "Today",
+    "7d": "Last 7 Days",
+    "30d": "Last 30 Days",
+    "90d": "Last 90 Days",
+    year: "This Year",
+  };
+
+  const statusChartData = orderStatus.map((item) => ({
+    name: normalizeLabel(item.status),
+    value: numberValue(item.count),
+  }));
+
+  const paymentChartData = paymentStatus.map((item) => ({
+    name: normalizeLabel(item.status),
+    value: numberValue(item.count),
+  }));
+
+  const categoryChartData = categoryPerformance.map(
+    (item) => ({
+      name: textValue(
+        item.category ?? item.name,
+        "Unknown",
+      ),
+      revenue: numberValue(item.revenue),
+      units: numberValue(
+        item.unitsSold ?? item.quantity,
+      ),
+    }),
+  );
+
+  const exportAnalytics = () => {
+    if (!analytics) {
+      return;
+    }
+
+    const rows = dailySales.map((item) => ({
+      date: item.date,
+      orders: item.orders,
+      revenue: item.revenue,
+    }));
+
+    downloadCsv(
+      `krve-business-analytics-${range}.csv`,
+      rows,
+    );
+  };
+
+  const openAskAI = () => {
+    window.dispatchEvent(
+      new CustomEvent("keos:open-ask-ai", {
+        detail: {
+          context: "business-analytics",
+          analytics,
+        },
+      }),
+    );
+  };
+
+  /* ------------------------------------------------------------------------ */
+  /* Loading state                                                            */
+  /* ------------------------------------------------------------------------ */
+
+  if (loading && !analytics) {
+    return (
+      <div className="min-h-full bg-slate-50 p-4 md:p-6">
+        <div className="mx-auto max-w-[1600px]">
+          <div className="mb-6 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-black text-slate-900">
-                Order Status Performance
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Actual order lifecycle status
-              </p>
+              <div className="h-7 w-64 animate-pulse rounded-lg bg-slate-200" />
+              <div className="mt-2 h-4 w-96 animate-pulse rounded bg-slate-200" />
             </div>
 
-            <ShoppingBag
-              size={22}
-              className="text-blue-600"
-            />
+            <div className="h-10 w-32 animate-pulse rounded-xl bg-slate-200" />
           </div>
 
-          {orderStatusData.length ===
-          0 ? (
-            <div className="mt-6">
-              <EmptyState
-                title="No order data"
-                description="Order status analytics will appear once live orders are available."
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-36 animate-pulse rounded-2xl bg-white shadow-sm"
               />
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-6 xl:grid-cols-3">
+            <div className="h-80 animate-pulse rounded-2xl bg-white xl:col-span-2" />
+            <div className="h-80 animate-pulse rounded-2xl bg-white" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Main UI                                                                  */
+  /* ------------------------------------------------------------------------ */
+
+  return (
+    <div className="min-h-full bg-slate-50 p-4 md:p-6">
+      <div className="mx-auto max-w-[1600px]">
+        {/* Header */}
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                <BarChart3 className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                  Business Analytics
+                </h1>
+
+                <p className="mt-0.5 text-sm text-slate-500">
+                  Live business intelligence powered by KRVE Central API
+                  and D1.
+                </p>
+              </div>
             </div>
-          ) : (
-            <div className="mt-7 h-[310px]">
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
+
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold ${
+                  analytics?.live
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-slate-100 text-slate-600"
+                }`}
               >
-                <RechartsBarChart
-                  data={
-                    orderStatusData
-                  }
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={
-                      false
-                    }
-                    stroke="#e2e8f0"
-                  />
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    analytics?.live
+                      ? "bg-emerald-500"
+                      : "bg-slate-400"
+                  }`}
+                />
 
-                  <XAxis
-                    dataKey="status"
-                    axisLine={
-                      false
-                    }
-                    tickLine={
-                      false
-                    }
-                    angle={-20}
-                    textAnchor="end"
-                    height={65}
-                  />
+                {analytics?.live ? "LIVE DATA" : "DATA"}
+              </span>
 
-                  <YAxis
-                    axisLine={
-                      false
-                    }
-                    tickLine={
-                      false
-                    }
-                    allowDecimals={
-                      false
-                    }
-                  />
-
-                  <Tooltip />
-
-                  <Bar
-                    dataKey="value"
-                    fill="#2563eb"
-                    radius={[
-                      8,
-                      8,
-                      0,
-                      0,
-                    ]}
-                  />
-                </RechartsBarChart>
-              </ResponsiveContainer>
+              <span className="text-slate-400">
+                {lastUpdated
+                  ? `Updated ${formatDateTime(
+                      lastUpdated.toISOString(),
+                    )}`
+                  : "Updating..."}
+              </span>
             </div>
-          )}
-        </article>
-
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black text-slate-900">
-                Customer Segments
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Live customer analytics from Central API
-              </p>
-            </div>
-
-            <Users
-              size={22}
-              className="text-blue-600"
-            />
           </div>
 
-          {customerSegments.length ===
-          0 ? (
-            <div className="mt-6">
-              <EmptyState
-                title="No customers yet"
-                description="Customer segmentation will appear when live customer records are available."
-              />
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Date range */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() =>
+                  setShowRangeMenu((current) => !current)
+                }
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300"
+              >
+                <CalendarDays className="h-4 w-4 text-slate-500" />
+
+                {rangeLabel[range]}
+
+                <ChevronDown className="h-4 w-4 text-slate-400" />
+              </button>
+
+              {showRangeMenu ? (
+                <div className="absolute right-0 z-30 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+                  {(
+                    Object.entries(rangeLabel) as [
+                      DateRange,
+                      string,
+                    ][]
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => {
+                        setRange(value);
+                        setShowRangeMenu(false);
+                      }}
+                      className={`w-full rounded-lg px-3 py-2 text-left text-sm transition ${
+                        range === value
+                          ? "bg-blue-50 font-semibold text-blue-700"
+                          : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
-          ) : (
-            <>
-              <div className="mt-5 h-[235px]">
+
+            <button
+              type="button"
+              onClick={() => void loadAnalytics(true)}
+              disabled={refreshing}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${
+                  refreshing ? "animate-spin" : ""
+                }`}
+              />
+
+              Refresh
+            </button>
+
+            <button
+              type="button"
+              onClick={exportAnalytics}
+              disabled={!analytics || !dailySales.length}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </button>
+
+            <button
+              type="button"
+              onClick={openAskAI}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+            >
+              <Sparkles className="h-4 w-4" />
+              Ask AI
+            </button>
+          </div>
+        </div>
+
+        {/* Error */}
+        {error ? (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+
+              <div className="min-w-0">
+                <p className="font-semibold text-red-800">
+                  Business analytics could not be loaded
+                </p>
+
+                <p className="mt-1 text-sm text-red-700">
+                  {error}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => void loadAnalytics(false)}
+                  className="mt-3 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Revenue metrics */}
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            title="Net Sales"
+            value={formatCurrency(
+              revenue?.netSales,
+            )}
+            subtitle={`${formatNumber(
+              revenue?.orderCount,
+            )} orders`}
+            icon={CircleDollarSign}
+            trend={revenue?.growthPercent}
+          />
+
+          <MetricCard
+            title="Average Order Value"
+            value={formatCurrency(
+              averageOrderValue,
+            )}
+            subtitle="Average revenue per order"
+            icon={ShoppingCart}
+          />
+
+          <MetricCard
+            title="Gross Sales"
+            value={formatCurrency(
+              revenue?.grossSales,
+            )}
+            subtitle={`Discounts ${formatCurrency(
+              revenue?.discounts,
+            )}`}
+            icon={Wallet}
+          />
+
+          <MetricCard
+            title="Customers"
+            value={formatNumber(customerCount)}
+            subtitle={`${formatNumber(
+              customers?.newCustomers,
+            )} new customers`}
+            icon={Users}
+          />
+        </div>
+
+        {/* Quick business cards */}
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <MiniCard
+            title="Open Orders"
+            value={formatNumber(openOrders)}
+            subtitle="Orders still in progress"
+            icon={Clock3}
+          />
+
+          <MiniCard
+            title="Repeat Purchase"
+            value={formatPercent(
+              repeatPurchaseRate,
+            )}
+            subtitle="Customer repeat rate"
+            icon={Users}
+          />
+
+          <MiniCard
+            title="Inventory Units"
+            value={formatNumber(
+              totalInventoryUnits,
+            )}
+            subtitle={`${formatNumber(
+              inventory?.totalProducts,
+            )} products`}
+            icon={Boxes}
+          />
+
+          <MiniCard
+            title="Inventory Value"
+            value={formatCurrency(
+              inventoryValue,
+            )}
+            subtitle="Current inventory value"
+            icon={Package}
+          />
+        </div>
+
+        {/* Sales trend + order status */}
+        <div className="mt-6 grid gap-6 xl:grid-cols-3">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Sales Trend
+                </h2>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Daily orders and revenue for the selected period.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4 text-xs text-slate-500">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-blue-500" />
+                  Revenue
+                </span>
+
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-slate-400" />
+                  Orders
+                </span>
+              </div>
+            </div>
+
+            {dailySales.length ? (
+              <div className="h-[320px] w-full">
                 <ResponsiveContainer
                   width="100%"
                   height="100%"
                 >
-                  <PieChart>
-                    <Pie
-                      data={
-                        customerSegments
-                      }
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius={
-                        60
-                      }
-                      outerRadius={
-                        88
-                      }
-                      paddingAngle={
-                        4
-                      }
-                    >
-                      {customerSegments.map(
-                        (
-                          item,
-                          index,
-                        ) => (
-                          <Cell
-                            key={
-                              item.name
-                            }
-                            fill={
-                              CHART_COLORS[
-                                index %
-                                  CHART_COLORS.length
-                              ]
-                            }
-                          />
-                        ),
-                      )}
-                    </Pie>
+                  <AreaChart data={dailySales}>
+                    <defs>
+                      <linearGradient
+                        id="krveRevenueGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="#2563eb"
+                          stopOpacity={0.25}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="#2563eb"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    </defs>
 
-                    <Tooltip />
-                  </PieChart>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="#e2e8f0"
+                    />
+
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={formatDateLabel}
+                      tickLine={false}
+                      axisLine={false}
+                      fontSize={11}
+                      stroke="#94a3b8"
+                    />
+
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      fontSize={11}
+                      stroke="#94a3b8"
+                      tickFormatter={(value) =>
+                        `₹${numberValue(
+                          value,
+                        ).toLocaleString("en-IN")}`
+                      }
+                    />
+
+                    <Tooltip
+                      formatter={(value, name) => [
+                        name === "revenue"
+                          ? formatCurrency(value)
+                          : formatNumber(value),
+                        name === "revenue"
+                          ? "Revenue"
+                          : "Orders",
+                      ]}
+                      labelFormatter={(label) =>
+                        formatDateLabel(String(label))
+                      }
+                    />
+
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#2563eb"
+                      strokeWidth={2}
+                      fill="url(#krveRevenueGradient)"
+                    />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
+            ) : (
+              <EmptyState message="No daily sales data available." />
+            )}
+          </section>
 
-              <div className="space-y-3">
-                {customerSegments.map(
-                  (
-                    item,
-                    index,
-                  ) => (
-                    <div
-                      key={
-                        item.name
-                      }
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{
-                            backgroundColor:
-                              CHART_COLORS[
-                                index %
-                                  CHART_COLORS.length
-                              ],
-                          }}
-                        />
-
-                        <span className="text-xs font-semibold text-slate-600">
-                          {
-                            item.name
-                          }
-                        </span>
-                      </div>
-
-                      <strong className="text-xs text-slate-900">
-                        {formatNumber(
-                          item.value,
-                        )}
-                      </strong>
-                    </div>
-                  ),
-                )}
-              </div>
-            </>
-          )}
-        </article>
-      </section>
-
-      <section className="mt-6 grid gap-6 xl:grid-cols-2">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black text-slate-900">
-                Payment Methods
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-5">
+              <h2 className="text-base font-bold text-slate-900">
+                Order Status
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Revenue and order count by payment method
+              <p className="mt-1 text-xs text-slate-500">
+                Current order distribution.
               </p>
             </div>
 
-            <CircleDollarSign
-              size={22}
-              className="text-blue-600"
-            />
-          </div>
-
-          {paymentMethodData.length ===
-          0 ? (
-            <div className="mt-6">
-              <EmptyState
-                title="No payment method data"
-                description="Payment method analytics will appear when payment records are available."
-              />
-            </div>
-          ) : (
-            <div className="mt-6 space-y-4">
-              {paymentMethodData.map(
-                (
-                  item,
-                ) => (
-                  <div
-                    key={
-                      item.method
-                    }
-                    className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+            {statusChartData.length ? (
+              <>
+                <div className="h-[230px] w-full">
+                  <ResponsiveContainer
+                    width="100%"
+                    height="100%"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-black text-slate-800">
-                        {
-                          item.method
-                        }
-                      </span>
+                    <PieChart>
+                      <Pie
+                        data={statusChartData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={62}
+                        outerRadius={88}
+                        paddingAngle={3}
+                      >
+                        {statusChartData.map(
+                          (entry, index) => (
+                            <Cell
+                              key={`${entry.name}-${index}`}
+                              fill={
+                                [
+                                  "#2563eb",
+                                  "#10b981",
+                                  "#f59e0b",
+                                  "#ef4444",
+                                  "#8b5cf6",
+                                  "#64748b",
+                                ][
+                                  index %
+                                    6
+                                ]
+                              }
+                            />
+                          ),
+                        )}
+                      </Pie>
 
-                      <span className="text-xs font-bold text-slate-500">
-                        {formatNumber(
-                          item.orders,
-                        )}{" "}
-                        orders
-                      </span>
-                    </div>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
 
-                    <p className="mt-2 text-lg font-black text-blue-700">
-                      {formatFullCurrency(
-                        item.revenue,
-                      )}
-                    </p>
-                  </div>
-                ),
-              )}
-            </div>
-          )}
-        </article>
+                <div className="space-y-2">
+                  {statusChartData.map(
+                    (item, index) => (
+                      <div
+                        key={`${item.name}-${index}`}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="h-2.5 w-2.5 rounded-full"
+                            style={{
+                              background:
+                                [
+                                  "#2563eb",
+                                  "#10b981",
+                                  "#f59e0b",
+                                  "#ef4444",
+                                  "#8b5cf6",
+                                  "#64748b",
+                                ][
+                                  index %
+                                    6
+                                ],
+                            }}
+                          />
 
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black text-slate-900">
-                Category Performance
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Actual product-category sales
-              </p>
-            </div>
-
-            <ShoppingBag
-              size={22}
-              className="text-red-600"
-            />
-          </div>
-
-          {categoryData.length ===
-          0 ? (
-            <div className="mt-6">
-              <EmptyState
-                title="No category data"
-                description="Category performance will appear after product line-item data is recorded."
-              />
-            </div>
-          ) : (
-            <div className="mt-6 space-y-5">
-              {categoryData.map(
-                (
-                  item,
-                ) => {
-                  const maxRevenue =
-                    Math.max(
-                      ...categoryData.map(
-                        (
-                          category,
-                        ) =>
-                          category.revenue,
-                      ),
-                      1,
-                    );
-
-                  const percentage =
-                    (
-                      (item.revenue /
-                        maxRevenue) *
-                      100
-                    );
-
-                  return (
-                    <div
-                      key={
-                        item.category
-                      }
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <div>
-                          <strong className="text-xs text-slate-800">
-                            {
-                              item.category
-                            }
-                          </strong>
-
-                          <span className="ml-2 text-[10px] text-slate-400">
-                            {formatNumber(
-                              item.units,
-                            )}{" "}
-                            units
+                          <span className="text-slate-600">
+                            {item.name}
                           </span>
                         </div>
 
-                        <strong className="text-xs text-slate-900">
-                          {formatCurrency(
-                            item.revenue,
-                          )}
-                        </strong>
+                        <span className="font-semibold text-slate-900">
+                          {formatNumber(item.value)}
+                        </span>
                       </div>
+                    ),
+                  )}
+                </div>
+              </>
+            ) : (
+              <EmptyState message="No order status data available." />
+            )}
+          </section>
+        </div>
 
-                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full bg-blue-600"
-                          style={{
-                            width: `${Math.min(
-                              100,
-                              Math.max(
-                                0,
-                                percentage,
-                              ),
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                },
-              )}
-            </div>
-          )}
-        </article>
-      </section>
-
-      <section className="mt-6 grid gap-6 xl:grid-cols-2">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black text-slate-900">
-                Product Analytics
+        {/* Payment + categories */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-5">
+              <h2 className="text-base font-bold text-slate-900">
+                Payment Status
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Live product-level sales from order line items
+              <p className="mt-1 text-xs text-slate-500">
+                Payment success and failure distribution.
               </p>
             </div>
 
-            <PackageCheck
-              size={22}
-              className="text-blue-600"
-            />
-          </div>
+            {paymentChartData.length ? (
+              <div className="h-[280px] w-full">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
+                  <BarChart
+                    data={paymentChartData}
+                    margin={{
+                      top: 10,
+                      right: 10,
+                      left: 0,
+                      bottom: 10,
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="#e2e8f0"
+                    />
 
-          {topProducts.length ===
-          0 ? (
-            <div className="mt-6">
-              <EmptyState
-                title="No product sales data"
-                description="Product analytics will appear when order line-item records are available."
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
+                      axisLine={false}
+                      fontSize={11}
+                    />
+
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      fontSize={11}
+                    />
+
+                    <Tooltip />
+
+                    <Bar
+                      dataKey="value"
+                      fill="#2563eb"
+                      radius={[
+                        6,
+                        6,
+                        0,
+                        0,
+                      ]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <EmptyState message="No payment status data available." />
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-5">
+              <h2 className="text-base font-bold text-slate-900">
+                Category Performance
+              </h2>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Revenue generated by product category.
+              </p>
+            </div>
+
+            {categoryChartData.length ? (
+              <div className="h-[280px] w-full">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
+                  <BarChart
+                    data={categoryChartData}
+                    layout="vertical"
+                    margin={{
+                      top: 10,
+                      right: 15,
+                      left: 20,
+                      bottom: 10,
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      horizontal={false}
+                      stroke="#e2e8f0"
+                    />
+
+                    <XAxis
+                      type="number"
+                      tickLine={false}
+                      axisLine={false}
+                      fontSize={11}
+                      tickFormatter={(value) =>
+                        `₹${numberValue(
+                          value,
+                        ).toLocaleString("en-IN")}`
+                      }
+                    />
+
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      tickLine={false}
+                      axisLine={false}
+                      fontSize={11}
+                      width={100}
+                    />
+
+                    <Tooltip
+                      formatter={(value) => [
+                        formatCurrency(value),
+                        "Revenue",
+                      ]}
+                    />
+
+                    <Bar
+                      dataKey="revenue"
+                      fill="#0f172a"
+                      radius={[
+                        0,
+                        6,
+                        6,
+                        0,
+                      ]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <EmptyState message="No category performance data available." />
+            )}
+          </section>
+        </div>
+
+        {/* Products */}
+        <div className="mt-6 grid gap-6 xl:grid-cols-2">
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Top Selling Products
+                </h2>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Products generating the most sales.
+                </p>
+              </div>
+
+              <Package className="h-5 w-5 text-blue-600" />
+            </div>
+
+            {topSelling.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[560px]">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/70">
+                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Product
+                      </th>
+
+                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Units
+                      </th>
+
+                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Revenue
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {topSelling
+                      .slice(0, 10)
+                      .map((item, index) => (
+                        <tr
+                          key={
+                            item.productId ||
+                            item.sku ||
+                            `${item.productName}-${index}`
+                          }
+                          className="border-b border-slate-100 last:border-0"
+                        >
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xs font-bold text-blue-700">
+                                {index + 1}
+                              </div>
+
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900">
+                                  {textValue(
+                                    item.productName ??
+                                      item.name,
+                                    "Unknown Product",
+                                  )}
+                                </p>
+
+                                <p className="truncate text-xs text-slate-500">
+                                  {textValue(
+                                    item.sku,
+                                    textValue(
+                                      item.category,
+                                      "Product",
+                                    ),
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-5 py-3.5 text-right text-sm font-semibold text-slate-900">
+                            {formatNumber(
+                              item.unitsSold ??
+                                item.quantity,
+                            )}
+                          </td>
+
+                          <td className="px-5 py-3.5 text-right text-sm font-semibold text-slate-900">
+                            {formatCurrency(
+                              item.revenue,
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-5">
+                <EmptyState message="No top-selling product data available." />
+              </div>
+            )}
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Slow Moving Products
+                </h2>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Products with lower sales movement.
+                </p>
+              </div>
+
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+            </div>
+
+            {slowMoving.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[560px]">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/70">
+                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Product
+                      </th>
+
+                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Units
+                      </th>
+
+                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Revenue
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {slowMoving
+                      .slice(0, 10)
+                      .map((item, index) => (
+                        <tr
+                          key={
+                            item.productId ||
+                            item.sku ||
+                            `${item.productName}-${index}`
+                          }
+                          className="border-b border-slate-100 last:border-0"
+                        >
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-xs font-bold text-amber-700">
+                                {index + 1}
+                              </div>
+
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900">
+                                  {textValue(
+                                    item.productName ??
+                                      item.name,
+                                    "Unknown Product",
+                                  )}
+                                </p>
+
+                                <p className="truncate text-xs text-slate-500">
+                                  {textValue(
+                                    item.sku,
+                                    textValue(
+                                      item.category,
+                                      "Product",
+                                    ),
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-5 py-3.5 text-right text-sm font-semibold text-slate-900">
+                            {formatNumber(
+                              item.unitsSold ??
+                                item.quantity,
+                            )}
+                          </td>
+
+                          <td className="px-5 py-3.5 text-right text-sm font-semibold text-slate-900">
+                            {formatCurrency(
+                              item.revenue,
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-5">
+                <EmptyState message="No slow-moving product data available." />
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* Customers + Inventory */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Customer Insights
+                </h2>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Customer activity for the selected period.
+                </p>
+              </div>
+
+              <Users className="h-5 w-5 text-blue-600" />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <InsightCard
+                title="New Customers"
+                value={formatNumber(
+                  customers?.newCustomers,
+                )}
+                subtitle="Customers appearing in the selected period."
+                icon={Users}
+                tone="blue"
+              />
+
+              <InsightCard
+                title="Returning Customers"
+                value={formatNumber(
+                  customers?.returningCustomers,
+                )}
+                subtitle="Customers with previous purchase history."
+                icon={Users}
+                tone="green"
+              />
+
+              <InsightCard
+                title="Repeat Purchase Rate"
+                value={formatPercent(
+                  customers?.repeatPurchaseRate,
+                )}
+                subtitle="Share of customers making repeat purchases."
+                icon={Activity}
+                tone="amber"
+              />
+
+              <InsightCard
+                title="Customer Revenue"
+                value={formatCurrency(
+                  customers?.customerRevenue,
+                )}
+                subtitle="Revenue attributed to customers in the selected period."
+                icon={CircleDollarSign}
+                tone="green"
               />
             </div>
-          ) : (
-            <div className="mt-6 overflow-x-auto">
-              <table className="w-full min-w-[600px] text-left">
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Inventory Health
+                </h2>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Current inventory availability.
+                </p>
+              </div>
+
+              <Boxes className="h-5 w-5 text-blue-600" />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <InsightCard
+                title="Total Products"
+                value={formatNumber(
+                  inventory?.totalProducts,
+                )}
+                subtitle="Products currently tracked in inventory."
+                icon={Package}
+                tone="blue"
+              />
+
+              <InsightCard
+                title="In Stock"
+                value={formatNumber(
+                  inventory?.inStockProducts,
+                )}
+                subtitle="Products currently available."
+                icon={Boxes}
+                tone="green"
+              />
+
+              <InsightCard
+                title="Low Stock"
+                value={formatNumber(
+                  lowStockProducts,
+                )}
+                subtitle="Products approaching low-stock threshold."
+                icon={AlertTriangle}
+                tone="amber"
+              />
+
+              <InsightCard
+                title="Out of Stock"
+                value={formatNumber(
+                  outOfStockProducts,
+                )}
+                subtitle="Products currently unavailable."
+                icon={Package}
+                tone="red"
+              />
+            </div>
+          </section>
+        </div>
+
+        {/* Payment methods */}
+        <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Payment Methods
+              </h2>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Revenue and order volume by payment method.
+              </p>
+            </div>
+
+            <Wallet className="h-5 w-5 text-blue-600" />
+          </div>
+
+          {paymentMethods.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[650px]">
                 <thead>
-                  <tr className="border-b border-slate-100">
-                    <th className="pb-3 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                      Product
+                  <tr className="border-b border-slate-100 bg-slate-50/70">
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Method
                     </th>
 
-                    <th className="pb-3 text-right text-[10px] font-black uppercase tracking-wider text-slate-400">
-                      Units
-                    </th>
-
-                    <th className="pb-3 text-right text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Orders
                     </th>
 
-                    <th className="pb-3 text-right text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Revenue
+                    </th>
+
+                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Share
                     </th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {topProducts.map(
-                    (
-                      product,
-                      index,
-                    ) => (
-                      <tr
-                        key={`${product.name}-${product.sku ?? index}`}
-                        className="border-b border-slate-50"
-                      >
-                        <td className="py-4">
-                          <p className="text-xs font-black text-slate-800">
-                            {
-                              product.name
-                            }
-                          </p>
+                  {paymentMethods.map(
+                    (item, index) => {
+                      const revenueValue =
+                        numberValue(
+                          item.revenue,
+                        );
 
-                          {product.sku ? (
-                            <p className="mt-1 text-[10px] text-slate-400">
-                              SKU:{" "}
-                              {
-                                product.sku
-                              }
-                            </p>
-                          ) : null}
-                        </td>
+                      const share =
+                        totalRevenue > 0
+                          ? (revenueValue /
+                              totalRevenue) *
+                            100
+                          : 0;
 
-                        <td className="py-4 text-right text-xs font-bold text-slate-700">
-                          {formatNumber(
-                            product.units,
-                          )}
-                        </td>
+                      return (
+                        <tr
+                          key={`${item.method}-${index}`}
+                          className="border-b border-slate-100 last:border-0"
+                        >
+                          <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">
+                            {normalizeLabel(
+                              item.method,
+                            )}
+                          </td>
 
-                        <td className="py-4 text-right text-xs font-bold text-slate-700">
-                          {formatNumber(
-                            product.orders,
-                          )}
-                        </td>
+                          <td className="px-5 py-3.5 text-right text-sm text-slate-700">
+                            {formatNumber(
+                              item.orders,
+                            )}
+                          </td>
 
-                        <td className="py-4 text-right text-xs font-black text-blue-700">
-                          {formatCurrency(
-                            product.revenue,
-                          )}
-                        </td>
-                      </tr>
-                    ),
+                          <td className="px-5 py-3.5 text-right text-sm font-semibold text-slate-900">
+                            {formatCurrency(
+                              item.revenue,
+                            )}
+                          </td>
+
+                          <td className="px-5 py-3.5 text-right text-sm text-slate-700">
+                            {share.toFixed(1)}%
+                          </td>
+                        </tr>
+                      );
+                    },
                   )}
                 </tbody>
               </table>
             </div>
+          ) : (
+            <div className="p-5">
+              <EmptyState message="No payment method data available." />
+            </div>
           )}
-        </article>
+        </section>
 
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
+        {/* Inventory movement */}
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-black text-slate-900">
-                Inventory Overview
+              <h2 className="text-base font-bold text-slate-900">
+                Inventory Movement
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Live inventory information from Central API
+              <p className="mt-1 text-xs text-slate-500">
+                Inventory movement recorded by the Central API.
               </p>
             </div>
 
-            <PackageCheck
-              size={22}
-              className="text-green-600"
-            />
+            <FileSpreadsheet className="h-5 w-5 text-blue-600" />
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl bg-blue-50 p-4">
-              <p className="text-[10px] font-bold uppercase text-blue-600">
-                Products
-              </p>
+          {inventoryMovement.length ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {inventoryMovement
+                .slice(-8)
+                .map((item, index) => (
+                  <div
+                    key={`${item.date}-${index}`}
+                    className="rounded-xl border border-slate-100 bg-slate-50 p-4"
+                  >
+                    <p className="text-xs font-medium text-slate-500">
+                      {formatDateLabel(
+                        textValue(
+                          item.date,
+                          "",
+                        ),
+                      )}
+                    </p>
 
-              <p className="mt-2 text-2xl font-black text-blue-900">
-                {formatNumber(
-                  inventory?.totalProducts ??
-                    0,
-                )}
-              </p>
+                    <p className="mt-2 text-xl font-bold text-slate-900">
+                      {formatNumber(
+                        item.units ??
+                          item.quantity,
+                      )}
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      Units moved
+                    </p>
+                  </div>
+                ))}
             </div>
+          ) : (
+            <EmptyState message="No inventory movement data available." />
+          )}
+        </section>
 
-            <div className="rounded-2xl bg-green-50 p-4">
-              <p className="text-[10px] font-bold uppercase text-green-600">
-                In Stock
-              </p>
+        {/* Finance availability */}
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <Wallet className="h-5 w-5" />
+              </div>
 
-              <p className="mt-2 text-2xl font-black text-green-900">
-                {formatNumber(
-                  inventory?.inStockProducts ??
-                    0,
-                )}
-              </p>
-            </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Finance Snapshot
+                </h2>
 
-            <div className="rounded-2xl bg-orange-50 p-4">
-              <p className="text-[10px] font-bold uppercase text-orange-600">
-                Low Stock
-              </p>
-
-              <p className="mt-2 text-2xl font-black text-orange-900">
-                {formatNumber(
-                  inventory?.lowStockProducts ??
-                    0,
-                )}
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-red-50 p-4">
-              <p className="text-[10px] font-bold uppercase text-red-600">
-                Out of Stock
-              </p>
-
-              <p className="mt-2 text-2xl font-black text-red-900">
-                {formatNumber(
-                  inventory?.outOfStockProducts ??
-                    0,
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500">
-                Total Units
-              </span>
-
-              <strong className="text-sm text-slate-900">
-                {formatNumber(
-                  inventory?.totalUnits ??
-                    0,
-                )}
-              </strong>
-            </div>
-
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500">
-                Inventory Value
-              </span>
-
-              <strong className="text-sm text-blue-700">
-                {formatFullCurrency(
-                  inventory?.inventoryValue ??
-                    0,
-                )}
-              </strong>
-            </div>
-          </div>
-
-          {inventoryMovement.length >
-          0 ? (
-            <div className="mt-5">
-              <p className="mb-3 text-xs font-black text-slate-800">
-                Inventory Movement
-              </p>
-
-              <div className="space-y-2">
-                {inventoryMovement
-                  .slice(
-                    0,
-                    6,
-                  )
-                  .map(
-                    (
-                      movement,
-                      index,
-                    ) => (
-                      <div
-                        key={`${movement.type}-${index}`}
-                        className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
-                      >
-                        <span className="text-xs font-semibold text-slate-600">
-                          {
-                            movement.type
-                          }
-                        </span>
-
-                        <span className="text-xs font-black text-slate-900">
-                          {formatNumber(
-                            movement.quantity,
-                          )}
-                        </span>
-                      </div>
-                    ),
-                  )}
+                <p className="mt-1 text-sm text-slate-500">
+                  Revenue is available from the live Central API.
+                </p>
               </div>
             </div>
-          ) : null}
-        </article>
-      </section>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-2">
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-3">
+              <div className="rounded-xl bg-slate-50 px-4 py-3">
+                <p className="text-xs text-slate-500">
+                  Revenue
+                </p>
+
+                <p className="mt-1 text-lg font-bold text-slate-900">
+                  {formatCurrency(
+                    finance?.revenue ??
+                      revenue?.netSales,
+                  )}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-amber-50 px-4 py-3">
+                <p className="text-xs text-amber-700">
+                  Expenses
+                </p>
+
+                <p className="mt-1 text-sm font-semibold text-amber-800">
+                  {finance?.expensesAvailable
+                    ? "Available"
+                    : "Not available"}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-amber-50 px-4 py-3">
+                <p className="text-xs text-amber-700">
+                  Gross Profit
+                </p>
+
+                <p className="mt-1 text-sm font-semibold text-amber-800">
+                  {finance?.grossProfitAvailable
+                    ? "Available"
+                    : "Not available"}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-amber-50 px-4 py-3">
+                <p className="text-xs text-amber-700">
+                  Cash Flow
+                </p>
+
+                <p className="mt-1 text-sm font-semibold text-amber-800">
+                  {finance?.netCashFlowAvailable
+                    ? "Available"
+                    : "Not available"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {finance?.note ? (
+            <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">
+              {finance.note}
+            </div>
+          ) : null}
+        </section>
+
+        {/* Regional sales */}
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+
             <div>
-              <h2 className="text-lg font-black text-slate-900">
+              <h2 className="text-base font-bold text-slate-900">
                 Regional Sales
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Requires shipping-address analytics
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Regional or city-level sales are not currently exposed by
+                the Central API analytics response.
               </p>
             </div>
-
-            <MapPin
-              size={22}
-              className="text-red-600"
-            />
           </div>
 
-          <div className="mt-6">
-            {regionalSalesAvailable ? (
-              <EmptyState
-                title="Regional data available"
-                description="Regional sales data is connected."
-              />
-            ) : (
-              <EmptyState
-                title="Regional sales not connected"
-                description="The Central Business Analytics endpoint currently returns revenue, orders, products, customers and inventory analytics, but does not expose shipping addresses. KEOS will not invent regional revenue."
-              />
-            )}
-          </div>
-        </article>
-
-        <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black text-slate-900">
-                Business Data Availability
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Analytics sources currently connected to KEOS
-              </p>
+          {!regionalSalesAvailable ? (
+            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
+              Regional analytics will appear here once location-level
+              order data is available in the Central API schema.
             </div>
+          ) : null}
+        </section>
 
-            <Activity
-              size={22}
-              className="text-green-600"
-            />
-          </div>
+        {/* Footer information */}
+        <div className="mt-6 flex flex-col gap-2 pb-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            KRVE Enterprise Operating System · Business Analytics
+          </p>
 
-          <div className="mt-6 space-y-3">
-            <DataStatus
-              label="Orders"
-              status={
-                analytics
-                  ? "LIVE"
-                  : "NO DATA"
-              }
-              description="KRVE Central API → Cloudflare D1"
-              live={
-                !!analytics
-              }
-            />
-
-            <DataStatus
-              label="Revenue"
-              status={
-                revenue
-                  ? "LIVE"
-                  : "NO DATA"
-              }
-              description="Central API business analytics"
-              live={
-                !!revenue
-              }
-            />
-
-            <DataStatus
-              label="Customers"
-              status={
-                customers
-                  ? "LIVE"
-                  : "NO DATA"
-              }
-              description="Central API customer analytics"
-              live={
-                !!customers
-              }
-            />
-
-            <DataStatus
-              label="Product Revenue"
-              status={
-                topProducts.length >
-                0
-                  ? "LIVE"
-                  : "NO DATA"
-              }
-              description="Central API order line-item analytics"
-              live={
-                topProducts.length >
-                0
-              }
-            />
-
-            <DataStatus
-              label="Inventory"
-              status={
-                inventory
-                  ? "LIVE"
-                  : "NO DATA"
-              }
-              description="Central API inventory analytics"
-              live={
-                !!inventory
-              }
-            />
-
-            <DataStatus
-              label="Regional Sales"
-              status="NOT CONNECTED"
-              description="Shipping-address analytics not exposed by current endpoint"
-            />
-
-            <DataStatus
-              label="Expenses / Profit"
-              status={
-                finance?.expensesAvailable
-                  ? "LIVE"
-                  : "NOT CONNECTED"
-              }
-              description="No expense / COGS monetary source available"
-              live={
-                !!finance?.expensesAvailable
-              }
-            />
-
-            <DataStatus
-              label="Website Funnel"
-              status="NOT CONNECTED"
-              description="Visitor/session analytics unavailable"
-            />
-
-            <DataStatus
-              label="Marketing ROI"
-              status="NOT CONNECTED"
-              description="Marketing spend and attribution unavailable"
-            />
-          </div>
-        </article>
-      </section>
-
-      <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div>
-          <h2 className="text-lg font-black text-slate-900">
-            Customer Intelligence
-          </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Live customer metrics from KRVE Central API
+          <p>
+            Source: KRVE Central API / D1
+            {analytics?.generatedAt
+              ? ` · Generated ${formatDateTime(
+                  analytics.generatedAt,
+                )}`
+              : ""}
           </p>
         </div>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MiniCard
-            icon={Users}
-            title="Active Customers"
-            value={formatNumber(
-              customers?.activeCustomers ??
-                0,
-            )}
-            change="Live Central API"
-            tone="blue"
-          />
-
-          <MiniCard
-            icon={UserCheck}
-            title="New Customers"
-            value={formatNumber(
-              customers?.newCustomers ??
-                0,
-            )}
-            change="Selected period"
-            tone="green"
-          />
-
-          <MiniCard
-            icon={UserCheck}
-            title="Returning Customers"
-            value={formatNumber(
-              customers?.returningCustomers ??
-                0,
-            )}
-            change="Live customer history"
-            tone="green"
-          />
-
-          <MiniCard
-            icon={BarChart3}
-            title="Repeat Purchase Rate"
-            value={formatPercentage(
-              customers?.repeatPurchaseRate ??
-                0,
-            )}
-            change="Central API calculation"
-            tone="orange"
-          />
-        </div>
-      </section>
-
-      <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div>
-          <h2 className="text-lg font-black text-slate-900">
-            Department Performance
-          </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Department performance requires actual KPI sources.
-          </p>
-        </div>
-
-        <div className="mt-6">
-          <EmptyState
-            title="Department KPI data is not connected"
-            description="Sales, Marketing, Finance, Inventory and HR performance scores are intentionally not fabricated. They will appear after their respective KEOS modules expose measurable KPIs."
-          />
-        </div>
-      </section>
-
-      <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MiniCard
-            icon={Eye}
-            title="Website Visitors"
-            value="N/A"
-            change="Analytics source not connected"
-            tone="blue"
-          />
-
-          <MiniCard
-            icon={UserCheck}
-            title="Returning Customers"
-            value={formatNumber(
-              returningCustomers,
-            )}
-            change="Live Central API"
-            tone="green"
-          />
-
-          <MiniCard
-            icon={BarChart3}
-            title="Marketing ROI"
-            value="N/A"
-            change="Marketing spend data not connected"
-            tone="red"
-          />
-
-          <MiniCard
-            icon={Activity}
-            title="Operational Score"
-            value="N/A"
-            change="Operational KPI source not connected"
-            tone="orange"
-          />
-        </div>
-      </section>
-
-      <section className="mt-6 rounded-3xl bg-[#0f172a] p-6 text-white shadow-xl sm:p-8">
-        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-          <div className="flex items-start gap-4">
-            <div className="grid h-12 w-12 place-items-center rounded-xl bg-blue-600">
-              <BrainCircuit size={23} />
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-black">
-                  KRVE AI Business Insights
-                </h2>
-
-                <span className="rounded-full bg-green-500/15 px-2 py-1 text-[10px] font-bold text-green-300">
-                  LIVE
-                </span>
-              </div>
-
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                Ask KRVE AI can analyse the live business data available
-                through KEOS. No fabricated revenue or performance figures
-                are sent as facts.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={
-              openAskAI
-            }
-            className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold hover:bg-blue-700"
-          >
-            <Sparkles size={17} />
-            Ask KRVE AI
-          </button>
-        </div>
-
-        <div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <InsightCard
-            icon={
-              CircleDollarSign
-            }
-            title="Revenue Status"
-            description={
-              totalRevenue >
-              0
-                ? `Revenue recorded in the selected period is ${formatFullCurrency(
-                    totalRevenue,
-                  )}.`
-                : "No revenue has been recorded in the selected period."
-            }
-            badge={
-              totalRevenue >
-              0
-                ? "LIVE DATA"
-                : "₹0 RECORDED"
-            }
-            tone="blue"
-          />
-
-          <InsightCard
-            icon={
-              ShoppingBag
-            }
-            title="Order Activity"
-            description={`${formatNumber(
-              totalOrders,
-            )} order(s) are present in the selected period.`}
-            badge="LIVE DATA"
-            tone="green"
-          />
-
-          <InsightCard
-            icon={Users}
-            title="Customer Activity"
-            description={`${formatNumber(
-              uniqueCustomers,
-            )} active customer record(s) are available in the selected period.`}
-            badge="LIVE DATA"
-            tone="blue"
-          />
-
-          <InsightCard
-            icon={
-              PackageCheck
-            }
-            title="Inventory Coverage"
-            description={`${formatNumber(
-              inventory?.totalUnits ??
-                0,
-            )} inventory unit(s) are currently tracked by the Central API.`}
-            badge="LIVE DATA"
-            tone="green"
-          />
-        </div>
-      </section>
-
-      <div className="mt-5 flex flex-col items-center justify-center gap-1 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-        <span>
-          {isLoading
-            ? "Loading live KRVE Central API data..."
-            : "Live analytics calculated from KRVE Central API + Cloudflare D1"}
-        </span>
-
-        {analytics?.generatedAt ? (
-          <span className="normal-case tracking-normal">
-            Last updated:{" "}
-            {new Date(
-              analytics.generatedAt,
-            ).toLocaleString(
-              "en-IN",
-            )}
-            {" · "}
-            Auto-refresh: 30 seconds
-          </span>
-        ) : null}
       </div>
     </div>
   );
