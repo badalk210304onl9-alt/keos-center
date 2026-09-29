@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   AlertCircle,
@@ -12,15 +12,13 @@ import {
   Check,
   CheckCheck,
   CheckCircle2,
-  ChevronDown,
-  CircleDollarSign,
   Clock3,
   Download,
   Eye,
   FileCheck2,
   FileText,
   Filter,
-  IndianRupee,
+  CircleDollarSign,
   Megaphone,
   MoreHorizontal,
   PackageCheck,
@@ -28,7 +26,6 @@ import {
   Search,
   ShieldCheck,
   ShoppingBag,
-  Trash2,
   UserCheck,
   UserRound,
   Users,
@@ -49,229 +46,92 @@ type ApprovalItem = {
   category: string;
   requester: string;
   requesterRole: string;
+  requesterId?: string | null;
   submittedAt: string;
   dueDate: string;
   amount?: string;
   priority: ApprovalPriority;
   status: ApprovalStatus;
-  icon: typeof FileText;
   attachments: number;
   notes: string;
+  decisionNote?: string | null;
+  decidedBy?: string | null;
+  decidedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
-const initialApprovals: ApprovalItem[] = [
-  {
-    id: "APR-2026-084",
-    title: "July Payroll Approval",
-    description:
-      "Monthly payroll approval for 128 active employees, including salary adjustments and incentives.",
-    department: "Human Resources",
-    category: "Payroll",
-    requester: "Ananya Singh",
-    requesterRole: "HR Manager",
-    submittedAt: "25 Jul 2026, 09:20 AM",
-    dueDate: "26 Jul 2026",
-    amount: "₹4,82,000",
-    priority: "Critical",
-    status: "Pending",
-    icon: BadgeIndianRupee,
-    attachments: 4,
-    notes:
-      "Payroll has been verified by HR. Final Founder approval is required before bank processing.",
-  },
-  {
-    id: "APR-2026-083",
-    title: "Vendor Payment — Arvind Textiles",
-    description:
-      "Payment approval for fabric supply invoices received during July 2026.",
-    department: "Finance",
-    category: "Vendor Payment",
-    requester: "Rohan Verma",
-    requesterRole: "Finance Manager",
-    submittedAt: "25 Jul 2026, 08:45 AM",
-    dueDate: "27 Jul 2026",
-    amount: "₹1,26,500",
-    priority: "High",
-    status: "Pending",
-    icon: CircleDollarSign,
-    attachments: 3,
-    notes:
-      "Goods receipt and quality verification have been completed by the warehouse team.",
-  },
-  {
-    id: "APR-2026-082",
-    title: "Inventory Replenishment Order",
-    description:
-      "Purchase request for replenishment of low-stock premium menswear products.",
-    department: "Inventory",
-    category: "Purchase Order",
-    requester: "Vikram Patel",
-    requesterRole: "Inventory Manager",
-    submittedAt: "24 Jul 2026, 05:30 PM",
-    dueDate: "28 Jul 2026",
-    amount: "₹2,18,750",
-    priority: "High",
-    status: "Pending",
-    icon: PackageCheck,
-    attachments: 5,
-    notes:
-      "The purchase request covers five SKUs currently below their reorder points.",
-  },
-  {
-    id: "APR-2026-081",
-    title: "Performance Marketing Campaign",
-    description:
-      "Approval for a 30-day paid campaign across Google, Meta and influencer channels.",
-    department: "Marketing",
-    category: "Campaign Budget",
-    requester: "Priya Mehta",
-    requesterRole: "Marketing Lead",
-    submittedAt: "24 Jul 2026, 03:10 PM",
-    dueDate: "29 Jul 2026",
-    amount: "₹1,75,000",
-    priority: "Medium",
-    status: "Pending",
-    icon: Megaphone,
-    attachments: 2,
-    notes:
-      "The campaign targets premium fashion customers across Delhi, Mumbai, Bengaluru and Hyderabad.",
-  },
-  {
-    id: "APR-2026-080",
-    title: "Employee Travel Reimbursements",
-    description:
-      "Reimbursement approval for seven employee business travel claims.",
-    department: "Finance",
-    category: "Reimbursement",
-    requester: "Neha Sharma",
-    requesterRole: "Accounts Executive",
-    submittedAt: "24 Jul 2026, 12:15 PM",
-    dueDate: "27 Jul 2026",
-    amount: "₹38,450",
-    priority: "Medium",
-    status: "Pending",
-    icon: WalletCards,
-    attachments: 7,
-    notes:
-      "All receipts and travel authorizations have been attached to the request.",
-  },
-  {
-    id: "APR-2026-079",
-    title: "Senior Fashion Designer Hiring",
-    description:
-      "Final hiring approval for the selected Senior Fashion Designer candidate.",
-    department: "Human Resources",
-    category: "Recruitment",
-    requester: "Ananya Singh",
-    requesterRole: "HR Manager",
-    submittedAt: "23 Jul 2026, 04:40 PM",
-    dueDate: "30 Jul 2026",
-    amount: "₹9.60L Annual CTC",
-    priority: "High",
-    status: "Pending",
-    icon: UserCheck,
-    attachments: 6,
-    notes:
-      "The candidate has completed all interview rounds and reference verification.",
-  },
-  {
-    id: "APR-2026-078",
-    title: "Bulk Order Discount Exception",
-    description:
-      "Special pricing approval for a corporate order of 86 premium blazers.",
-    department: "Sales",
-    category: "Discount",
-    requester: "Aarav Sharma",
-    requesterRole: "Sales Manager",
-    submittedAt: "23 Jul 2026, 02:30 PM",
-    dueDate: "26 Jul 2026",
-    amount: "₹8,42,800",
-    priority: "Critical",
-    status: "Pending",
-    icon: ShoppingBag,
-    attachments: 2,
-    notes:
-      "The requested discount is 12%, while the standard authorized discount is 8%.",
-  },
-  {
-    id: "APR-2026-077",
-    title: "Cloud Infrastructure Upgrade",
-    description:
-      "Upgrade request for production servers, monitoring and backup infrastructure.",
-    department: "Technology",
-    category: "Technology Expense",
-    requester: "Aditya Rao",
-    requesterRole: "Technology Lead",
-    submittedAt: "22 Jul 2026, 06:05 PM",
-    dueDate: "31 Jul 2026",
-    amount: "₹92,000",
-    priority: "Medium",
-    status: "Approved",
-    icon: Building2,
-    attachments: 3,
-    notes:
-      "The upgrade is required to support increased traffic and enterprise data workloads.",
-  },
-  {
-    id: "APR-2026-076",
-    title: "Influencer Partnership Request",
-    description:
-      "Three-month collaboration request with a premium fashion content creator.",
-    department: "Marketing",
-    category: "Influencer Partnership",
-    requester: "Priya Mehta",
-    requesterRole: "Marketing Lead",
-    submittedAt: "22 Jul 2026, 10:15 AM",
-    dueDate: "25 Jul 2026",
-    amount: "₹1,20,000",
-    priority: "Low",
-    status: "Rejected",
-    icon: Users,
-    attachments: 2,
-    notes:
-      "The proposal did not meet the required return-on-investment benchmark.",
-  },
-  {
-    id: "APR-2026-075",
-    title: "GST Payment Authorization",
-    description:
-      "Authorization for monthly GST liability payment for June 2026.",
-    department: "Finance",
-    category: "Tax Compliance",
-    requester: "Rohan Verma",
-    requesterRole: "Finance Manager",
-    submittedAt: "21 Jul 2026, 11:35 AM",
-    dueDate: "25 Jul 2026",
-    amount: "₹74,280",
-    priority: "Critical",
-    status: "Approved",
-    icon: ShieldCheck,
-    attachments: 4,
-    notes:
-      "GST returns were reconciled and verified before the payment request.",
-  },
-];
+type ApiApproval = {
+  id?: string;
+  title?: string;
+  description?: string | null;
+  department?: string | null;
+  category?: string | null;
+  requester?: string | null;
+  requester_role?: string | null;
+  requesterRole?: string | null;
+  requester_id?: string | null;
+  requesterId?: string | null;
+  amount?: number | string | null;
+  currency?: string | null;
+  priority?: ApprovalPriority | string | null;
+  status?: ApprovalStatus | string | null;
+  due_date?: string | null;
+  dueDate?: string | null;
+  attachments_json?: string | null;
+  attachments?: number | string | null;
+  notes?: string | null;
+  decision_note?: string | null;
+  decisionNote?: string | null;
+  decided_by?: string | null;
+  decidedBy?: string | null;
+  decided_at?: string | null;
+  decidedAt?: string | null;
+  submitted_at?: string | null;
+  submittedAt?: string | null;
+  created_at?: string | null;
+  createdAt?: string | null;
+  updated_at?: string | null;
+  updatedAt?: string | null;
+};
 
-const recentDecisions = [
-  {
-    id: "APR-2026-077",
-    title: "Cloud Infrastructure Upgrade",
-    decision: "Approved",
-    time: "22 Jul 2026, 07:10 PM",
-  },
-  {
-    id: "APR-2026-076",
-    title: "Influencer Partnership Request",
-    decision: "Rejected",
-    time: "22 Jul 2026, 11:40 AM",
-  },
-  {
-    id: "APR-2026-075",
-    title: "GST Payment Authorization",
-    decision: "Approved",
-    time: "21 Jul 2026, 12:10 PM",
-  },
-];
+type ApiHistoryItem = {
+  id?: string;
+  action?: string;
+  from_status?: string | null;
+  to_status?: string | null;
+  note?: string | null;
+  actor_id?: string | null;
+  created_at?: string | null;
+};
+
+type ApiApprovalsResponse = {
+  approvals?: ApiApproval[];
+  statistics?: {
+    pending?: number;
+    approved?: number;
+    rejected?: number;
+    critical?: number;
+    total?: number;
+  };
+  workloadByDepartment?: Array<{
+    department?: string;
+    count?: number;
+  }>;
+  recentDecisions?: Array<{
+    id?: string;
+    title?: string;
+    decision?: string;
+    time?: string;
+  }>;
+  total?: number;
+  live?: boolean;
+};
+
+type ApiApprovalDetailResponse = {
+  approval?: ApiApproval;
+  history?: ApiHistoryItem[];
+};
 
 function getPriorityClasses(priority: ApprovalPriority) {
   if (priority === "Critical") {
@@ -306,7 +166,10 @@ function getDepartmentClasses(department: string) {
     return "bg-blue-50 text-blue-700";
   }
 
-  if (department === "Human Resources") {
+  if (
+    department === "Human Resources" ||
+    department === "HR"
+  ) {
     return "bg-violet-50 text-violet-700";
   }
 
@@ -325,28 +188,434 @@ function getDepartmentClasses(department: string) {
   return "bg-slate-100 text-slate-700";
 }
 
+function getApprovalIcon(
+  category?: string | null,
+  department?: string | null,
+) {
+  const value = `${category ?? ""} ${department ?? ""}`.toLowerCase();
+
+  if (
+    value.includes("payroll") ||
+    value.includes("salary") ||
+    value.includes("tax") ||
+    value.includes("gst")
+  ) {
+    return BadgeIndianRupee;
+  }
+
+  if (
+    value.includes("vendor") ||
+    value.includes("payment") ||
+    value.includes("expense") ||
+    value.includes("reimbursement")
+  ) {
+    return CircleDollarSign;
+  }
+
+  if (
+    value.includes("inventory") ||
+    value.includes("purchase") ||
+    value.includes("stock")
+  ) {
+    return PackageCheck;
+  }
+
+  if (
+    value.includes("marketing") ||
+    value.includes("campaign")
+  ) {
+    return Megaphone;
+  }
+
+  if (
+    value.includes("recruitment") ||
+    value.includes("hiring") ||
+    value.includes("employee")
+  ) {
+    return UserCheck;
+  }
+
+  if (
+    value.includes("sales") ||
+    value.includes("discount") ||
+    value.includes("order")
+  ) {
+    return ShoppingBag;
+  }
+
+  if (
+    value.includes("technology") ||
+    value.includes("infrastructure") ||
+    value.includes("cloud")
+  ) {
+    return Building2;
+  }
+
+  if (value.includes("influencer")) {
+    return Users;
+  }
+
+  if (value.includes("compliance")) {
+    return ShieldCheck;
+  }
+
+  return FileText;
+}
+
+function normalizePriority(
+  priority?: string | null,
+): ApprovalPriority {
+  if (priority === "Critical") return "Critical";
+  if (priority === "High") return "High";
+  if (priority === "Medium") return "Medium";
+  return "Low";
+}
+
+function normalizeStatus(
+  status?: string | null,
+): ApprovalStatus {
+  if (status === "Approved") return "Approved";
+  if (status === "Rejected") return "Rejected";
+  return "Pending";
+}
+
+function formatAmount(
+  amount: number | string | null | undefined,
+  currency?: string | null,
+) {
+  if (
+    amount === null ||
+    amount === undefined ||
+    amount === ""
+  ) {
+    return undefined;
+  }
+
+  const numericAmount =
+    typeof amount === "number"
+      ? amount
+      : Number(String(amount).replace(/,/g, ""));
+
+  if (!Number.isNaN(numericAmount)) {
+    if (!currency || currency === "INR") {
+      return new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 2,
+      }).format(numericAmount);
+    }
+
+    return `${currency} ${numericAmount.toLocaleString("en-IN")}`;
+  }
+
+  return String(amount);
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) {
+    return "—";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatDate(value?: string | null) {
+  if (!value) {
+    return "—";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function parseAttachments(
+  value?: string | number | null,
+) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (!value) {
+    return 0;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+
+    if (Array.isArray(parsed)) {
+      return parsed.length;
+    }
+
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      Array.isArray(parsed.files)
+    ) {
+      return parsed.files.length;
+    }
+
+    return 0;
+  } catch {
+    const numeric = Number(value);
+
+    return Number.isNaN(numeric) ? 0 : numeric;
+  }
+}
+
+function mapApproval(
+  approval: ApiApproval,
+): ApprovalItem {
+  return {
+    id: approval.id ?? "",
+    title: approval.title ?? "Untitled Approval",
+    description:
+      approval.description ?? "No description provided.",
+    department: approval.department ?? "General",
+    category: approval.category ?? "General",
+    requester:
+      approval.requester ?? "Unknown Requester",
+    requesterRole:
+      approval.requester_role ??
+      approval.requesterRole ??
+      "Employee",
+    requesterId:
+      approval.requester_id ??
+      approval.requesterId ??
+      null,
+    submittedAt: formatDateTime(
+      approval.submitted_at ??
+        approval.submittedAt ??
+        approval.created_at ??
+        approval.createdAt,
+    ),
+    dueDate: formatDate(
+      approval.due_date ?? approval.dueDate,
+    ),
+    amount: formatAmount(
+      approval.amount,
+      approval.currency,
+    ),
+    priority: normalizePriority(approval.priority),
+    status: normalizeStatus(approval.status),
+    icon: getApprovalIcon(
+      approval.category,
+      approval.department,
+    ),
+    attachments: parseAttachments(
+      approval.attachments_json ??
+        approval.attachments ??
+        0,
+    ),
+    notes: approval.notes ?? "No notes provided.",
+    decisionNote:
+      approval.decision_note ??
+      approval.decisionNote ??
+      null,
+    decidedBy:
+      approval.decided_by ??
+      approval.decidedBy ??
+      null,
+    decidedAt:
+      approval.decided_at ??
+      approval.decidedAt ??
+      null,
+    createdAt:
+      approval.created_at ??
+      approval.createdAt ??
+      undefined,
+    updatedAt:
+      approval.updated_at ??
+      approval.updatedAt ??
+      undefined,
+  };
+}
+
 export default function TasksApprovals() {
-  const [approvals, setApprovals] =
-    useState<ApprovalItem[]>(initialApprovals);
+  const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
 
   const [activeTab, setActiveTab] =
     useState<ApprovalTab>("Pending");
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("All");
-  const [priorityFilter, setPriorityFilter] = useState("All");
+  const [departmentFilter, setDepartmentFilter] =
+    useState("All");
+  const [priorityFilter, setPriorityFilter] =
+    useState("All");
 
   const [selectedApprovalId, setSelectedApprovalId] =
     useState<string | null>(null);
 
-  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>(
+    [],
+  );
+
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [error, setError] = useState<string | null>(null);
+
+  const [decisionNote, setDecisionNote] = useState("");
+
+  const [processingApprovalId, setProcessingApprovalId] =
+    useState<string | null>(null);
+
+  const [processingBulk, setProcessingBulk] = useState(false);
+
+  const [workloadByDepartment, setWorkloadByDepartment] =
+    useState<
+      Array<{
+        department: string;
+        count: number;
+      }>
+    >([]);
+
+  const [recentDecisions, setRecentDecisions] = useState<
+    Array<{
+      id: string;
+      title: string;
+      decision: string;
+      time: string;
+    }>
+  >([]);
+
+  const [selectedHistory, setSelectedHistory] = useState<
+    ApiHistoryItem[]
+  >([]);
+
+  const [isLoadingDetail, setIsLoadingDetail] =
+    useState(false);
+
+  const loadApprovals = useCallback(
+    async (showRefreshState = false) => {
+      if (showRefreshState) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+
+      setError(null);
+
+      try {
+        const response = await fetch(
+          "/api/keos/approvals",
+          {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+              Accept: "application/json",
+            },
+          },
+        );
+
+        const payload =
+          (await response.json().catch(() => null)) as
+            | ApiApprovalsResponse
+            | {
+                error?: string;
+                message?: string;
+              }
+            | null;
+
+        if (!response.ok) {
+          throw new Error(
+            payload &&
+              "error" in payload &&
+              payload.error
+              ? payload.error
+              : payload &&
+                  "message" in payload &&
+                  payload.message
+                ? payload.message
+                : `Failed to load approvals (${response.status})`,
+          );
+        }
+
+        const data = payload as ApiApprovalsResponse;
+
+        setApprovals(
+          Array.isArray(data.approvals)
+            ? data.approvals.map(mapApproval)
+            : [],
+        );
+
+        setWorkloadByDepartment(
+          Array.isArray(data.workloadByDepartment)
+            ? data.workloadByDepartment
+                .map((item) => ({
+                  department:
+                    item.department ?? "General",
+                  count: Number(item.count ?? 0),
+                }))
+                .filter((item) => item.count > 0)
+            : [],
+        );
+
+        setRecentDecisions(
+          Array.isArray(data.recentDecisions)
+            ? data.recentDecisions.map((item) => ({
+                id: item.id ?? "",
+                title: item.title ?? "Approval",
+                decision:
+                  item.decision === "Approved"
+                    ? "Approved"
+                    : "Rejected",
+                time: item.time ?? "—",
+              }))
+            : [],
+        );
+      } catch (requestError) {
+        console.error(
+          "KEOS_APPROVALS_LOAD_ERROR",
+          requestError,
+        );
+
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Unable to load approvals.",
+        );
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    void loadApprovals();
+  }, [loadApprovals]);
 
   const departments = useMemo(
     () => [
       "All",
       ...Array.from(
-        new Set(approvals.map((approval) => approval.department)),
+        new Set(
+          approvals
+            .map((approval) => approval.department)
+            .filter(Boolean),
+        ),
       ),
     ],
     [approvals],
@@ -357,7 +626,8 @@ export default function TasksApprovals() {
 
     return approvals.filter((approval) => {
       const tabMatch =
-        activeTab === "All" || approval.status === activeTab;
+        activeTab === "All" ||
+        approval.status === activeTab;
 
       const departmentMatch =
         departmentFilter === "All" ||
@@ -369,7 +639,7 @@ export default function TasksApprovals() {
 
       const searchMatch =
         !query ||
-        `${approval.id} ${approval.title} ${approval.description} ${approval.department} ${approval.requester}`
+        `${approval.id} ${approval.title} ${approval.description} ${approval.department} ${approval.requester} ${approval.category}`
           .toLowerCase()
           .includes(query);
 
@@ -411,64 +681,364 @@ export default function TasksApprovals() {
       approval.priority === "Critical",
   ).length;
 
-  function updateApprovalStatus(
+  useEffect(() => {
+    if (!selectedApproval) {
+      setDecisionNote("");
+      setSelectedHistory([]);
+      return;
+    }
+
+    setDecisionNote(selectedApproval.decisionNote ?? "");
+  }, [selectedApproval]);
+
+  const loadApprovalDetail = useCallback(
+    async (approvalId: string) => {
+      setIsLoadingDetail(true);
+
+      try {
+        const response = await fetch(
+          `/api/keos/approvals/${encodeURIComponent(
+            approvalId,
+          )}`,
+          {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+              Accept: "application/json",
+            },
+          },
+        );
+
+        const payload =
+          (await response.json().catch(() => null)) as
+            | ApiApprovalDetailResponse
+            | { error?: string; message?: string }
+            | null;
+
+        if (!response.ok) {
+          throw new Error(
+            payload &&
+              "error" in payload &&
+              payload.error
+              ? payload.error
+              : payload &&
+                  "message" in payload &&
+                  payload.message
+                ? payload.message
+                : "Unable to load approval details.",
+          );
+        }
+
+        const data =
+          payload as ApiApprovalDetailResponse;
+
+        if (data.approval) {
+          const mappedApproval =
+            mapApproval(data.approval);
+
+          setApprovals((current) =>
+            current.map((approval) =>
+              approval.id === approvalId
+                ? mappedApproval
+                : approval,
+            ),
+          );
+        }
+
+        setSelectedHistory(
+          Array.isArray(data.history)
+            ? data.history
+            : [],
+        );
+      } catch (requestError) {
+        console.error(
+          "KEOS_APPROVAL_DETAIL_ERROR",
+          requestError,
+        );
+      } finally {
+        setIsLoadingDetail(false);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (selectedApprovalId) {
+      void loadApprovalDetail(selectedApprovalId);
+    }
+  }, [selectedApprovalId, loadApprovalDetail]);
+
+  async function decideApproval(
     approvalId: string,
-    status: ApprovalStatus,
+    status: "Approved" | "Rejected",
+    noteOverride?: string,
   ) {
-    setApprovals((currentApprovals) =>
-      currentApprovals.map((approval) =>
-        approval.id === approvalId
-          ? {
-              ...approval,
-              status,
-            }
-          : approval,
-      ),
-    );
+    if (processingApprovalId) {
+      return false;
+    }
 
-    setSelectedRows((currentRows) =>
-      currentRows.filter((id) => id !== approvalId),
-    );
+    setProcessingApprovalId(approvalId);
+    setError(null);
+
+    try {
+      const endpoint =
+        status === "Approved"
+          ? `/api/keos/approvals/${encodeURIComponent(
+              approvalId,
+            )}/approve`
+          : `/api/keos/approvals/${encodeURIComponent(
+              approvalId,
+            )}/reject`;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          decisionNote:
+            noteOverride ??
+            (approvalId === selectedApprovalId
+              ? decisionNote
+              : ""),
+        }),
+      });
+
+      const payload = await response
+        .json()
+        .catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          payload?.error ||
+            payload?.message ||
+            `Unable to ${status.toLowerCase()} approval.`,
+        );
+      }
+
+      const returnedApproval =
+        payload?.approval ?? payload?.data?.approval;
+
+      if (returnedApproval) {
+        const mappedApproval =
+          mapApproval(returnedApproval);
+
+        setApprovals((current) =>
+          current.map((approval) =>
+            approval.id === approvalId
+              ? mappedApproval
+              : approval,
+          ),
+        );
+      } else {
+        setApprovals((current) =>
+          current.map((approval) =>
+            approval.id === approvalId
+              ? {
+                  ...approval,
+                  status,
+                  decisionNote:
+                    noteOverride ??
+                    (approvalId === selectedApprovalId
+                      ? decisionNote
+                      : ""),
+                  decidedAt:
+                    new Date().toISOString(),
+                }
+              : approval,
+          ),
+        );
+      }
+
+      setSelectedRows((current) =>
+        current.filter((id) => id !== approvalId),
+      );
+
+      if (approvalId === selectedApprovalId) {
+        setSelectedApprovalId(null);
+      }
+
+      await loadApprovals(true);
+
+      return true;
+    } catch (requestError) {
+      console.error(
+        "KEOS_APPROVAL_DECISION_ERROR",
+        requestError,
+      );
+
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : `Unable to ${status.toLowerCase()} approval.`,
+      );
+
+      return false;
+    } finally {
+      setProcessingApprovalId(null);
+    }
   }
 
-  function approveSelectedRows() {
-    if (selectedRows.length === 0) {
+  async function approveSelectedRows() {
+    if (
+      selectedRows.length === 0 ||
+      processingBulk
+    ) {
       return;
     }
 
-    setApprovals((currentApprovals) =>
-      currentApprovals.map((approval) =>
-        selectedRows.includes(approval.id) &&
-        approval.status === "Pending"
-          ? {
-              ...approval,
-              status: "Approved",
-            }
-          : approval,
+    const pendingIds = selectedRows.filter((id) =>
+      approvals.some(
+        (approval) =>
+          approval.id === id &&
+          approval.status === "Pending",
       ),
     );
 
-    setSelectedRows([]);
-  }
-
-  function rejectSelectedRows() {
-    if (selectedRows.length === 0) {
+    if (pendingIds.length === 0) {
+      setSelectedRows([]);
       return;
     }
 
-    setApprovals((currentApprovals) =>
-      currentApprovals.map((approval) =>
-        selectedRows.includes(approval.id) &&
-        approval.status === "Pending"
-          ? {
-              ...approval,
-              status: "Rejected",
-            }
-          : approval,
+    setProcessingBulk(true);
+    setError(null);
+
+    try {
+      const results = await Promise.all(
+        pendingIds.map(async (approvalId) => {
+          const response = await fetch(
+            `/api/keos/approvals/${encodeURIComponent(
+              approvalId,
+            )}/approve`,
+            {
+              method: "POST",
+              cache: "no-store",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({
+                decisionNote: "",
+              }),
+            },
+          );
+
+          if (!response.ok) {
+            const payload = await response
+              .json()
+              .catch(() => null);
+
+            throw new Error(
+              payload?.error ||
+                payload?.message ||
+                `Failed to approve ${approvalId}`,
+            );
+          }
+
+          return response;
+        }),
+      );
+
+      if (results.length > 0) {
+        setSelectedRows([]);
+        await loadApprovals(true);
+      }
+    } catch (requestError) {
+      console.error(
+        "KEOS_BULK_APPROVE_ERROR",
+        requestError,
+      );
+
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Some approvals could not be approved.",
+      );
+
+      await loadApprovals(true);
+    } finally {
+      setProcessingBulk(false);
+    }
+  }
+
+  async function rejectSelectedRows() {
+    if (
+      selectedRows.length === 0 ||
+      processingBulk
+    ) {
+      return;
+    }
+
+    const pendingIds = selectedRows.filter((id) =>
+      approvals.some(
+        (approval) =>
+          approval.id === id &&
+          approval.status === "Pending",
       ),
     );
 
-    setSelectedRows([]);
+    if (pendingIds.length === 0) {
+      setSelectedRows([]);
+      return;
+    }
+
+    setProcessingBulk(true);
+    setError(null);
+
+    try {
+      await Promise.all(
+        pendingIds.map(async (approvalId) => {
+          const response = await fetch(
+            `/api/keos/approvals/${encodeURIComponent(
+              approvalId,
+            )}/reject`,
+            {
+              method: "POST",
+              cache: "no-store",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({
+                decisionNote: "",
+              }),
+            },
+          );
+
+          if (!response.ok) {
+            const payload = await response
+              .json()
+              .catch(() => null);
+
+            throw new Error(
+              payload?.error ||
+                payload?.message ||
+                `Failed to reject ${approvalId}`,
+            );
+          }
+        }),
+      );
+
+      setSelectedRows([]);
+      await loadApprovals(true);
+    } catch (requestError) {
+      console.error(
+        "KEOS_BULK_REJECT_ERROR",
+        requestError,
+      );
+
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Some approvals could not be rejected.",
+      );
+
+      await loadApprovals(true);
+    } finally {
+      setProcessingBulk(false);
+    }
   }
 
   function toggleRow(approvalId: string) {
@@ -481,12 +1051,16 @@ export default function TasksApprovals() {
 
   function toggleAllVisibleRows() {
     const pendingVisibleIds = filteredApprovals
-      .filter((approval) => approval.status === "Pending")
+      .filter(
+        (approval) => approval.status === "Pending",
+      )
       .map((approval) => approval.id);
 
     const allSelected =
       pendingVisibleIds.length > 0 &&
-      pendingVisibleIds.every((id) => selectedRows.includes(id));
+      pendingVisibleIds.every((id) =>
+        selectedRows.includes(id),
+      );
 
     if (allSelected) {
       setSelectedRows((currentRows) =>
@@ -497,18 +1071,13 @@ export default function TasksApprovals() {
     } else {
       setSelectedRows((currentRows) =>
         Array.from(
-          new Set([...currentRows, ...pendingVisibleIds]),
+          new Set([
+            ...currentRows,
+            ...pendingVisibleIds,
+          ]),
         ),
       );
     }
-  }
-
-  function refreshApprovals() {
-    setIsRefreshing(true);
-
-    window.setTimeout(() => {
-      setIsRefreshing(false);
-    }, 700);
   }
 
   function exportApprovals() {
@@ -542,7 +1111,10 @@ export default function TasksApprovals() {
         row
           .map(
             (value) =>
-              `"${String(value).replaceAll('"', '""')}"`,
+              `"${String(value).replaceAll(
+                '"',
+                '""',
+              )}"`,
           )
           .join(","),
       )
@@ -557,10 +1129,19 @@ export default function TasksApprovals() {
 
     anchor.href = url;
     anchor.download = "keos-tasks-approvals.csv";
+    document.body.appendChild(anchor);
     anchor.click();
+    anchor.remove();
 
     URL.revokeObjectURL(url);
   }
+
+  const maxDepartmentCount = Math.max(
+    1,
+    ...workloadByDepartment.map(
+      (department) => department.count,
+    ),
+  );
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -577,24 +1158,30 @@ export default function TasksApprovals() {
             </h1>
 
             <p className="mt-3 max-w-3xl text-sm leading-7 text-blue-100">
-              Review, approve and reject financial, operational,
-              employee, inventory, sales and marketing requests from
-              one centralized Founder workspace.
+              Review, approve and reject financial,
+              operational, employee, inventory, sales and
+              marketing requests from one centralized
+              Founder workspace.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={refreshApprovals}
-              className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold transition hover:bg-white/20"
+              onClick={() => void loadApprovals(true)}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-70"
             >
               <RefreshCcw
                 size={17}
-                className={isRefreshing ? "animate-spin" : ""}
+                className={
+                  isRefreshing ? "animate-spin" : ""
+                }
               />
 
-              {isRefreshing ? "Refreshing..." : "Refresh"}
+              {isRefreshing
+                ? "Refreshing..."
+                : "Refresh"}
             </button>
 
             <button
@@ -608,6 +1195,36 @@ export default function TasksApprovals() {
           </div>
         </div>
       </section>
+
+      {error && (
+        <section className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle
+              size={19}
+              className="mt-0.5 shrink-0 text-red-600"
+            />
+
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-red-800">
+                Unable to synchronize approvals
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-red-700">
+                {error}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="ml-auto text-red-500 hover:text-red-700"
+              aria-label="Close error"
+            >
+              <X size={17} />
+            </button>
+          </div>
+        </section>
+      )}
 
       <section className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
@@ -659,7 +1276,8 @@ export default function TasksApprovals() {
                   tab === "All"
                     ? approvals.length
                     : approvals.filter(
-                        (approval) => approval.status === tab,
+                        (approval) =>
+                          approval.status === tab,
                       ).length;
 
                 return (
@@ -677,6 +1295,7 @@ export default function TasksApprovals() {
                     }`}
                   >
                     {tab}
+
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] ${
                         activeTab === tab
@@ -693,13 +1312,18 @@ export default function TasksApprovals() {
 
             <div className="flex flex-wrap gap-3">
               <div className="flex h-11 min-w-[240px] items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100">
-                <Search size={17} className="text-slate-400" />
+                <Search
+                  size={17}
+                  className="text-slate-400"
+                />
 
                 <input
                   type="search"
                   value={searchQuery}
                   onChange={(event) =>
-                    setSearchQuery(event.target.value)
+                    setSearchQuery(
+                      event.target.value,
+                    )
                   }
                   placeholder="Search approvals..."
                   className="min-w-0 flex-1 bg-transparent text-sm outline-none"
@@ -708,10 +1332,15 @@ export default function TasksApprovals() {
                 {searchQuery && (
                   <button
                     type="button"
-                    onClick={() => setSearchQuery("")}
+                    onClick={() =>
+                      setSearchQuery("")
+                    }
                     aria-label="Clear search"
                   >
-                    <X size={15} className="text-slate-400" />
+                    <X
+                      size={15}
+                      className="text-slate-400"
+                    />
                   </button>
                 )}
               </div>
@@ -729,17 +1358,24 @@ export default function TasksApprovals() {
                 <select
                   value={departmentFilter}
                   onChange={(event) =>
-                    setDepartmentFilter(event.target.value)
+                    setDepartmentFilter(
+                      event.target.value,
+                    )
                   }
                   className="h-10 rounded-xl border border-slate-200 bg-white pl-10 pr-9 text-xs font-semibold text-slate-600 outline-none"
                 >
-                  {departments.map((department) => (
-                    <option key={department} value={department}>
-                      {department === "All"
-                        ? "All Departments"
-                        : department}
-                    </option>
-                  ))}
+                  {departments.map(
+                    (department) => (
+                      <option
+                        key={department}
+                        value={department}
+                      >
+                        {department === "All"
+                          ? "All Departments"
+                          : department}
+                      </option>
+                    ),
+                  )}
                 </select>
               </div>
 
@@ -752,14 +1388,22 @@ export default function TasksApprovals() {
                 <select
                   value={priorityFilter}
                   onChange={(event) =>
-                    setPriorityFilter(event.target.value)
+                    setPriorityFilter(
+                      event.target.value,
+                    )
                   }
                   className="h-10 rounded-xl border border-slate-200 bg-white pl-10 pr-9 text-xs font-semibold text-slate-600 outline-none"
                 >
-                  <option value="All">All Priorities</option>
-                  <option value="Critical">Critical</option>
+                  <option value="All">
+                    All Priorities
+                  </option>
+                  <option value="Critical">
+                    Critical
+                  </option>
                   <option value="High">High</option>
-                  <option value="Medium">Medium</option>
+                  <option value="Medium">
+                    Medium
+                  </option>
                   <option value="Low">Low</option>
                 </select>
               </div>
@@ -773,17 +1417,25 @@ export default function TasksApprovals() {
 
                 <button
                   type="button"
-                  onClick={approveSelectedRows}
-                  className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700"
+                  onClick={() =>
+                    void approveSelectedRows()
+                  }
+                  disabled={processingBulk}
+                  className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <CheckCheck size={15} />
-                  Approve
+                  {processingBulk
+                    ? "Processing..."
+                    : "Approve"}
                 </button>
 
                 <button
                   type="button"
-                  onClick={rejectSelectedRows}
-                  className="flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700"
+                  onClick={() =>
+                    void rejectSelectedRows()
+                  }
+                  disabled={processingBulk}
+                  className="flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Ban size={15} />
                   Reject
@@ -812,15 +1464,19 @@ export default function TasksApprovals() {
                     checked={
                       filteredApprovals.filter(
                         (approval) =>
-                          approval.status === "Pending",
+                          approval.status ===
+                          "Pending",
                       ).length > 0 &&
                       filteredApprovals
                         .filter(
                           (approval) =>
-                            approval.status === "Pending",
+                            approval.status ===
+                            "Pending",
                         )
                         .every((approval) =>
-                          selectedRows.includes(approval.id),
+                          selectedRows.includes(
+                            approval.id,
+                          ),
                         )
                     }
                     onChange={toggleAllVisibleRows}
@@ -863,36 +1519,150 @@ export default function TasksApprovals() {
             </thead>
 
             <tbody>
-              {filteredApprovals.length > 0 ? (
-                filteredApprovals.map((approval) => {
-                  const ApprovalIcon = approval.icon;
+              {isLoading ? (
+                <tr>
+                  <td
+                    colSpan={9}
+                    className="px-6 py-20"
+                  >
+                    <div className="flex flex-col items-center justify-center">
+                      <RefreshCcw
+                        size={25}
+                        className="animate-spin text-blue-600"
+                      />
 
-                  return (
-                    <tr
-                      key={approval.id}
-                      className="border-b border-slate-100 text-sm transition hover:bg-slate-50/70"
-                    >
-                      <td className="px-6 py-5">
-                        <input
-                          type="checkbox"
-                          disabled={
-                            approval.status !== "Pending"
-                          }
-                          checked={selectedRows.includes(
-                            approval.id,
-                          )}
-                          onChange={() => toggleRow(approval.id)}
-                          className="h-4 w-4 accent-blue-600 disabled:opacity-30"
-                        />
-                      </td>
+                      <h3 className="mt-4 text-base font-bold text-slate-800">
+                        Loading approvals...
+                      </h3>
 
-                      <td className="px-4 py-5">
-                        <div className="flex items-start gap-3">
-                          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
-                            <ApprovalIcon size={19} />
+                      <p className="mt-2 text-sm text-slate-500">
+                        Synchronizing with KRVE Central
+                        API.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredApprovals.length > 0 ? (
+                filteredApprovals.map(
+                  (approval) => {
+                    const ApprovalIcon =
+                      approval.icon;
+
+                    return (
+                      <tr
+                        key={approval.id}
+                        className="border-b border-slate-100 text-sm transition hover:bg-slate-50/70"
+                      >
+                        <td className="px-6 py-5">
+                          <input
+                            type="checkbox"
+                            disabled={
+                              approval.status !==
+                              "Pending"
+                            }
+                            checked={selectedRows.includes(
+                              approval.id,
+                            )}
+                            onChange={() =>
+                              toggleRow(
+                                approval.id,
+                              )
+                            }
+                            className="h-4 w-4 accent-blue-600 disabled:opacity-30"
+                          />
+                        </td>
+
+                        <td className="px-4 py-5">
+                          <div className="flex items-start gap-3">
+                            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                              <ApprovalIcon
+                                size={19}
+                              />
+                            </div>
+
+                            <div className="max-w-[310px]">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedApprovalId(
+                                    approval.id,
+                                  )
+                                }
+                                className="block text-left text-sm font-bold text-slate-900 hover:text-blue-600"
+                              >
+                                {approval.title}
+                              </button>
+
+                              <span className="mt-1 block text-[11px] font-semibold text-blue-600">
+                                {approval.id}
+                              </span>
+
+                              <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+                                {approval.description}
+                              </p>
+                            </div>
                           </div>
+                        </td>
 
-                          <div className="max-w-[310px]">
+                        <td className="px-4 py-5">
+                          <span
+                            className={`rounded-full px-3 py-1.5 text-[10px] font-bold ${getDepartmentClasses(
+                              approval.department,
+                            )}`}
+                          >
+                            {approval.department}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-5">
+                          <strong className="block text-xs text-slate-800">
+                            {approval.requester}
+                          </strong>
+
+                          <span className="mt-1 block text-[10px] text-slate-500">
+                            {
+                              approval.requesterRole
+                            }
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-5 font-black text-slate-900">
+                          {approval.amount ??
+                            "—"}
+                        </td>
+
+                        <td className="px-4 py-5">
+                          <span
+                            className={`rounded-full border px-3 py-1 text-[10px] font-bold ${getPriorityClasses(
+                              approval.priority,
+                            )}`}
+                          >
+                            {approval.priority}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-5">
+                          <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <CalendarDays
+                              size={14}
+                              className="text-slate-400"
+                            />
+                            {approval.dueDate}
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-5">
+                          <span
+                            className={`rounded-full border px-3 py-1 text-[10px] font-bold ${getStatusClasses(
+                              approval.status,
+                            )}`}
+                          >
+                            {approval.status}
+                          </span>
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <div className="flex justify-end gap-2">
                             <button
                               type="button"
                               onClick={() =>
@@ -900,136 +1670,84 @@ export default function TasksApprovals() {
                                   approval.id,
                                 )
                               }
-                              className="block text-left text-sm font-bold text-slate-900 hover:text-blue-600"
+                              className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
+                              aria-label="View approval"
                             >
-                              {approval.title}
+                              <Eye size={16} />
                             </button>
 
-                            <span className="mt-1 block text-[11px] font-semibold text-blue-600">
-                              {approval.id}
-                            </span>
+                            {approval.status ===
+                              "Pending" && (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={
+                                    processingApprovalId ===
+                                    approval.id
+                                  }
+                                  onClick={() =>
+                                    void decideApproval(
+                                      approval.id,
+                                      "Approved",
+                                    )
+                                  }
+                                  className="grid h-9 w-9 place-items-center rounded-lg border border-green-200 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                  aria-label="Approve"
+                                >
+                                  {processingApprovalId ===
+                                  approval.id ? (
+                                    <RefreshCcw
+                                      size={16}
+                                      className="animate-spin"
+                                    />
+                                  ) : (
+                                    <Check
+                                      size={16}
+                                    />
+                                  )}
+                                </button>
 
-                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
-                              {approval.description}
-                            </p>
+                                <button
+                                  type="button"
+                                  disabled={
+                                    processingApprovalId ===
+                                    approval.id
+                                  }
+                                  onClick={() =>
+                                    void decideApproval(
+                                      approval.id,
+                                      "Rejected",
+                                    )
+                                  }
+                                  className="grid h-9 w-9 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                  aria-label="Reject"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </>
+                            )}
+
+                            <button
+                              type="button"
+                              className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100"
+                              aria-label="More options"
+                            >
+                              <MoreHorizontal
+                                size={17}
+                              />
+                            </button>
                           </div>
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-5">
-                        <span
-                          className={`rounded-full px-3 py-1.5 text-[10px] font-bold ${getDepartmentClasses(
-                            approval.department,
-                          )}`}
-                        >
-                          {approval.department}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-5">
-                        <strong className="block text-xs text-slate-800">
-                          {approval.requester}
-                        </strong>
-
-                        <span className="mt-1 block text-[10px] text-slate-500">
-                          {approval.requesterRole}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-5 font-black text-slate-900">
-                        {approval.amount ?? "—"}
-                      </td>
-
-                      <td className="px-4 py-5">
-                        <span
-                          className={`rounded-full border px-3 py-1 text-[10px] font-bold ${getPriorityClasses(
-                            approval.priority,
-                          )}`}
-                        >
-                          {approval.priority}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-5">
-                        <div className="flex items-center gap-2 text-xs text-slate-600">
-                          <CalendarDays
-                            size={14}
-                            className="text-slate-400"
-                          />
-                          {approval.dueDate}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-5">
-                        <span
-                          className={`rounded-full border px-3 py-1 text-[10px] font-bold ${getStatusClasses(
-                            approval.status,
-                          )}`}
-                        >
-                          {approval.status}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-5">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedApprovalId(approval.id)
-                            }
-                            className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
-                            aria-label="View approval"
-                          >
-                            <Eye size={16} />
-                          </button>
-
-                          {approval.status === "Pending" && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  updateApprovalStatus(
-                                    approval.id,
-                                    "Approved",
-                                  )
-                                }
-                                className="grid h-9 w-9 place-items-center rounded-lg border border-green-200 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white"
-                                aria-label="Approve"
-                              >
-                                <Check size={16} />
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  updateApprovalStatus(
-                                    approval.id,
-                                    "Rejected",
-                                  )
-                                }
-                                className="grid h-9 w-9 place-items-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white"
-                                aria-label="Reject"
-                              >
-                                <X size={16} />
-                              </button>
-                            </>
-                          )}
-
-                          <button
-                            type="button"
-                            className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100"
-                            aria-label="More options"
-                          >
-                            <MoreHorizontal size={17} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                        </td>
+                      </tr>
+                    );
+                  },
+                )
               ) : (
                 <tr>
-                  <td colSpan={9} className="px-6 py-20">
+                  <td
+                    colSpan={9}
+                    className="px-6 py-20"
+                  >
                     <div className="text-center">
                       <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-400">
                         <FileCheck2 size={25} />
@@ -1040,8 +1758,9 @@ export default function TasksApprovals() {
                       </h3>
 
                       <p className="mt-2 text-sm text-slate-500">
-                        Change the filters or search query to view
-                        other requests.
+                        {approvals.length === 0
+                          ? "There are currently no approval requests in the KRVE system."
+                          : "Change the filters or search query to view other requests."}
                       </p>
                     </div>
                   </td>
@@ -1058,7 +1777,36 @@ export default function TasksApprovals() {
           </span>
 
           <span>
-            Last synchronized: 25 Jul 2026, 08:20 PM
+            Last synchronized:{" "}
+            {approvals.length > 0
+              ? formatDateTime(
+                  approvals.reduce(
+                    (latest, approval) => {
+                      const value =
+                        approval.updatedAt ??
+                        approval.createdAt;
+
+                      if (!value) {
+                        return latest;
+                      }
+
+                      if (!latest) {
+                        return value;
+                      }
+
+                      return new Date(
+                        value,
+                      ).getTime() >
+                        new Date(
+                          latest,
+                        ).getTime()
+                        ? value
+                        : latest;
+                    },
+                    null as string | null,
+                  ),
+                )
+              : "—"}
           </span>
         </div>
       </section>
@@ -1071,64 +1819,84 @@ export default function TasksApprovals() {
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Pending requests currently assigned to the Founder
+              Pending requests currently assigned to
+              the Founder
             </p>
           </div>
 
           <div className="mt-7 space-y-5">
-            {[
-              {
-                name: "Finance",
-                value: 3,
-                percentage: 75,
-                className: "bg-blue-600",
-              },
-              {
-                name: "Human Resources",
-                value: 2,
-                percentage: 50,
-                className: "bg-violet-600",
-              },
-              {
-                name: "Inventory",
-                value: 1,
-                percentage: 25,
-                className: "bg-orange-500",
-              },
-              {
-                name: "Marketing",
-                value: 1,
-                percentage: 25,
-                className: "bg-red-500",
-              },
-              {
-                name: "Sales",
-                value: 1,
-                percentage: 25,
-                className: "bg-green-600",
-              },
-            ].map((department) => (
-              <div key={department.name}>
-                <div className="mb-2 flex items-center justify-between">
-                  <strong className="text-xs text-slate-700">
-                    {department.name}
-                  </strong>
+            {workloadByDepartment.length > 0 ? (
+              workloadByDepartment.map(
+                (department) => {
+                  const percentage = Math.round(
+                    (department.count /
+                      maxDepartmentCount) *
+                      100,
+                  );
 
-                  <span className="text-xs font-bold text-slate-900">
-                    {department.value} pending
-                  </span>
-                </div>
+                  return (
+                    <div
+                      key={department.department}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <strong className="text-xs text-slate-700">
+                          {
+                            department.department
+                          }
+                        </strong>
 
-                <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className={`h-full rounded-full ${department.className}`}
-                    style={{
-                      width: `${department.percentage}%`,
-                    }}
-                  />
-                </div>
+                        <span className="text-xs font-bold text-slate-900">
+                          {department.count} pending
+                        </span>
+                      </div>
+
+                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full ${
+                            department.department ===
+                            "Finance"
+                              ? "bg-blue-600"
+                              : department.department ===
+                                  "Human Resources"
+                                ? "bg-violet-600"
+                                : department.department ===
+                                    "Inventory"
+                                  ? "bg-orange-500"
+                                  : department.department ===
+                                      "Marketing"
+                                    ? "bg-red-500"
+                                    : department.department ===
+                                        "Sales"
+                                      ? "bg-green-600"
+                                      : "bg-slate-500"
+                          }`}
+                          style={{
+                            width: `${percentage}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                },
+              )
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center">
+                <Building2
+                  size={25}
+                  className="mx-auto text-slate-300"
+                />
+
+                <p className="mt-3 text-sm font-bold text-slate-600">
+                  No pending workload
+                </p>
+
+                <p className="mt-1 text-xs text-slate-400">
+                  Department workload will appear
+                  here when approval requests are
+                  created.
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </article>
 
@@ -1144,56 +1912,83 @@ export default function TasksApprovals() {
           </div>
 
           <div className="mt-6 space-y-4">
-            {recentDecisions.map((decision) => (
-              <div
-                key={decision.id}
-                className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4"
-              >
-                <div
-                  className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-                    decision.decision === "Approved"
-                      ? "bg-green-50 text-green-600"
-                      : "bg-red-50 text-red-600"
-                  }`}
-                >
-                  {decision.decision === "Approved" ? (
-                    <CheckCircle2 size={19} />
-                  ) : (
-                    <XCircle size={19} />
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <strong className="block truncate text-sm text-slate-900">
-                    {decision.title}
-                  </strong>
-
-                  <span className="mt-1 block text-xs text-slate-500">
-                    {decision.id}
-                  </span>
-
-                  <div className="mt-2 flex items-center gap-2">
-                    <span
-                      className={`text-xs font-bold ${
-                        decision.decision === "Approved"
-                          ? "text-green-600"
-                          : "text-red-600"
+            {recentDecisions.length > 0 ? (
+              recentDecisions.map(
+                (decision) => (
+                  <div
+                    key={`${decision.id}-${decision.time}`}
+                    className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4"
+                  >
+                    <div
+                      className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
+                        decision.decision ===
+                        "Approved"
+                          ? "bg-green-50 text-green-600"
+                          : "bg-red-50 text-red-600"
                       }`}
                     >
-                      {decision.decision}
-                    </span>
+                      {decision.decision ===
+                      "Approved" ? (
+                        <CheckCircle2 size={19} />
+                      ) : (
+                        <XCircle size={19} />
+                      )}
+                    </div>
 
-                    <span className="text-[10px] text-slate-400">
-                      {decision.time}
-                    </span>
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm text-slate-900">
+                        {decision.title}
+                      </strong>
+
+                      <span className="mt-1 block text-xs text-slate-500">
+                        {decision.id}
+                      </span>
+
+                      <div className="mt-2 flex items-center gap-2">
+                        <span
+                          className={`text-xs font-bold ${
+                            decision.decision ===
+                            "Approved"
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {decision.decision}
+                        </span>
+
+                        <span className="text-[10px] text-slate-400">
+                          {decision.time}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ),
+              )
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center">
+                <Clock3
+                  size={25}
+                  className="mx-auto text-slate-300"
+                />
+
+                <p className="mt-3 text-sm font-bold text-slate-600">
+                  No decisions yet
+                </p>
+
+                <p className="mt-1 text-xs text-slate-400">
+                  Approved and rejected requests
+                  will appear here.
+                </p>
               </div>
-            ))}
+            )}
           </div>
 
           <button
             type="button"
+            onClick={() => {
+              setActiveTab("All");
+              setSelectedRows([]);
+            }}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50"
           >
             View Complete Decision History
@@ -1206,7 +2001,9 @@ export default function TasksApprovals() {
         <>
           <button
             type="button"
-            onClick={() => setSelectedApprovalId(null)}
+            onClick={() =>
+              setSelectedApprovalId(null)
+            }
             className="fixed inset-0 z-[60] bg-slate-950/50 backdrop-blur-sm"
             aria-label="Close approval details"
           />
@@ -1225,7 +2022,9 @@ export default function TasksApprovals() {
 
               <button
                 type="button"
-                onClick={() => setSelectedApprovalId(null)}
+                onClick={() =>
+                  setSelectedApprovalId(null)
+                }
                 className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-100"
                 aria-label="Close details"
               >
@@ -1236,7 +2035,14 @@ export default function TasksApprovals() {
             <div className="p-6">
               <div className="flex items-start gap-4">
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-                  <selectedApproval.icon size={23} />
+                  {(() => {
+                    const SelectedIcon =
+                      selectedApproval.icon;
+
+                    return (
+                      <SelectedIcon size={23} />
+                    );
+                  })()}
                 </div>
 
                 <div>
@@ -1297,20 +2103,26 @@ export default function TasksApprovals() {
                   icon={UserRound}
                   label="Requested By"
                   value={selectedApproval.requester}
-                  description={selectedApproval.requesterRole}
+                  description={
+                    selectedApproval.requesterRole
+                  }
                 />
 
                 <DetailCard
                   icon={Building2}
                   label="Department"
                   value={selectedApproval.department}
-                  description={selectedApproval.category}
+                  description={
+                    selectedApproval.category
+                  }
                 />
 
                 <DetailCard
                   icon={CalendarDays}
                   label="Submitted"
-                  value={selectedApproval.submittedAt}
+                  value={
+                    selectedApproval.submittedAt
+                  }
                   description="Submission timestamp"
                 />
 
@@ -1324,7 +2136,10 @@ export default function TasksApprovals() {
 
               <div className="mt-6 rounded-2xl border border-slate-200 p-5">
                 <div className="flex items-center gap-2">
-                  <FileText size={17} className="text-blue-600" />
+                  <FileText
+                    size={17}
+                    className="text-blue-600"
+                  />
 
                   <h4 className="text-sm font-black text-slate-900">
                     Request Notes
@@ -1344,7 +2159,8 @@ export default function TasksApprovals() {
                     </h4>
 
                     <p className="mt-1 text-xs text-slate-500">
-                      {selectedApproval.attachments} files attached
+                      {selectedApproval.attachments}{" "}
+                      files attached
                     </p>
                   </div>
 
@@ -1357,52 +2173,189 @@ export default function TasksApprovals() {
                 </div>
               </div>
 
-              <div className="mt-6">
-                <label
-                  htmlFor="decision-note"
-                  className="mb-2 block text-sm font-bold text-slate-700"
-                >
-                  Decision Note
-                </label>
+              {selectedApproval.status ===
+                "Pending" && (
+                <div className="mt-6">
+                  <label
+                    htmlFor="decision-note"
+                    className="mb-2 block text-sm font-bold text-slate-700"
+                  >
+                    Decision Note
+                  </label>
 
-                <textarea
-                  id="decision-note"
-                  rows={4}
-                  placeholder="Add a note for the requester..."
-                  className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                />
+                  <textarea
+                    id="decision-note"
+                    rows={4}
+                    value={decisionNote}
+                    onChange={(event) =>
+                      setDecisionNote(
+                        event.target.value,
+                      )
+                    }
+                    placeholder="Add a note for the requester..."
+                    className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  />
+                </div>
+              )}
+
+              {selectedApproval.status !==
+                "Pending" &&
+                selectedApproval.decisionNote && (
+                  <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex items-center gap-2">
+                      <FileText
+                        size={17}
+                        className="text-blue-600"
+                      />
+
+                      <h4 className="text-sm font-black text-slate-900">
+                        Decision Note
+                      </h4>
+                    </div>
+
+                    <p className="mt-3 text-sm leading-7 text-slate-600">
+                      {
+                        selectedApproval.decisionNote
+                      }
+                    </p>
+
+                    {selectedApproval.decidedAt && (
+                      <p className="mt-3 text-[10px] text-slate-400">
+                        Decided{" "}
+                        {formatDateTime(
+                          selectedApproval.decidedAt,
+                        )}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+              <div className="mt-6 rounded-2xl border border-slate-200 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900">
+                      Audit History
+                    </h4>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      {isLoadingDetail
+                        ? "Loading history..."
+                        : `${selectedHistory.length} recorded events`}
+                    </p>
+                  </div>
+
+                  {isLoadingDetail && (
+                    <RefreshCcw
+                      size={16}
+                      className="animate-spin text-blue-600"
+                    />
+                  )}
+                </div>
+
+                {!isLoadingDetail &&
+                  selectedHistory.length > 0 && (
+                    <div className="mt-4 space-y-3">
+                      {selectedHistory
+                        .slice(0, 8)
+                        .map((history) => (
+                          <div
+                            key={
+                              history.id ??
+                              `${history.action}-${history.created_at}`
+                            }
+                            className="rounded-xl bg-slate-50 p-3"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-xs font-bold text-slate-700">
+                                {history.action ??
+                                  "Activity"}
+                              </span>
+
+                              <span className="text-[10px] text-slate-400">
+                                {formatDateTime(
+                                  history.created_at,
+                                )}
+                              </span>
+                            </div>
+
+                            {(history.from_status ||
+                              history.to_status) && (
+                              <p className="mt-1 text-[10px] text-slate-500">
+                                {history.from_status ??
+                                  "—"}{" "}
+                                →{" "}
+                                {history.to_status ??
+                                  "—"}
+                              </p>
+                            )}
+
+                            {history.note && (
+                              <p className="mt-2 text-xs leading-5 text-slate-500">
+                                {history.note}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                {!isLoadingDetail &&
+                  selectedHistory.length ===
+                    0 && (
+                    <p className="mt-4 text-xs text-slate-400">
+                      No approval history is
+                      available.
+                    </p>
+                  )}
               </div>
 
-              {selectedApproval.status === "Pending" ? (
+              {selectedApproval.status ===
+              "Pending" ? (
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      updateApprovalStatus(
+                    disabled={
+                      processingApprovalId ===
+                      selectedApproval.id
+                    }
+                    onClick={() =>
+                      void decideApproval(
                         selectedApproval.id,
                         "Rejected",
-                      );
-                      setSelectedApprovalId(null);
-                    }}
-                    className="flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-600 hover:text-white"
+                        decisionNote,
+                      )
+                    }
+                    className="flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <XCircle size={18} />
-                    Reject
+
+                    {processingApprovalId ===
+                    selectedApproval.id
+                      ? "Processing..."
+                      : "Reject"}
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => {
-                      updateApprovalStatus(
+                    disabled={
+                      processingApprovalId ===
+                      selectedApproval.id
+                    }
+                    onClick={() =>
+                      void decideApproval(
                         selectedApproval.id,
                         "Approved",
-                      );
-                      setSelectedApprovalId(null);
-                    }}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
+                        decisionNote,
+                      )
+                    }
+                    className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <CheckCircle2 size={18} />
-                    Approve
+
+                    {processingApprovalId ===
+                    selectedApproval.id
+                      ? "Processing..."
+                      : "Approve"}
                   </button>
                 </div>
               ) : (
@@ -1411,7 +2364,8 @@ export default function TasksApprovals() {
                     selectedApproval.status,
                   )}`}
                 >
-                  {selectedApproval.status === "Approved" ? (
+                  {selectedApproval.status ===
+                  "Approved" ? (
                     <CheckCircle2 size={19} />
                   ) : (
                     <XCircle size={19} />
@@ -1491,7 +2445,10 @@ function DetailCard({
 }) {
   return (
     <article className="rounded-2xl border border-slate-200 p-4">
-      <Icon size={18} className="text-blue-600" />
+      <Icon
+        size={18}
+        className="text-blue-600"
+      />
 
       <p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
         {label}
