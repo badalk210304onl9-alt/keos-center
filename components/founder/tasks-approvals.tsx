@@ -52,10 +52,7 @@ type ApprovalItem = {
   amount?: string;
   priority: ApprovalPriority;
   status: ApprovalStatus;
-
-  // FIX: approval icons are LucideIcon components.
   icon: LucideIcon;
-
   attachments: number;
   notes: string;
   decisionNote?: string | null;
@@ -221,10 +218,7 @@ function getApprovalIcon(
     return PackageCheck;
   }
 
-  if (
-    value.includes("marketing") ||
-    value.includes("campaign")
-  ) {
+  if (value.includes("marketing") || value.includes("campaign")) {
     return Megaphone;
   }
 
@@ -263,18 +257,14 @@ function getApprovalIcon(
   return FileText;
 }
 
-function normalizePriority(
-  priority?: string | null,
-): ApprovalPriority {
+function normalizePriority(priority?: string | null): ApprovalPriority {
   if (priority === "Critical") return "Critical";
   if (priority === "High") return "High";
   if (priority === "Medium") return "Medium";
   return "Low";
 }
 
-function normalizeStatus(
-  status?: string | null,
-): ApprovalStatus {
+function normalizeStatus(status?: string | null): ApprovalStatus {
   if (status === "Approved") return "Approved";
   if (status === "Rejected") return "Rejected";
   return "Pending";
@@ -284,11 +274,7 @@ function formatAmount(
   amount: number | string | null | undefined,
   currency?: string | null,
 ) {
-  if (
-    amount === null ||
-    amount === undefined ||
-    amount === ""
-  ) {
+  if (amount === null || amount === undefined || amount === "") {
     return undefined;
   }
 
@@ -350,9 +336,7 @@ function formatDate(value?: string | null) {
   });
 }
 
-function parseAttachments(
-  value?: string | number | null,
-) {
+function parseAttachments(value?: string | number | null) {
   if (typeof value === "number") {
     return value;
   }
@@ -384,106 +368,62 @@ function parseAttachments(
   }
 }
 
-function mapApproval(
-  approval: ApiApproval,
-): ApprovalItem {
+function mapApproval(approval: ApiApproval): ApprovalItem {
   return {
     id: approval.id ?? "",
     title: approval.title ?? "Untitled Approval",
-    description:
-      approval.description ?? "No description provided.",
+    description: approval.description ?? "No description provided.",
     department: approval.department ?? "General",
     category: approval.category ?? "General",
-    requester:
-      approval.requester ?? "Unknown Requester",
+    requester: approval.requester ?? "Unknown Requester",
     requesterRole:
-      approval.requester_role ??
-      approval.requesterRole ??
-      "Employee",
+      approval.requester_role ?? approval.requesterRole ?? "Employee",
     requesterId:
-      approval.requester_id ??
-      approval.requesterId ??
-      null,
+      approval.requester_id ?? approval.requesterId ?? null,
     submittedAt: formatDateTime(
       approval.submitted_at ??
         approval.submittedAt ??
         approval.created_at ??
         approval.createdAt,
     ),
-    dueDate: formatDate(
-      approval.due_date ?? approval.dueDate,
-    ),
-    amount: formatAmount(
-      approval.amount,
-      approval.currency,
-    ),
+    dueDate: formatDate(approval.due_date ?? approval.dueDate),
+    amount: formatAmount(approval.amount, approval.currency),
     priority: normalizePriority(approval.priority),
     status: normalizeStatus(approval.status),
-
-    // FIXED
-    icon: getApprovalIcon(
-      approval.category,
-      approval.department,
-    ),
-
+    icon: getApprovalIcon(approval.category, approval.department),
     attachments: parseAttachments(
-      approval.attachments_json ??
-        approval.attachments ??
-        0,
+      approval.attachments_json ?? approval.attachments ?? 0,
     ),
     notes: approval.notes ?? "No notes provided.",
     decisionNote:
-      approval.decision_note ??
-      approval.decisionNote ??
-      null,
-    decidedBy:
-      approval.decided_by ??
-      approval.decidedBy ??
-      null,
-    decidedAt:
-      approval.decided_at ??
-      approval.decidedAt ??
-      null,
+      approval.decision_note ?? approval.decisionNote ?? null,
+    decidedBy: approval.decided_by ?? approval.decidedBy ?? null,
+    decidedAt: approval.decided_at ?? approval.decidedAt ?? null,
     createdAt:
-      approval.created_at ??
-      approval.createdAt ??
-      undefined,
+      approval.created_at ?? approval.createdAt ?? undefined,
     updatedAt:
-      approval.updated_at ??
-      approval.updatedAt ??
-      undefined,
+      approval.updated_at ?? approval.updatedAt ?? undefined,
   };
 }
 
 export default function TasksApprovals() {
   const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
-
   const [activeTab, setActiveTab] =
     useState<ApprovalTab>("Pending");
-
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] =
     useState("All");
   const [priorityFilter, setPriorityFilter] =
     useState("All");
-
   const [selectedApprovalId, setSelectedApprovalId] =
     useState<string | null>(null);
-
-  const [selectedRows, setSelectedRows] = useState<string[]>(
-    [],
-  );
-
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
   const [error, setError] = useState<string | null>(null);
-
   const [decisionNote, setDecisionNote] = useState("");
-
   const [processingApprovalId, setProcessingApprovalId] =
     useState<string | null>(null);
-
   const [processingBulk, setProcessingBulk] = useState(false);
 
   const [workloadByDepartment, setWorkloadByDepartment] =
@@ -910,7 +850,7 @@ export default function TasksApprovals() {
     setError(null);
 
     try {
-      const results = await Promise.all(
+      await Promise.all(
         pendingIds.map(async (approvalId) => {
           const response = await fetch(
             `/api/keos/approvals/${encodeURIComponent(
@@ -940,15 +880,11 @@ export default function TasksApprovals() {
                 `Failed to approve ${approvalId}`,
             );
           }
-
-          return response;
         }),
       );
 
-      if (results.length > 0) {
-        setSelectedRows([]);
-        await loadApprovals(true);
-      }
+      setSelectedRows([]);
+      await loadApprovals(true);
     } catch (requestError) {
       console.error(
         "KEOS_BULK_APPROVE_ERROR",
