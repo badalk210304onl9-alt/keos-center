@@ -1,106 +1,112 @@
-import {
-  NextRequest,
-  NextResponse,
-} from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
+const CENTRAL_API_URL =
+  process.env.KRVE_CENTRAL_API_URL ||
+  process.env.NEXT_PUBLIC_KRVE_CENTRAL_API_URL ||
+  "http://localhost:4000";
 
-type RouteContext = {
-  params: Promise<{
-    id: string;
-  }>;
-};
+function centralUrl(path: string) {
+  return `${CENTRAL_API_URL.replace(/\/$/, "")}${path}`;
+}
 
 export async function POST(
   request: NextRequest,
-  context: RouteContext,
+  context: {
+    params: Promise<{ id: string }>;
+  },
 ) {
   try {
-    const { id } =
-      await context.params;
+    const { id } = await context.params;
 
-    const baseUrl = (
-      process.env.KRVE_CENTRAL_API_URL ||
-      process.env.KRVE_API_URL ||
-      "https://krve-central-api.badalk210304-onl9.workers.dev"
-    ).replace(/\/+$/, "");
-
-    const secret =
-      process.env.KEOS_API_SECRET?.trim();
-
-    if (!secret) {
+    if (!id) {
       return NextResponse.json(
         {
-          success: false,
-          message:
-            "KEOS_API_SECRET is missing in Vercel Environment Variables.",
+          error: "Approval ID is required.",
         },
-        { status: 500 },
+        {
+          status: 400,
+        },
       );
     }
 
-    const body =
-      await request.text();
+    const body = await request
+      .json()
+      .catch(() => ({}));
 
-    const response =
-      await fetch(
-        `${baseUrl}/keos/approvals/${encodeURIComponent(id)}/approve`,
-        {
-          method: "POST",
-          headers: {
-            Accept:
-              "application/json",
-            "Content-Type":
-              "application/json",
-            "X-KEOS-API-Key":
-              secret,
-          },
-          body,
-          cache: "no-store",
+    const response = await fetch(
+      centralUrl(
+        `/api/keos/approvals/${encodeURIComponent(id)}/approve`,
+      ),
+      {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-      );
+        body: JSON.stringify({
+          decisionNote:
+            typeof body?.decisionNote === "string"
+              ? body.decisionNote
+              : "",
+        }),
+      },
+    );
 
-    const text =
-      await response.text();
+    const text = await response.text();
 
-    let data: unknown;
+    let data: unknown = null;
 
     try {
-      data = text
-        ? JSON.parse(text)
-        : {
-            success:
-              response.ok,
-          };
+      data = text ? JSON.parse(text) : null;
     } catch {
       data = {
-        success:
-          response.ok,
-        message: text,
+        error:
+          text ||
+          "Invalid response from KRVE Central API.",
       };
     }
 
-    return NextResponse.json(
-      data,
-      {
-        status:
-          response.status,
-        headers: {
-          "Cache-Control":
-            "no-store",
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          error:
+            typeof data === "object" &&
+            data !== null &&
+            "error" in data
+              ? String(
+                  (data as { error?: unknown }).error ??
+                    `KRVE Central API returned ${response.status}`,
+                )
+              : `KRVE Central API returned ${response.status}`,
+          status: response.status,
+          data,
         },
-      },
-    );
+        {
+          status: response.status,
+        },
+      );
+    }
+
+    return NextResponse.json(data, {
+      status: 200,
+    });
   } catch (error) {
+    console.error(
+      "KEOS_APPROVAL_APPROVE_PROXY_ERROR",
+      error,
+    );
+
     return NextResponse.json(
       {
-        success: false,
-        message:
+        error:
           error instanceof Error
             ? error.message
-            : "Unable to approve request.",
+            : "Unable to approve this request.",
       },
-      { status: 500 },
+      {
+        status: 500,
+      },
     );
   }
 }
