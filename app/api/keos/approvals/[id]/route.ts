@@ -1,115 +1,101 @@
-import {
-  NextRequest,
-  NextResponse,
-} from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
+const CENTRAL_API_URL =
+  process.env.KRVE_CENTRAL_API_URL ||
+  process.env.NEXT_PUBLIC_KRVE_CENTRAL_API_URL ||
+  "http://localhost:4000";
 
-type RouteContext = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-function getConfig() {
-  const baseUrl = (
-    process.env.KRVE_CENTRAL_API_URL ||
-    process.env.KRVE_API_URL ||
-    "https://krve-central-api.badalk210304-onl9.workers.dev"
-  ).replace(/\/+$/, "");
-
-  return {
-    baseUrl,
-    secret:
-      process.env.KEOS_API_SECRET?.trim(),
-  };
-}
-
-async function readResponse(
-  response: Response,
-) {
-  const text =
-    await response.text();
-
-  if (!text) {
-    return {
-      success: response.ok,
-    };
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return {
-      success: response.ok,
-      message: text,
-    };
-  }
+function centralUrl(path: string) {
+  return `${CENTRAL_API_URL.replace(/\/$/, "")}${path}`;
 }
 
 export async function GET(
-  request: NextRequest,
-  context: RouteContext,
+  _request: NextRequest,
+  context: {
+    params: Promise<{ id: string }>;
+  },
 ) {
   try {
-    const { id } =
-      await context.params;
+    const { id } = await context.params;
 
-    const {
-      baseUrl,
-      secret,
-    } = getConfig();
-
-    if (!secret) {
+    if (!id) {
       return NextResponse.json(
         {
-          success: false,
-          message:
-            "KEOS_API_SECRET is missing in Vercel Environment Variables.",
+          error: "Approval ID is required.",
         },
-        { status: 500 },
+        {
+          status: 400,
+        },
       );
     }
 
-    const response =
-      await fetch(
-        `${baseUrl}/keos/approvals/${encodeURIComponent(id)}`,
-        {
-          method: "GET",
-          headers: {
-            Accept:
-              "application/json",
-            "X-KEOS-API-Key":
-              secret,
-          },
-          cache: "no-store",
-        },
-      );
-
-    const data =
-      await readResponse(response);
-
-    return NextResponse.json(
-      data,
+    const response = await fetch(
+      centralUrl(
+        `/api/keos/approvals/${encodeURIComponent(id)}`,
+      ),
       {
-        status:
-          response.status,
+        method: "GET",
+        cache: "no-store",
         headers: {
-          "Cache-Control":
-            "no-store",
+          Accept: "application/json",
         },
       },
     );
+
+    const text = await response.text();
+
+    let data: unknown = null;
+
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = {
+        error:
+          text ||
+          "Invalid response from KRVE Central API.",
+      };
+    }
+
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          error:
+            typeof data === "object" &&
+            data !== null &&
+            "error" in data
+              ? String(
+                  (data as { error?: unknown }).error ??
+                    `KRVE Central API returned ${response.status}`,
+                )
+              : `KRVE Central API returned ${response.status}`,
+          status: response.status,
+          data,
+        },
+        {
+          status: response.status,
+        },
+      );
+    }
+
+    return NextResponse.json(data, {
+      status: 200,
+    });
   } catch (error) {
+    console.error(
+      "KEOS_APPROVAL_DETAIL_PROXY_ERROR",
+      error,
+    );
+
     return NextResponse.json(
       {
-        success: false,
-        message:
+        error:
           error instanceof Error
             ? error.message
-            : "Unable to load approval.",
+            : "Unable to connect to KRVE Central API.",
       },
-      { status: 500 },
+      {
+        status: 500,
+      },
     );
   }
 }
