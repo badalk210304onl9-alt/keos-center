@@ -64,6 +64,7 @@ type Product = {
   description: string | null;
 
   category: ProductCategory;
+  subcategory?: string | null;
 
   price: number;
   compareAtPrice: number | null;
@@ -120,6 +121,7 @@ type ProductFormState = {
   description: string;
 
   category: ProductCategory;
+  subcategory: string;
 
   price: string;
   compareAtPrice: string;
@@ -185,6 +187,45 @@ const categoryOptions: Array<{
   },
 ];
 
+const subcategoryOptions: Record<ProductCategory, Array<{ value: string; label: string }>> = {
+  menswear: [
+    { value: "shirts", label: "Shirts" },
+    { value: "t-shirts", label: "T-Shirts" },
+    { value: "trousers", label: "Trousers" },
+    { value: "jeans", label: "Jeans" },
+    { value: "jackets", label: "Jackets" },
+    { value: "blazers", label: "Blazers" },
+    { value: "co-ord-sets", label: "Co-ord Sets" },
+  ],
+  womenswear: [
+    { value: "tops", label: "Tops" },
+    { value: "shirts", label: "Shirts" },
+    { value: "dresses", label: "Dresses" },
+    { value: "trousers", label: "Trousers" },
+    { value: "jeans", label: "Jeans" },
+    { value: "co-ord-sets", label: "Co-ord Sets" },
+    { value: "ethnic-wear", label: "Ethnic Wear" },
+  ],
+  kidswear: [
+    { value: "t-shirts", label: "T-Shirts" },
+    { value: "shirts", label: "Shirts" },
+    { value: "bottomwear", label: "Bottomwear" },
+    { value: "sets", label: "Sets" },
+  ],
+  accessories: [
+    { value: "belts", label: "Belts" },
+    { value: "bags", label: "Bags" },
+    { value: "wallets", label: "Wallets" },
+    { value: "caps", label: "Caps" },
+  ],
+  footwear: [
+    { value: "sneakers", label: "Sneakers" },
+    { value: "formal-shoes", label: "Formal Shoes" },
+    { value: "sandals", label: "Sandals" },
+    { value: "boots", label: "Boots" },
+  ],
+};
+
 const statusOptions: Array<{
   value: ProductStatus;
   label: string;
@@ -211,6 +252,7 @@ const initialFormState: ProductFormState = {
   description: "",
 
   category: "menswear",
+  subcategory: "shirts",
 
   price: "",
   compareAtPrice: "",
@@ -334,6 +376,7 @@ function productToFormState(
 
     category:
       product.category,
+    subcategory: product.subcategory ?? "",
 
     price:
       String(product.price),
@@ -999,6 +1042,8 @@ export default function ProductsManagement() {
 
         category:
           form.category,
+        subcategory:
+          form.subcategory || null,
 
         price:
           Number(form.price),
@@ -1960,14 +2005,21 @@ function ProductFormModal({
                     options={
                       categoryOptions
                     }
-                    onChange={(
-                      value,
-                    ) =>
+                    onChange={(value) => {
+                      const nextCategory = value as ProductCategory;
+                      onChange("category", nextCategory);
                       onChange(
-                        "category",
-                        value as ProductCategory,
-                      )
-                    }
+                        "subcategory",
+                        subcategoryOptions[nextCategory][0]?.value ?? "",
+                      );
+                    }}
+                  />
+
+                  <SelectInput
+                    label="Subcategory"
+                    value={form.subcategory}
+                    options={subcategoryOptions[form.category]}
+                    onChange={(value) => onChange("subcategory", value)}
                   />
 
                   <TextField
