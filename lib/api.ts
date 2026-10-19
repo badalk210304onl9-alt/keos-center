@@ -1,8 +1,3 @@
-/* =========================================================
-   KRVE CENTRAL API CLIENT
-   Used by the KRVE customer-facing website
-========================================================= */
-
 export type ProductCategory =
   | "menswear"
   | "womenswear"
@@ -14,6 +9,14 @@ export type ProductStatus =
   | "draft"
   | "published"
   | "archived";
+
+export type InventoryTransactionType =
+  | "opening"
+  | "purchase"
+  | "sale"
+  | "return"
+  | "adjustment"
+  | "damage";
 
 export type KrveProduct = {
   id: string;
@@ -29,12 +32,10 @@ export type KrveProduct = {
 
   price: number;
   compareAtPrice: number | null;
-
   currency: string;
 
   imageUrl: string;
   image: string;
-
   gallery: string[];
 
   sizes: string[];
@@ -54,27 +55,113 @@ export type KrveProduct = {
   updatedAt: string;
 };
 
-export type ProductsPagination = {
-  total: number;
-  limit: number;
-  offset: number;
-  hasMore?: boolean;
+export type ProductInput = {
+  id?: string;
+  slug?: string;
+
+  name: string;
+
+  shortDescription?: string;
+  description?: string;
+
+  category: ProductCategory;
+  subcategory?: string | null;
+
+  price: number;
+  compareAtPrice?: number | null;
+
+  currency?: string;
+
+  imageUrl: string;
+  gallery?: string[];
+
+  sizes?: string[];
+  colours?: string[];
+
+  sku?: string | null;
+
+  stockQuantity?: number;
+
+  featured?: boolean;
+  newArrival?: boolean;
+
+  status?: ProductStatus;
 };
 
-export type ProductsResult = {
-  products: KrveProduct[];
-  pagination: ProductsPagination;
-};
+export type ProductUpdateInput =
+  Partial<ProductInput>;
 
-export type ProductQuery = {
+export type ProductFilters = {
   category?: ProductCategory;
   subcategory?: string;
   status?: ProductStatus;
   search?: string;
-  featured?: boolean;
-  newArrival?: boolean;
   limit?: number;
   offset?: number;
+};
+
+export type Pagination = {
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export type ProductListData = {
+  products: KrveProduct[];
+  pagination: Pagination;
+};
+
+export type InventoryUpdateInput = {
+  quantity: number;
+
+  transactionType?:
+    InventoryTransactionType;
+
+  note?: string;
+  referenceId?: string;
+  createdBy?: string;
+};
+
+export type InventoryUpdateResult = {
+  productId: string;
+  previousQuantity: number;
+  quantityChange: number;
+  newQuantity: number;
+
+  transactionType:
+    InventoryTransactionType;
+};
+
+export type InventoryTransaction = {
+  id: string;
+  product_id: string;
+
+  transaction_type:
+    InventoryTransactionType;
+
+  quantity_change: number;
+  previous_quantity: number;
+  new_quantity: number;
+
+  reference_id: string | null;
+  note: string | null;
+  created_by: string | null;
+
+  created_at: string;
+};
+
+export type InventoryHistoryData = {
+  productId: string;
+  currentStock: number;
+  transactions: InventoryTransaction[];
+};
+
+export type HealthData = {
+  application: string;
+  environment: string;
+  database: string;
+  products: number;
+  timestamp: string;
 };
 
 type ApiSuccess<T> = {
@@ -88,156 +175,109 @@ type ApiFailure = {
   code?: string;
 };
 
-export type ApiResponse<T> =
+type ApiResponse<T> =
   | ApiSuccess<T>
   | ApiFailure;
 
-/* =========================================================
-   API URL
-========================================================= */
+type RequestOptions = {
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  body?: unknown;
+  actorId?: string;
+};
 
-function getApiUrl() {
-  const apiUrl =
-    process.env.KRVE_API_URL?.trim() ||
-    process.env.NEXT_PUBLIC_KRVE_API_URL?.trim() ||
-    process.env.KRVE_CENTRAL_API_URL?.trim() ||
-    process.env.NEXT_PUBLIC_KRVE_CENTRAL_API_URL?.trim();
+export class KrveApiError extends Error {
+  status: number;
+  code?: string;
 
-  if (!apiUrl) {
+  constructor(
+    message: string,
+    status: number,
+    code?: string,
+  ) {
+    super(message);
+
+    this.name = "KrveApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+function getRequiredEnvironmentVariable(
+  name: string,
+) {
+  const value =
+    process.env[name]?.trim();
+
+  if (!value) {
     throw new Error(
-      "KRVE API URL is missing. Add KRVE_API_URL in the Vercel environment variables.",
+      `Missing required environment variable: ${name}`,
     );
   }
 
-  return apiUrl.replace(
-    /\/+$/,
-    "",
+  return value;
+}
+
+function getApiUrl() {
+  return getRequiredEnvironmentVariable(
+    "KRVE_API_URL",
+  ).replace(/\/+$/, "");
+}
+
+function getKeosApiSecret() {
+  return getRequiredEnvironmentVariable(
+    "KEOS_API_SECRET",
   );
 }
 
-/* =========================================================
-   QUERY HELPERS
-========================================================= */
-
 function createQueryString(
-  query: ProductQuery,
+  values: Record<
+    string,
+    string | number | boolean | undefined
+  >,
 ) {
   const parameters =
     new URLSearchParams();
 
-  if (query.category) {
-    parameters.set(
-      "category",
-      query.category,
-    );
-  }
+  Object.entries(values).forEach(
+    ([key, value]) => {
+      if (
+        value === undefined ||
+        value === ""
+      ) {
+        return;
+      }
 
-  if (query.subcategory?.trim()) {
-    parameters.set(
-      "subcategory",
-      query.subcategory.trim(),
-    );
-  }
+      parameters.set(
+        key,
+        String(value),
+      );
+    },
+  );
 
-  if (query.status) {
-    parameters.set(
-      "status",
-      query.status,
-    );
-  }
+  const query =
+    parameters.toString();
 
-  if (query.search?.trim()) {
-    parameters.set(
-      "search",
-      query.search.trim(),
-    );
-  }
-
-  if (
-    typeof query.featured ===
-    "boolean"
-  ) {
-    parameters.set(
-      "featured",
-      query.featured
-        ? "true"
-        : "false",
-    );
-  }
-
-  if (
-    typeof query.newArrival ===
-    "boolean"
-  ) {
-    parameters.set(
-      "newArrival",
-      query.newArrival
-        ? "true"
-        : "false",
-    );
-  }
-
-  if (
-    typeof query.limit ===
-      "number" &&
-    Number.isFinite(
-      query.limit,
-    )
-  ) {
-    parameters.set(
-      "limit",
-      String(
-        Math.max(
-          1,
-          Math.floor(
-            query.limit,
-          ),
-        ),
-      ),
-    );
-  }
-
-  if (
-    typeof query.offset ===
-      "number" &&
-    Number.isFinite(
-      query.offset,
-    )
-  ) {
-    parameters.set(
-      "offset",
-      String(
-        Math.max(
-          0,
-          Math.floor(
-            query.offset,
-          ),
-        ),
-      ),
-    );
-  }
-
-  return parameters.toString();
+  return query
+    ? `?${query}`
+    : "";
 }
 
-/* =========================================================
-   RESPONSE HELPERS
-========================================================= */
-
-async function readApiResponse<T>(
+async function parseApiResponse<T>(
   response: Response,
 ): Promise<T> {
   let result:
     | ApiResponse<T>
-    | null = null;
+    | undefined;
 
   try {
     result =
       (await response.json()) as
         ApiResponse<T>;
   } catch {
-    throw new Error(
-      "KRVE Central API returned an invalid response.",
+    throw new KrveApiError(
+      "Central API returned an invalid response.",
+      response.status,
+      "INVALID_API_RESPONSE",
     );
   }
 
@@ -246,890 +286,399 @@ async function readApiResponse<T>(
     !result.success
   ) {
     const message =
-      result &&
-      !result.success
-        ? result.message
-        : `KRVE API request failed with status ${response.status}.`;
+      result.success
+        ? "The request could not be completed."
+        : result.message;
 
-    throw new Error(
+    const code =
+      result.success
+        ? undefined
+        : result.code;
+
+    throw new KrveApiError(
       message,
+      response.status,
+      code,
     );
   }
 
   return result.data;
 }
 
-/* =========================================================
-   NORMALISATION HELPERS
-========================================================= */
-
-function normaliseStringArray(
-  value: unknown,
-): string[] {
-  if (
-    !Array.isArray(
-      value,
-    )
-  ) {
-    return [];
-  }
-
-  return value
-    .filter(
-      (
-        item,
-      ): item is string =>
-        typeof item ===
-          "string" &&
-        item.trim().length >
-          0,
-    )
-    .map(
-      (item) =>
-        item.trim(),
-    );
-}
-
-function normaliseCategory(
-  category: unknown,
-): ProductCategory {
-  switch (category) {
-    case "womenswear":
-      return "womenswear";
-
-    case "kidswear":
-      return "kidswear";
-
-    case "accessories":
-      return "accessories";
-
-    case "footwear":
-      return "footwear";
-
-    case "menswear":
-    default:
-      return "menswear";
-  }
-}
-
-function normaliseStatus(
-  status: unknown,
-): ProductStatus {
-  switch (status) {
-    case "published":
-      return "published";
-
-    case "archived":
-      return "archived";
-
-    case "draft":
-    default:
-      return "draft";
-  }
-}
-
-function normaliseImageUrl(
-  value: unknown,
-): string {
-  if (
-    typeof value !==
-      "string" ||
-    !value.trim()
-  ) {
-    return "";
-  }
-
-  return value.trim();
-}
-
-function normaliseProduct(
-  product:
-    Partial<KrveProduct>,
-): KrveProduct {
-  const rawGallery =
-    normaliseStringArray(
-      product.gallery,
-    );
-
-  const imageUrl =
-    normaliseImageUrl(
-      product.imageUrl ||
-        product.image ||
-        rawGallery[0] ||
-        "",
-    );
-
-  const gallery =
-    [...rawGallery];
+async function keosRequest<T>(
+  endpoint: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  /*
+    Security protection:
+    Is file ko Client Component me import
+    nahi karna hai.
+  */
 
   if (
-    imageUrl &&
-    !gallery.includes(
-      imageUrl,
-    )
+    typeof window !== "undefined"
   ) {
-    gallery.unshift(
-      imageUrl,
+    throw new Error(
+      "KEOS API client can only run on the server.",
     );
   }
 
-  const stockQuantity =
-    Number.isFinite(
-      Number(
-        product.stockQuantity,
-      ),
-    )
-      ? Math.max(
-          0,
-          Math.floor(
-            Number(
-              product.stockQuantity,
-            ),
-          ),
-        )
-      : 0;
+  const method =
+    options.method ?? "GET";
 
-  const price =
-    Number.isFinite(
-      Number(
-        product.price,
-      ),
-    )
-      ? Number(
-          product.price,
-        )
-      : 0;
+  const headers =
+    new Headers({
+      Accept: "application/json",
+      "X-KEOS-API-Key":
+        getKeosApiSecret(),
+    });
 
-  let compareAtPrice:
-    | number
-    | null =
-    null;
+  if (options.actorId) {
+    headers.set(
+      "X-KEOS-Actor-ID",
+      options.actorId,
+    );
+  }
 
   if (
-    product.compareAtPrice !==
-      null &&
-    product.compareAtPrice !==
-      undefined &&
-    Number.isFinite(
-      Number(
-        product.compareAtPrice,
-      ),
-    )
+    options.body !== undefined
   ) {
-    compareAtPrice =
-      Number(
-        product.compareAtPrice,
-      );
-  }
-
-  const id =
-    String(
-      product.id || "",
-    ).trim();
-
-  const slug =
-    String(
-      product.slug ||
-        product.id ||
-        "",
-    ).trim();
-
-  return {
-    id,
-
-    slug,
-
-    name:
-      String(
-        product.name ||
-          "KRVE Product",
-      ).trim(),
-
-    shortDescription:
-      product.shortDescription ??
-      null,
-
-    description:
-      product.description ??
-      null,
-
-    category:
-      normaliseCategory(
-        product.category,
-      ),
-
-    subcategory:
-      typeof (product as Partial<KrveProduct> & { subcategory?: unknown }).subcategory === "string" &&
-      (product as Partial<KrveProduct> & { subcategory?: string }).subcategory?.trim()
-        ? (product as Partial<KrveProduct> & { subcategory?: string }).subcategory!.trim()
-        : null,
-
-    price,
-
-    compareAtPrice,
-
-    currency:
-      String(
-        product.currency ||
-          "INR",
-      )
-        .trim()
-        .toUpperCase(),
-
-    imageUrl,
-
-    image:
-      imageUrl,
-
-    gallery,
-
-    sizes:
-      normaliseStringArray(
-        product.sizes,
-      ),
-
-    colours:
-      normaliseStringArray(
-        product.colours,
-      ),
-
-    sku:
-      product.sku ??
-      null,
-
-    stockQuantity,
-
-    inStock:
-      typeof product.inStock ===
-      "boolean"
-        ? product.inStock
-        : stockQuantity > 0,
-
-    featured:
-      Boolean(
-        product.featured,
-      ),
-
-    newArrival:
-      Boolean(
-        product.newArrival,
-      ),
-
-    status:
-      normaliseStatus(
-        product.status,
-      ),
-
-    createdAt:
-      product.createdAt ||
-      "",
-
-    updatedAt:
-      product.updatedAt ||
-      "",
-  };
-}
-
-/* =========================================================
-   PRODUCT LIST
-========================================================= */
-
-export async function getProducts(
-  query: ProductQuery = {},
-): Promise<ProductsResult> {
-  const queryString =
-    createQueryString(
-      query,
+    headers.set(
+      "Content-Type",
+      "application/json",
     );
-
-  const endpoint =
-    `${getApiUrl()}/api/products${
-      queryString
-        ? `?${queryString}`
-        : ""
-    }`;
+  }
 
   const response =
     await fetch(
-      endpoint,
+      `${getApiUrl()}${endpoint}`,
       {
-        method:
-          "GET",
+        method,
+        headers,
+
+        body:
+          options.body === undefined
+            ? undefined
+            : JSON.stringify(
+                options.body,
+              ),
+
+        cache: "no-store",
+      },
+    );
+
+  return parseApiResponse<T>(
+    response,
+  );
+}
+
+async function publicRequest<T>(
+  endpoint: string,
+): Promise<T> {
+  const response =
+    await fetch(
+      `${getApiUrl()}${endpoint}`,
+      {
+        method: "GET",
 
         headers: {
-          Accept:
-            "application/json",
+          Accept: "application/json",
         },
 
-        cache:
-          "no-store",
+        cache: "no-store",
       },
     );
 
-  const data =
-    await readApiResponse<ProductsResult>(
-      response,
-    );
-
-  const products =
-    Array.isArray(
-      data.products,
-    )
-      ? data.products.map(
-          normaliseProduct,
-        )
-      : [];
-
-  const total =
-    Number.isFinite(
-      Number(
-        data.pagination?.total,
-      ),
-    )
-      ? Number(
-          data.pagination.total,
-        )
-      : products.length;
-
-  const limit =
-    Number.isFinite(
-      Number(
-        data.pagination?.limit,
-      ),
-    )
-      ? Number(
-          data.pagination.limit,
-        )
-      : query.limit ||
-        100;
-
-  const offset =
-    Number.isFinite(
-      Number(
-        data.pagination?.offset,
-      ),
-    )
-      ? Number(
-          data.pagination.offset,
-        )
-      : query.offset ||
-        0;
-
-  const hasMore =
-    typeof data.pagination
-      ?.hasMore ===
-    "boolean"
-      ? data.pagination.hasMore
-      : offset +
-          products.length <
-        total;
-
-  return {
-    products,
-
-    pagination: {
-      total,
-      limit,
-      offset,
-      hasMore,
-    },
-  };
-}
-
-/* =========================================================
-   ALL PUBLISHED PRODUCTS
-========================================================= */
-
-export async function getAllProducts(): Promise<
-  KrveProduct[]
-> {
-  const result =
-    await getProducts({
-      status:
-        "published",
-
-      limit:
-        100,
-
-      offset:
-        0,
-    });
-
-  return result.products.filter(
-    (product) =>
-      product.status ===
-      "published",
+  return parseApiResponse<T>(
+    response,
   );
 }
 
 /* =========================================================
-   HOMEPAGE PRODUCTS
-   ---------------------------------------------------------
-   Used by the customer-facing homepage.
-
-   Priority:
-   1. New arrivals
-   2. Featured products
-   3. Latest published products
-
-   This function NEVER requires the product to have
-   newArrival=true in order to appear on the homepage.
+   HEALTH
 ========================================================= */
 
-export async function getHomepageProducts(
-  limit = 4,
-): Promise<KrveProduct[]> {
-  const safeLimit =
-    Math.max(
-      1,
-      Math.floor(
-        limit,
-      ),
-    );
+export async function getKrveApiHealth() {
+  return publicRequest<HealthData>(
+    "/api/health",
+  );
+}
 
-  const result =
-    await getProducts({
+/* =========================================================
+   PRODUCTS
+========================================================= */
+
+export async function getKeosProducts(
+  filters: ProductFilters = {},
+) {
+  const query =
+    createQueryString({
+      category:
+        filters.category,
+
+      subcategory:
+        filters.subcategory,
+
       status:
-        "published",
+        filters.status,
+
+      search:
+        filters.search?.trim(),
 
       limit:
-        100,
+        filters.limit ?? 100,
 
       offset:
-        0,
+        filters.offset ?? 0,
     });
 
-  const publishedProducts =
-    result.products.filter(
-      (product) =>
-        product.status ===
-        "published",
+  return keosRequest<ProductListData>(
+    `/api/keos/products${query}`,
+  );
+}
+
+export async function getKeosProduct(
+  idOrSlug: string,
+) {
+  const value =
+    idOrSlug.trim();
+
+  if (!value) {
+    throw new Error(
+      "Product ID or slug is required.",
     );
+  }
+
+  return keosRequest<KrveProduct>(
+    `/api/keos/products/${encodeURIComponent(value)}`,
+  );
+}
+
+export async function createKeosProduct(
+  input: ProductInput,
+  actorId?: string,
+) {
+  return keosRequest<KrveProduct>(
+    "/api/keos/products",
+    {
+      method: "POST",
+      body: input,
+      actorId,
+    },
+  );
+}
+
+export async function updateKeosProduct(
+  idOrSlug: string,
+  input: ProductUpdateInput,
+  actorId?: string,
+) {
+  const value =
+    idOrSlug.trim();
+
+  if (!value) {
+    throw new Error(
+      "Product ID or slug is required.",
+    );
+  }
+
+  return keosRequest<KrveProduct>(
+    `/api/keos/products/${encodeURIComponent(value)}`,
+    {
+      method: "PATCH",
+      body: input,
+      actorId,
+    },
+  );
+}
+
+export async function deleteKeosProduct(
+  idOrSlug: string,
+  actorId?: string,
+) {
+  const value =
+    idOrSlug.trim();
+
+  if (!value) {
+    throw new Error(
+      "Product ID or slug is required.",
+    );
+  }
+
+  return keosRequest<{
+    id: string;
+    deleted: boolean;
+  }>(
+    `/api/keos/products/${encodeURIComponent(value)}`,
+    {
+      method: "DELETE",
+      actorId,
+    },
+  );
+}
+
+/* =========================================================
+   PRODUCT PUBLISHING
+========================================================= */
+
+export async function updateKeosProductStatus(
+  idOrSlug: string,
+  status: ProductStatus,
+  actorId?: string,
+) {
+  const value =
+    idOrSlug.trim();
+
+  if (!value) {
+    throw new Error(
+      "Product ID or slug is required.",
+    );
+  }
+
+  return keosRequest<KrveProduct>(
+    `/api/keos/products/${encodeURIComponent(value)}/status`,
+    {
+      method: "PATCH",
+
+      body: {
+        status,
+      },
+
+      actorId,
+    },
+  );
+}
+
+export async function publishKeosProduct(
+  idOrSlug: string,
+  actorId?: string,
+) {
+  return updateKeosProductStatus(
+    idOrSlug,
+    "published",
+    actorId,
+  );
+}
+
+export async function moveKeosProductToDraft(
+  idOrSlug: string,
+  actorId?: string,
+) {
+  return updateKeosProductStatus(
+    idOrSlug,
+    "draft",
+    actorId,
+  );
+}
+
+export async function archiveKeosProduct(
+  idOrSlug: string,
+  actorId?: string,
+) {
+  return updateKeosProductStatus(
+    idOrSlug,
+    "archived",
+    actorId,
+  );
+}
+
+/* =========================================================
+   INVENTORY
+========================================================= */
+
+export async function updateKeosInventory(
+  idOrSlug: string,
+  input: InventoryUpdateInput,
+  actorId?: string,
+) {
+  const value =
+    idOrSlug.trim();
+
+  if (!value) {
+    throw new Error(
+      "Product ID or slug is required.",
+    );
+  }
 
   if (
-    publishedProducts.length ===
-    0
+    !Number.isFinite(
+      Number(input.quantity),
+    )
   ) {
-    return [];
+    throw new Error(
+      "A valid inventory quantity is required.",
+    );
   }
 
-  const sortedProducts =
-    [...publishedProducts].sort(
-      (
-        first,
-        second,
-      ) => {
-        if (
-          first.newArrival !==
-          second.newArrival
-        ) {
-          return first.newArrival
-            ? -1
-            : 1;
-        }
-
-        if (
-          first.featured !==
-          second.featured
-        ) {
-          return first.featured
-            ? -1
-            : 1;
-        }
-
-        const firstDate =
-          new Date(
-            first.createdAt ||
-              0,
-          ).getTime();
-
-        const secondDate =
-          new Date(
-            second.createdAt ||
-              0,
-          ).getTime();
-
-        return (
-          secondDate -
-          firstDate
-        );
-      },
-    );
-
-  return sortedProducts.slice(
-    0,
-    safeLimit,
+  return keosRequest<InventoryUpdateResult>(
+    `/api/keos/products/${encodeURIComponent(value)}/inventory`,
+    {
+      method: "POST",
+      body: input,
+      actorId,
+    },
   );
 }
 
-/* =========================================================
-   NEW ARRIVALS
-========================================================= */
-
-export async function getNewArrivalProducts(
-  limit = 4,
-): Promise<KrveProduct[]> {
-  const safeLimit =
-    Math.max(
-      1,
-      Math.floor(
-        limit,
-      ),
-    );
-
-  const result =
-    await getProducts({
-      status:
-        "published",
-
-      newArrival:
-        true,
-
-      limit:
-        safeLimit,
-
-      offset:
-        0,
-    });
-
-  return result.products
-    .filter(
-      (product) =>
-        product.status ===
-          "published" &&
-        product.newArrival,
-    )
-    .slice(
-      0,
-      safeLimit,
-    );
-}
-
-/* =========================================================
-   FEATURED PRODUCTS
-========================================================= */
-
-export async function getFeaturedProducts(
-  limit = 8,
-): Promise<KrveProduct[]> {
-  const safeLimit =
-    Math.max(
-      1,
-      Math.floor(
-        limit,
-      ),
-    );
-
-  const result =
-    await getProducts({
-      status:
-        "published",
-
-      featured:
-        true,
-
-      limit:
-        safeLimit,
-
-      offset:
-        0,
-    });
-
-  return result.products
-    .filter(
-      (product) =>
-        product.status ===
-          "published" &&
-        product.featured,
-    )
-    .slice(
-      0,
-      safeLimit,
-    );
-}
-
-/* =========================================================
-   CATEGORY PRODUCTS
-========================================================= */
-
-export async function getProductsByCategory(
-  category:
-    ProductCategory,
-  limit = 100,
-): Promise<KrveProduct[]> {
-  const safeLimit =
-    Math.max(
-      1,
-      Math.floor(
-        limit,
-      ),
-    );
-
-  const result =
-    await getProducts({
-      category,
-
-      status:
-        "published",
-
-      limit:
-        safeLimit,
-
-      offset:
-        0,
-    });
-
-  return result.products.filter(
-    (product) =>
-      product.status ===
-      "published",
-  );
-}
-
-/* =========================================================
-   SUBCATEGORY PRODUCTS
-========================================================= */
-
-export async function getProductsBySubcategory(
-  subcategory: string,
-  category?: ProductCategory,
-  limit = 100,
-): Promise<KrveProduct[]> {
-  const cleanedSubcategory = subcategory.trim();
-
-  if (!cleanedSubcategory) {
-    return [];
-  }
-
-  const safeLimit = Math.max(1, Math.floor(limit));
-  const result = await getProducts({
-    ...(category ? { category } : {}),
-    subcategory: cleanedSubcategory,
-    status: "published",
-    limit: safeLimit,
-    offset: 0,
-  });
-
-  return result.products.filter(
-    (product) =>
-      product.status === "published" &&
-      (product.subcategory || "").trim().toLowerCase() ===
-        cleanedSubcategory.toLowerCase(),
-  );
-}
-
-/* =========================================================
-   SEARCH PRODUCTS
-========================================================= */
-
-export async function searchProducts(
-  search: string,
-  limit = 20,
-): Promise<KrveProduct[]> {
-  const cleanedSearch =
-    search.trim();
-
-  if (!cleanedSearch) {
-    return [];
-  }
-
-  const safeLimit =
-    Math.max(
-      1,
-      Math.floor(
-        limit,
-      ),
-    );
-
-  const result =
-    await getProducts({
-      search:
-        cleanedSearch,
-
-      status:
-        "published",
-
-      limit:
-        safeLimit,
-
-      offset:
-        0,
-    });
-
-  return result.products.filter(
-    (product) =>
-      product.status ===
-      "published",
-  );
-}
-
-/* =========================================================
-   PRODUCT MATCH HELPER
-========================================================= */
-
-function productMatchesIdentifier(
-  product: KrveProduct,
-  identifier: string,
-) {
-  const expected =
-    identifier
-      .trim()
-      .toLowerCase();
-
-  const productSlug =
-    String(
-      product.slug || "",
-    )
-      .trim()
-      .toLowerCase();
-
-  const productId =
-    String(
-      product.id || "",
-    )
-      .trim()
-      .toLowerCase();
-
-  return (
-    productSlug ===
-      expected ||
-    productId ===
-      expected
-  );
-}
-
-/* =========================================================
-   SINGLE PRODUCT BY SLUG
-========================================================= */
-
-export async function getProductBySlug(
-  slug: string,
-): Promise<KrveProduct | null> {
-  const cleanedSlug =
-    decodeURIComponent(
-      slug,
-    ).trim();
-
-  if (!cleanedSlug) {
-    return null;
-  }
-
-  /*
-   * First try the direct Central API endpoint.
-   */
-
-  try {
-    const endpoint =
-      `${getApiUrl()}/api/products/${encodeURIComponent(
-        cleanedSlug,
-      )}`;
-
-    const response =
-      await fetch(
-        endpoint,
-        {
-          method:
-            "GET",
-
-          headers: {
-            Accept:
-              "application/json",
-          },
-
-          cache:
-            "no-store",
-        },
-      );
-
-    if (
-      response.ok
-    ) {
-      try {
-        const data =
-          await readApiResponse<{
-            product?: KrveProduct;
-          }>(
-            response,
-          );
-
-        const product =
-          data.product;
-
-        if (
-          product
-        ) {
-          return normaliseProduct(
-            product,
-          );
-        }
-      } catch {
-        /*
-         * Continue to the published-products
-         * fallback below.
-         */
-      }
-    }
-  } catch {
-    /*
-     * Continue to the published-products
-     * fallback below.
-     */
-  }
-
-  /*
-   * Fallback:
-   * Fetch the same published products used
-   * by the collections page and locate the
-   * exact product by slug or ID.
-   */
-
-  try {
-    const result =
-      await getProducts({
-        status:
-          "published",
-
-        limit:
-          100,
-
-        offset:
-          0,
-      });
-
-    const product =
-      result.products.find(
-        (item) =>
-          productMatchesIdentifier(
-            item,
-            cleanedSlug,
-          ),
-      );
-
-    if (
-      product
-    ) {
-      return product;
-    }
-  } catch (
-    error
-  ) {
-    console.error(
-      "KRVE_PRODUCT_LOOKUP_ERROR",
-      error,
-    );
-  }
-
-  return null;
-}
-
-/* =========================================================
-   SINGLE PRODUCT BY ID OR SLUG
-========================================================= */
-
-export async function getProduct(
+export async function getKeosInventoryHistory(
   idOrSlug: string,
-): Promise<KrveProduct | null> {
-  return getProductBySlug(
-    idOrSlug,
+) {
+  const value =
+    idOrSlug.trim();
+
+  if (!value) {
+    throw new Error(
+      "Product ID or slug is required.",
+    );
+  }
+
+  return keosRequest<InventoryHistoryData>(
+    `/api/keos/products/${encodeURIComponent(value)}/inventory`,
   );
+}
+
+/* =========================================================
+   PRODUCT HELPERS
+========================================================= */
+
+export function formatProductPrice(
+  price: number,
+  currency = "INR",
+) {
+  return new Intl.NumberFormat(
+    "en-IN",
+    {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    },
+  ).format(price);
+}
+
+export function getProductStatusLabel(
+  status: ProductStatus,
+) {
+  if (status === "published") {
+    return "Published";
+  }
+
+  if (status === "archived") {
+    return "Archived";
+  }
+
+  return "Draft";
+}
+
+export function getStockLabel(
+  stockQuantity: number,
+) {
+  if (stockQuantity <= 0) {
+    return "Out of stock";
+  }
+
+  if (stockQuantity <= 5) {
+    return "Low stock";
+  }
+
+  return "In stock";
 }
