@@ -59,6 +59,11 @@ export async function GET(
         | ProductStatus
         | null;
 
+    const subcategory =
+      searchParams.get(
+        "subcategory",
+      ) ?? undefined;
+
     const search =
       searchParams.get(
         "search",
@@ -82,6 +87,9 @@ export async function GET(
       await getKeosProducts({
         category:
           category || undefined,
+
+        subcategory:
+          subcategory || undefined,
 
         status:
           status || undefined,
