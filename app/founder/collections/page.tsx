@@ -4,12 +4,33 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, CirclePlus,
   FolderTree, Layers3, LoaderCircle, Pencil, Plus, Search, Shirt,
-  Sparkles, Trash2, X,
+  Sparkles, Trash2, X, Package, RefreshCw,
 } from "lucide-react";
 
 type Subcategory = { id: string; name: string; active: boolean; sortOrder: number };
 type CategoryGroup = { id: string; name: string; active: boolean; sortOrder: number; subcategories: Subcategory[] };
 type MainCategory = { id: string; name: string; slug: string; active: boolean; sortOrder: number; groups: CategoryGroup[] };
+type CatalogueProduct = {
+  id: string;
+  name: string;
+  category: string;
+  subcategory: string;
+  image: string;
+  price: number;
+  currency: string;
+  status: string;
+  sku: string;
+  stockQuantity: number;
+};
+
+const normaliseKey = (value: unknown) => String(value ?? "").toLowerCase().trim().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "");
+const categoryKey = (value: unknown) => {
+  const key = normaliseKey(value);
+  if (["men", "mens", "menswear", "menswearclothing", "menwear", "mensclothing", "men'swear"].includes(key)) return "menswear";
+  if (["women", "womens", "womenswear", "womenswearclothing", "womenwear", "womensclothing", "women'swear"].includes(key)) return "womenswear";
+  if (["kids", "kid", "kidswear", "childrenswear", "children", "kidsclothing"].includes(key)) return "kidswear";
+  return key;
+};
 
 const starterCollections: MainCategory[] = [
   { id: "menswear", name: "Men's Wear", slug: "menswear", active: true, sortOrder: 1, groups: [
@@ -81,6 +102,9 @@ export default function ManageCollectionsPage() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const [apiReady, setApiReady] = useState(false);
+  const [products, setProducts] = useState<CatalogueProduct[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -100,6 +124,47 @@ export default function ManageCollectionsPage() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  async function loadProducts() {
+    setProductsLoading(true);
+    setProductsError("");
+    try {
+      const response = await fetch("/api/keos/products", { cache: "no-store" });
+      if (!response.ok) throw new Error(`Products API returned ${response.status}`);
+      const payload = await response.json();
+      const data = payload?.data?.products ?? payload?.products ?? payload?.data ?? [];
+      if (!Array.isArray(data)) throw new Error("Products response format is not recognised");
+      const mapped: CatalogueProduct[] = data.map((item: any) => ({
+        id: String(item.id ?? item._id ?? item.sku ?? item.name ?? Math.random()),
+        name: String(item.name ?? item.title ?? "Untitled product"),
+        category: String(item.category ?? item.mainCategory ?? ""),
+        subcategory: String(item.subcategory ?? item.subCategory ?? item.sub_category ?? ""),
+        image: String(item.imageUrl ?? item.image ?? item.thumbnail ?? item.primaryImage ?? item.images?.[0] ?? item.gallery?.[0] ?? ""),
+        price: Number(item.price ?? item.sellingPrice ?? 0),
+        currency: String(item.currency ?? "INR"),
+        status: String(item.status ?? (item.published ? "published" : "draft")),
+        sku: String(item.sku ?? "—"),
+        stockQuantity: Number(item.stockQuantity ?? item.stock ?? item.quantity ?? 0),
+      }));
+      setProducts(mapped);
+    } catch (error) {
+      setProductsError(error instanceof Error ? error.message : "Products could not be loaded");
+      setProducts([]);
+    } finally {
+      setProductsLoading(false);
+    }
+  }
+
+  useEffect(() => { void loadProducts(); }, []);
+
+  function productsForSubcategory(category: MainCategory, subcategory: Subcategory) {
+    const targetCategory = categoryKey(category.slug || category.name);
+    const targetSubcategory = normaliseKey(subcategory.name);
+    return products.filter((product) =>
+      categoryKey(product.category) === targetCategory &&
+      normaliseKey(product.subcategory) === targetSubcategory
+    );
+  }
 
   const selected = collections.find((item) => item.id === selectedId) ?? collections[0];
   const totalGroups = collections.reduce((sum, item) => sum + item.groups.length, 0);
@@ -195,7 +260,7 @@ export default function ManageCollectionsPage() {
   }
 
   return (
-      <div className="w-full min-w-0 bg-[#f5f7fb] text-slate-900">
+      <main className="min-h-screen w-full bg-[#f5f7fb] text-slate-900">
       <div className="mx-auto max-w-[1700px] px-4 py-6 sm:px-7 lg:px-10">
         <header className="mb-7 flex flex-col justify-between gap-5 rounded-[28px] bg-[#101216] px-6 py-7 text-white shadow-xl sm:flex-row sm:items-center sm:px-8">
           <div>
@@ -219,7 +284,7 @@ export default function ManageCollectionsPage() {
           <aside className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 p-5"><h2 className="font-semibold">Main categories</h2><p className="mt-1 text-sm text-slate-500">Choose a collection to manage.</p></div>
             <div className="space-y-2 p-3">
-              {collections.map((category) => <button key={category.id} onClick={() => setSelectedId(category.id)} className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${selectedId === category.id ? "border-amber-300 bg-amber-50" : "border-transparent hover:bg-slate-50"}`}><div className={`rounded-lg p-2 ${selectedId === category.id ? "bg-amber-200 text-amber-900" : "bg-slate-100 text-slate-600"}`}><Shirt size={18}/></div><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{category.name}</span><span className="mt-1 block text-xs text-slate-500">{category.groups.length} groups · {category.groups.reduce((n, g) => n + g.subcategories.length, 0)} subcategories</span></span><ChevronRight size={16} className="text-slate-400"/></button>)}
+              {collections.map((category) => <button key={category.id} onClick={() => setSelectedId(category.id)} className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${selectedId === category.id ? "border-amber-300 bg-amber-50" : "border-transparent hover:bg-slate-50"}`}><div className={`rounded-lg p-2 ${selectedId === category.id ? "bg-amber-200 text-amber-900" : "bg-slate-100 text-slate-600"}`}><Shirt size={18}/></div><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{category.name}</span><span className="mt-1 block text-xs text-slate-500">{products.filter((product) => categoryKey(product.category) === categoryKey(category.slug || category.name)).length} products · {category.groups.length} groups</span></span><ChevronRight size={16} className="text-slate-400"/></button>)}
               {!collections.length && <p className="p-3 text-sm text-slate-500">No categories yet. Add your first category.</p>}
             </div>
             {selected && <div className="border-t border-slate-100 p-4"><div className="flex items-center justify-between gap-3"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Selected status</span><button onClick={() => toggleActive("category", selected.id, selected.id)} className={`rounded-full px-3 py-1.5 text-xs font-bold ${selected.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"}`}>{selected.active ? "Active" : "Hidden"}</button></div><div className="mt-3 flex gap-2"><button onClick={() => setEditing({type:"category", categoryId:selected.id, itemId:selected.id, name:selected.name})} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium hover:bg-slate-50"><Pencil size={14}/> Rename</button><button onClick={() => deleteItem("category", selected.id, selected.id)} className="rounded-lg border border-red-100 px-3 py-2 text-red-600 hover:bg-red-50"><Trash2 size={15}/></button></div></div>}
@@ -228,7 +293,7 @@ export default function ManageCollectionsPage() {
           <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-col justify-between gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:p-6">
               <div><div className="text-xs font-bold uppercase tracking-[.2em] text-amber-700">Collection structure</div><h2 className="mt-2 text-2xl font-semibold">{selected?.name ?? "Select a category"}</h2><p className="mt-1 text-sm text-slate-500">Organise the customer-facing menu in the order you want.</p></div>
-              <div className="flex flex-wrap gap-2"><button onClick={() => { setNewGroupName(""); setShowAddGroup(true); }} disabled={!selected} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"><CirclePlus size={16}/> Add menu group</button></div>
+              <div className="flex flex-wrap gap-2"><button onClick={() => void loadProducts()} disabled={productsLoading} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"><RefreshCw size={15} className={productsLoading ? "animate-spin" : ""}/> Refresh products</button><button onClick={() => { setNewGroupName(""); setShowAddGroup(true); }} disabled={!selected} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"><CirclePlus size={16}/> Add menu group</button></div>
             </div>
             <div className="border-b border-slate-100 p-4 sm:px-6"><label className="flex max-w-md items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5"><Search size={17} className="text-slate-400"/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search groups or subcategories" className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"/></label></div>
             <div className="space-y-3 p-4 sm:p-6">
@@ -238,6 +303,13 @@ export default function ManageCollectionsPage() {
                 return <article key={group.id} className="overflow-hidden rounded-2xl border border-slate-200">
                   <div className="flex flex-wrap items-center gap-3 bg-slate-50 p-4"><button onClick={() => setExpandedGroups((current) => expanded ? current.filter((id) => id !== group.id) : [...current, group.id])} className="rounded-lg p-1 hover:bg-slate-200">{expanded ? <ChevronDown size={18}/> : <ChevronRight size={18}/>}</button><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{group.name}</h3><span className="rounded-full bg-white px-2.5 py-1 text-xs text-slate-500">{group.subcategories.length} items</span><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${group.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}>{group.active ? "Active" : "Hidden"}</span></div><p className="mt-1 text-xs text-slate-500">Menu group · Order {group.sortOrder}</p></div><div className="flex items-center gap-1"><button title="Move up" onClick={() => moveGroup(group.id, -1)} className="rounded-lg p-2 hover:bg-white"><ArrowUp size={15}/></button><button title="Move down" onClick={() => moveGroup(group.id, 1)} className="rounded-lg p-2 hover:bg-white"><ArrowDown size={15}/></button><button title="Rename group" onClick={() => setEditing({type:"group", categoryId:selected.id, itemId:group.id, name:group.name})} className="rounded-lg p-2 hover:bg-white"><Pencil size={15}/></button><button title="Toggle group" onClick={() => toggleActive("group", selected.id, group.id)} className="rounded-lg px-2 py-2 text-xs font-semibold hover:bg-white">{group.active ? "Hide" : "Show"}</button><button title="Delete group" onClick={() => deleteItem("group", selected.id, group.id)} className="rounded-lg p-2 text-red-600 hover:bg-red-50"><Trash2 size={15}/></button></div></div>
                   {expanded && <div className="p-3 sm:p-4"><div className="space-y-2">{group.subcategories.filter((item) => !search.trim() || item.name.toLowerCase().includes(search.trim().toLowerCase()) || group.name.toLowerCase().includes(search.trim().toLowerCase())).map((sub) => <div key={sub.id} className="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-3"><div className="rounded-lg bg-slate-100 p-2 text-slate-500"><Shirt size={16}/></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{sub.name}</p><p className="mt-0.5 text-xs text-slate-500">Order {sub.sortOrder}</p></div><button onClick={() => toggleActive("subcategory", selected.id, sub.id, group.id)} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${sub.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"}`}>{sub.active ? "Active" : "Hidden"}</button><button title="Rename subcategory" onClick={() => setEditing({type:"subcategory", categoryId:selected.id, groupId:group.id, itemId:sub.id, name:sub.name})} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"><Pencil size={15}/></button><button title="Delete subcategory" onClick={() => deleteItem("subcategory", selected.id, sub.id, group.id)} className="rounded-lg p-2 text-red-600 hover:bg-red-50"><Trash2 size={15}/></button></div>)}
+                  {group.subcategories.filter((item) => !search.trim() || item.name.toLowerCase().includes(search.trim().toLowerCase()) || group.name.toLowerCase().includes(search.trim().toLowerCase())).map((sub) => {
+                    const matchedProducts = productsForSubcategory(selected, sub);
+                    return <div key={`${sub.id}-products`} className="ml-2 mt-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-3 sm:ml-10">
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2 text-sm font-semibold text-slate-700"><Package size={16} className="text-amber-700"/> {sub.name} products</div><span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-500">{productsLoading ? "Loading…" : `${matchedProducts.length} product${matchedProducts.length === 1 ? "" : "s"}`}</span></div>
+                      {productsLoading ? <div className="text-xs text-slate-500">Loading products from KEOS…</div> : productsError ? <div className="text-xs text-red-600">Products load nahi hue: {productsError}</div> : matchedProducts.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{matchedProducts.map((product) => <div key={product.id} className="flex min-w-0 gap-3 rounded-xl border border-slate-200 bg-white p-3">{product.image ? <img src={product.image} alt={product.name} className="h-20 w-16 shrink-0 rounded-lg bg-slate-100 object-cover" /> : <div className="flex h-20 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400"><Shirt size={22}/></div>}<div className="min-w-0 flex-1"><p className="line-clamp-2 text-sm font-semibold text-slate-900">{product.name}</p><p className="mt-1 text-xs text-slate-500">SKU: {product.sku || "—"}</p><div className="mt-1 flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-slate-900">{new Intl.NumberFormat("en-IN", { style: "currency", currency: /^[A-Z]{3}$/.test(product.currency) ? product.currency : "INR", maximumFractionDigits: 0 }).format(Number.isFinite(product.price) ? product.price : 0)}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${product.status.toLowerCase() === "published" ? "bg-emerald-100 text-emerald-700" : product.status.toLowerCase() === "archived" ? "bg-slate-200 text-slate-600" : "bg-amber-100 text-amber-700"}`}>{product.status}</span></div><p className="mt-1 text-xs text-slate-500">Stock: {product.stockQuantity}</p></div></div>)}</div> : <p className="text-xs leading-5 text-slate-500">Abhi is subcategory mein koi product assign nahi hai. Product add karte waqt category aur subcategory ka naam isi se match hona chahiye.</p>}
+                    </div>;
+                  })}
                   {showAddSubcategory === group.id ? <form onSubmit={(event) => { event.preventDefault(); addSubcategory(group.id); }} className="mt-3 flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50/50 p-3 sm:flex-row"><input autoFocus value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="e.g. Overshirts" className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-400"/><button type="submit" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Add subcategory</button><button type="button" onClick={() => setShowAddSubcategory(null)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">Cancel</button></form> : <button onClick={() => { setNewName(""); setShowAddSubcategory(group.id); }} className="mt-3 inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50"><Plus size={16}/> Add subcategory</button>}</div></div>}
                 </article>;
               })}
@@ -250,6 +322,6 @@ export default function ManageCollectionsPage() {
 
       {(showAddCategory || showAddGroup || editing) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"><div className="mb-5 flex items-start justify-between"><div><h2 className="text-xl font-semibold">{editing ? "Rename item" : showAddCategory ? "Add main category" : "Add menu group"}</h2><p className="mt-1 text-sm text-slate-500">Use a clear customer-facing name.</p></div><button onClick={() => { setEditing(null); setShowAddCategory(false); setShowAddGroup(false); }} className="rounded-lg p-2 hover:bg-slate-100"><X size={18}/></button></div>
         {editing ? <form onSubmit={(event) => { event.preventDefault(); saveEdit(); }}><label className="mb-2 block text-sm font-semibold">Name</label><input autoFocus value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-amber-400"/><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setEditing(null)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Cancel</button><button type="submit" className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Save name</button></div></form> : showAddCategory ? <form onSubmit={(event) => { event.preventDefault(); addCategory(); }}><label className="mb-2 block text-sm font-semibold">Category name</label><input autoFocus value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="e.g. Men's Wear" className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-amber-400"/><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setShowAddCategory(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Cancel</button><button type="submit" className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Create category</button></div></form> : <form onSubmit={(event) => { event.preventDefault(); addGroup(); }}><label className="mb-2 block text-sm font-semibold">Menu group name</label><input autoFocus value={newGroupName} onChange={(event) => setNewGroupName(event.target.value)} placeholder="e.g. Formal Wear" className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-amber-400"/><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setShowAddGroup(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Cancel</button><button type="submit" className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Create group</button></div></form>}</div></div>}
-      </div>
+      </main>
   );
 }
