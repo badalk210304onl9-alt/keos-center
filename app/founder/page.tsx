@@ -1857,13 +1857,13 @@ export default function FounderPage() {
       string,
   ) {
     if (sectionId === "manage-collections") {
-      setMobileSidebarOpen(false);
-      setNotificationOpen(false);
-      setSelectedNotification(null);
-      setProfileOpen(false);
-      router.push("/founder/collections");
-      return;
-    }
+  setActiveSection("manage-collections");
+  setMobileSidebarOpen(false);
+  setNotificationOpen(false);
+  setSelectedNotification(null);
+  setProfileOpen(false);
+  return;
+}
 
     setActiveSection(
       sectionId,
