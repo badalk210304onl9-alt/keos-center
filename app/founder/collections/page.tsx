@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, CirclePlus,
   FolderTree, Layers3, LoaderCircle, Pencil, Plus, Search, Shirt,
-  Sparkles, Tags, Trash2, X,
+  Sparkles, Tags, Trash2, X, LayoutDashboard, ChartNoAxesColumn,
+  ClipboardCheck, ShoppingBag, Warehouse, Truck, RotateCcw,
 } from "lucide-react";
 
 type Subcategory = { id: string; name: string; active: boolean; sortOrder: number };
@@ -202,15 +203,19 @@ export default function ManageCollectionsPage() {
           <div><div className="font-bold tracking-tight">KEOS</div><div className="text-xs tracking-[.18em] text-slate-400">ENTERPRISE OS</div></div>
         </div>
         <div className="border-b border-slate-100 p-5"><div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-400"><Search className="mr-2 inline" size={16}/>Search KEOS...</div></div>
-        <nav className="flex-1 space-y-2 overflow-y-auto p-4 text-[15px]">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-4 text-[15px]">
           <div className="px-2 pb-2 pt-1 text-[11px] font-bold tracking-[.2em] text-slate-400">COMMAND CENTER</div>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 hover:bg-slate-100"><Layers3 size={19}/> Founder Dashboard</a>
+          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><LayoutDashboard size={19}/> Founder Dashboard</a>
+          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><ChartNoAxesColumn size={19}/> Business Analytics</a>
+          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><ClipboardCheck size={19}/> Tasks &amp; Approvals</a>
           <div className="px-2 pb-2 pt-5 text-[11px] font-bold tracking-[.2em] text-slate-400">COMMERCE</div>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 hover:bg-slate-100"><FolderTree size={19}/> Products</a>
-          <a href="/founder/collections" className="flex items-center gap-3 rounded-xl bg-slate-950 px-4 py-3 font-semibold text-white"><Tags size={19}/> Manage Collections</a>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 hover:bg-slate-100"><Layers3 size={19}/> Inventory</a>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 hover:bg-slate-100"><FolderTree size={19}/> Warehouse</a>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 hover:bg-slate-100"><FolderTree size={19}/> Shipping</a>
+          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><ShoppingBag size={19}/> Orders</a>
+          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><FolderTree size={19}/> Products</a>
+          <a href="/founder/collections" aria-current="page" className="flex items-center gap-3 rounded-xl bg-slate-950 px-4 py-3 font-semibold text-white shadow-sm"><Tags size={19}/> Manage Collections</a>
+          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><Layers3 size={19}/> Inventory</a>
+          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><Warehouse size={19}/> Warehouse</a>
+          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><Truck size={19}/> Shipping</a>
+          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><RotateCcw size={19}/> Returns &amp; Refunds</a>
         </nav>
         <div className="border-t border-slate-100 p-5"><div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-950 text-sm font-bold text-white">BK</div><div><div className="font-semibold">Badal Kumar</div><div className="text-xs text-slate-400">Founder</div></div></div></div>
       </aside>
