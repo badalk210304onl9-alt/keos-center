@@ -359,6 +359,20 @@ const navigationGroups:
 
       {
         id:
+          "manage-collections",
+
+        name:
+          "Manage Collections",
+
+        description:
+          "Manage clothing collections, category groups and subcategories for the KRVE website",
+
+        icon:
+          Tags,
+      },
+
+      {
+        id:
           "inventory",
 
         name:
@@ -1842,6 +1856,15 @@ export default function FounderPage() {
     sectionId:
       string,
   ) {
+    if (sectionId === "manage-collections") {
+      setMobileSidebarOpen(false);
+      setNotificationOpen(false);
+      setSelectedNotification(null);
+      setProfileOpen(false);
+      router.push("/founder/collections");
+      return;
+    }
+
     setActiveSection(
       sectionId,
     );
