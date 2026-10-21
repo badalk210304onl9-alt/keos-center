@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, CirclePlus,
   FolderTree, Layers3, LoaderCircle, Pencil, Plus, Search, Shirt,
-  Sparkles, Tags, Trash2, X, LayoutDashboard, ChartNoAxesColumn,
-  ClipboardCheck, ShoppingBag, Warehouse, Truck, RotateCcw,
+  Sparkles, Trash2, X,
 } from "lucide-react";
 
 type Subcategory = { id: string; name: string; active: boolean; sortOrder: number };
@@ -196,36 +195,7 @@ export default function ManageCollectionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-950">
-      <div className="flex min-h-screen">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[290px] shrink-0 flex-col border-r border-slate-200 bg-white lg:sticky lg:top-0 lg:flex lg:h-screen">
-        <div className="flex h-[74px] shrink-0 items-center gap-3 border-b border-slate-200 px-5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-xs font-bold tracking-[0.12em] text-white">KRVE</div>
-          <div><div className="font-bold tracking-tight">KEOS</div><div className="text-[10px] font-semibold tracking-[.18em] text-slate-400">ENTERPRISE OS</div></div>
-        </div>
-        <div className="shrink-0 border-b border-slate-200 p-4"><div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-400"><Search className="mr-2 inline" size={16}/>Search KEOS...</div></div>
-        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4 text-sm">
-          <div className="px-2 pb-2 pt-1 text-[11px] font-bold tracking-[.2em] text-slate-400">COMMAND CENTER</div>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><LayoutDashboard size={19}/> Founder Dashboard</a>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><ChartNoAxesColumn size={19}/> Business Analytics</a>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><ClipboardCheck size={19}/> Tasks &amp; Approvals</a>
-          <div className="px-2 pb-2 pt-5 text-[11px] font-bold tracking-[.2em] text-slate-400">COMMERCE</div>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><ShoppingBag size={19}/> Orders</a>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><FolderTree size={19}/> Products</a>
-          <a href="/founder/collections" aria-current="page" className="flex items-center gap-3 rounded-xl bg-slate-950 px-4 py-3 font-semibold text-white shadow-sm"><Tags size={19}/> Manage Collections</a>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><Layers3 size={19}/> Inventory</a>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><Warehouse size={19}/> Warehouse</a>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><Truck size={19}/> Shipping</a>
-          <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><RotateCcw size={19}/> Returns &amp; Refunds</a>
-        </nav>
-        <div className="shrink-0 border-t border-slate-200 p-4"><div className="flex items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-bold text-white">BK</div><div><div className="text-sm font-semibold">Badal Kumar</div><div className="text-xs text-slate-400">Founder</div></div></div></div>
-      </aside>
-      <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-20 flex min-h-[92px] items-center justify-between border-b border-slate-200 bg-white px-5 sm:px-8">
-          <div><div className="text-lg font-bold">Manage Collections</div><div className="mt-1 text-sm text-slate-400">Product catalogue, categories and publishing</div></div>
-          <div className="flex items-center gap-3"><div className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 sm:block">● Central API Connected</div><div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 text-xs font-bold text-white">BK</span><span className="hidden sm:block">Badal Kumar</span></div></div>
-        </header>
-      <main className="min-h-[calc(100vh-92px)] bg-[#f5f7fb] text-slate-900">
+      <main className="min-h-screen w-full bg-[#f5f7fb] text-slate-900">
       <div className="mx-auto max-w-[1700px] px-4 py-6 sm:px-7 lg:px-10">
         <header className="mb-7 flex flex-col justify-between gap-5 rounded-[28px] bg-[#101216] px-6 py-7 text-white shadow-xl sm:flex-row sm:items-center sm:px-8">
           <div>
@@ -281,8 +251,5 @@ export default function ManageCollectionsPage() {
       {(showAddCategory || showAddGroup || editing) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"><div className="mb-5 flex items-start justify-between"><div><h2 className="text-xl font-semibold">{editing ? "Rename item" : showAddCategory ? "Add main category" : "Add menu group"}</h2><p className="mt-1 text-sm text-slate-500">Use a clear customer-facing name.</p></div><button onClick={() => { setEditing(null); setShowAddCategory(false); setShowAddGroup(false); }} className="rounded-lg p-2 hover:bg-slate-100"><X size={18}/></button></div>
         {editing ? <form onSubmit={(event) => { event.preventDefault(); saveEdit(); }}><label className="mb-2 block text-sm font-semibold">Name</label><input autoFocus value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-amber-400"/><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setEditing(null)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Cancel</button><button type="submit" className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Save name</button></div></form> : showAddCategory ? <form onSubmit={(event) => { event.preventDefault(); addCategory(); }}><label className="mb-2 block text-sm font-semibold">Category name</label><input autoFocus value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="e.g. Men's Wear" className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-amber-400"/><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setShowAddCategory(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Cancel</button><button type="submit" className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Create category</button></div></form> : <form onSubmit={(event) => { event.preventDefault(); addGroup(); }}><label className="mb-2 block text-sm font-semibold">Menu group name</label><input autoFocus value={newGroupName} onChange={(event) => setNewGroupName(event.target.value)} placeholder="e.g. Formal Wear" className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-amber-400"/><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setShowAddGroup(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Cancel</button><button type="submit" className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Create group</button></div></form>}</div></div>}
       </main>
-      </div>
-      </div>
-    </div>
   );
 }
