@@ -196,14 +196,15 @@ export default function ManageCollectionsPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f1f5f9] text-slate-900">
-      <aside className="hidden w-[350px] shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
-        <div className="flex h-[92px] items-center gap-3 border-b border-slate-100 px-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black tracking-wide text-white">KRVE</div>
-          <div><div className="font-bold tracking-tight">KEOS</div><div className="text-xs tracking-[.18em] text-slate-400">ENTERPRISE OS</div></div>
+    <div className="min-h-screen bg-slate-100 text-slate-950">
+      <div className="flex min-h-screen">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[290px] shrink-0 flex-col border-r border-slate-200 bg-white lg:sticky lg:top-0 lg:flex lg:h-screen">
+        <div className="flex h-[74px] shrink-0 items-center gap-3 border-b border-slate-200 px-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-xs font-bold tracking-[0.12em] text-white">KRVE</div>
+          <div><div className="font-bold tracking-tight">KEOS</div><div className="text-[10px] font-semibold tracking-[.18em] text-slate-400">ENTERPRISE OS</div></div>
         </div>
-        <div className="border-b border-slate-100 p-5"><div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-400"><Search className="mr-2 inline" size={16}/>Search KEOS...</div></div>
-        <nav className="flex-1 space-y-1 overflow-y-auto p-4 text-[15px]">
+        <div className="shrink-0 border-b border-slate-200 p-4"><div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-400"><Search className="mr-2 inline" size={16}/>Search KEOS...</div></div>
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4 text-sm">
           <div className="px-2 pb-2 pt-1 text-[11px] font-bold tracking-[.2em] text-slate-400">COMMAND CENTER</div>
           <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><LayoutDashboard size={19}/> Founder Dashboard</a>
           <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><ChartNoAxesColumn size={19}/> Business Analytics</a>
@@ -217,7 +218,7 @@ export default function ManageCollectionsPage() {
           <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><Truck size={19}/> Shipping</a>
           <a href="/founder" className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition hover:bg-slate-100"><RotateCcw size={19}/> Returns &amp; Refunds</a>
         </nav>
-        <div className="border-t border-slate-100 p-5"><div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-950 text-sm font-bold text-white">BK</div><div><div className="font-semibold">Badal Kumar</div><div className="text-xs text-slate-400">Founder</div></div></div></div>
+        <div className="shrink-0 border-t border-slate-200 p-4"><div className="flex items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-bold text-white">BK</div><div><div className="text-sm font-semibold">Badal Kumar</div><div className="text-xs text-slate-400">Founder</div></div></div></div>
       </aside>
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-20 flex min-h-[92px] items-center justify-between border-b border-slate-200 bg-white px-5 sm:px-8">
@@ -280,6 +281,7 @@ export default function ManageCollectionsPage() {
       {(showAddCategory || showAddGroup || editing) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"><div className="mb-5 flex items-start justify-between"><div><h2 className="text-xl font-semibold">{editing ? "Rename item" : showAddCategory ? "Add main category" : "Add menu group"}</h2><p className="mt-1 text-sm text-slate-500">Use a clear customer-facing name.</p></div><button onClick={() => { setEditing(null); setShowAddCategory(false); setShowAddGroup(false); }} className="rounded-lg p-2 hover:bg-slate-100"><X size={18}/></button></div>
         {editing ? <form onSubmit={(event) => { event.preventDefault(); saveEdit(); }}><label className="mb-2 block text-sm font-semibold">Name</label><input autoFocus value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-amber-400"/><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setEditing(null)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Cancel</button><button type="submit" className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Save name</button></div></form> : showAddCategory ? <form onSubmit={(event) => { event.preventDefault(); addCategory(); }}><label className="mb-2 block text-sm font-semibold">Category name</label><input autoFocus value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="e.g. Men's Wear" className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-amber-400"/><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setShowAddCategory(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Cancel</button><button type="submit" className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Create category</button></div></form> : <form onSubmit={(event) => { event.preventDefault(); addGroup(); }}><label className="mb-2 block text-sm font-semibold">Menu group name</label><input autoFocus value={newGroupName} onChange={(event) => setNewGroupName(event.target.value)} placeholder="e.g. Formal Wear" className="w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-amber-400"/><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setShowAddGroup(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Cancel</button><button type="submit" className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Create group</button></div></form>}</div></div>}
       </main>
+      </div>
       </div>
     </div>
   );
