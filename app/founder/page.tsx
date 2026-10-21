@@ -74,6 +74,8 @@ import OrdersManagement from "@/components/founder/orders-management";
 
 import ProductsManagement from "@/components/founder/products-management";
 
+import ManageCollectionsPage from "./collections/page";
+
 import InventoryManagement from "@/components/founder/inventory-management";
 
 import WarehouseManagement from "@/components/founder/warehouse-management";
@@ -1857,13 +1859,13 @@ export default function FounderPage() {
       string,
   ) {
     if (sectionId === "manage-collections") {
-  setActiveSection("manage-collections");
-  setMobileSidebarOpen(false);
-  setNotificationOpen(false);
-  setSelectedNotification(null);
-  setProfileOpen(false);
-  return;
-}
+      setActiveSection("manage-collections");
+      setMobileSidebarOpen(false);
+      setNotificationOpen(false);
+      setSelectedNotification(null);
+      setProfileOpen(false);
+      return;
+    }
 
     setActiveSection(
       sectionId,
@@ -2884,6 +2886,11 @@ export default function FounderPage() {
       case "products":
         return (
           <ProductsManagement />
+        );
+
+      case "manage-collections":
+        return (
+          <ManageCollectionsPage />
         );
 
       case "inventory":
